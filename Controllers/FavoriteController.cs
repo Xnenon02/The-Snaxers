@@ -7,7 +7,7 @@ using TheSnaxers.Models;
 
 namespace TheSnaxers.Controllers;
 
-// [Authorize]
+[Authorize]
 public class FavoriteController : Controller
 {
     private readonly ApplicationDbContext _db;
