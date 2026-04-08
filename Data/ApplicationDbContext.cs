@@ -12,4 +12,5 @@ public class ApplicationDbContext : IdentityDbContext
     }
 
     public DbSet<Favorite> Favorites { get; set; }
+    public DbSet<Product> Products { get; set; }
 }
