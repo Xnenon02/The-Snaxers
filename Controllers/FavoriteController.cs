@@ -30,18 +30,28 @@ public class FavoriteController : Controller
     }
 
     [HttpPost]
-    public async Task<IActionResult> Add(int productId)
+public async Task<IActionResult> Add(int productId)
+{
+    var userId = _userManager.GetUserId(User);
+
+    if (userId == null)
+        return RedirectToAction("Index", "Product");
+
+    var exists = await _db.Favorites
+        .AnyAsync(f => f.UserId == userId && f.ProductId == productId);
+
+    if (!exists)
     {
-        var userId = _userManager.GetUserId(User);
-        var exists = await _db.Favorites
-            .AnyAsync(f => f.UserId == userId && f.ProductId == productId);
-        if (!exists)
+        _db.Favorites.Add(new Favorite
         {
-            _db.Favorites.Add(new Favorite { UserId = userId!, ProductId = productId });
-            await _db.SaveChangesAsync();
-        }
-        return RedirectToAction("Index", "Home");
+            UserId = userId,
+            ProductId = productId
+        });
+        await _db.SaveChangesAsync();
     }
+
+    return RedirectToAction("Index", "Product");
+}
 
     [HttpPost]
     public async Task<IActionResult> Remove(int productId)
