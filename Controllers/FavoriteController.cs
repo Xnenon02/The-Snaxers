@@ -19,6 +19,7 @@ public class FavoriteController : Controller
         _userManager = userManager;
     }
 
+    [ResponseCache(NoStore = true, Duration = 0)]
     public async Task<IActionResult> Index()
     {
         var userId = _userManager.GetUserId(User);
@@ -30,40 +31,45 @@ public class FavoriteController : Controller
     }
 
     [HttpPost]
-public async Task<IActionResult> Add(int productId)
-{
-    var userId = _userManager.GetUserId(User);
-
-    if (userId == null)
-        return RedirectToAction("Index", "Product");
-
-    var exists = await _db.Favorites
-        .AnyAsync(f => f.UserId == userId && f.ProductId == productId);
-
-    if (!exists)
+    public async Task<IActionResult> Add(int productId)
     {
-        _db.Favorites.Add(new Favorite
+        var userId = _userManager.GetUserId(User);
+
+        if (userId == null)
+            return RedirectToAction("Index", "Product");
+
+        var exists = await _db.Favorites
+            .AnyAsync(f => f.UserId == userId && f.ProductId == productId);
+
+        if (!exists)
         {
-            UserId = userId,
-            ProductId = productId
-        });
-        await _db.SaveChangesAsync();
+            _db.Favorites.Add(new Favorite
+            {
+                UserId = userId,
+                ProductId = productId
+            });
+            await _db.SaveChangesAsync();
+        }
+
+        return RedirectToAction("Index", "Product");
     }
 
-    return RedirectToAction("Index", "Product");
-}
-
     [HttpPost]
-    public async Task<IActionResult> Remove(int productId)
+    public async Task<IActionResult> Remove(int productId, string returnUrl = "Favorite")
     {
         var userId = _userManager.GetUserId(User);
         var favorite = await _db.Favorites
             .FirstOrDefaultAsync(f => f.UserId == userId && f.ProductId == productId);
+
         if (favorite != null)
         {
             _db.Favorites.Remove(favorite);
             await _db.SaveChangesAsync();
         }
+
+        if (returnUrl == "Product")
+            return RedirectToAction("Index", "Product");
+
         return RedirectToAction("Index");
     }
 }
