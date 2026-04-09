@@ -1,0 +1,42 @@
+@model List<TheSnaxers.Models.Product>
+
+<h2>🍫 Våra lyxchoklader</h2>
+
+@if (!Model.Any())
+{
+    <p>Inga produkter finns ännu.</p>
+}
+else
+{
+    <div class="row">
+        @foreach (var product in Model)
+        {
+            var isFavorite = ((List<int>)ViewBag.FavoriteIds).Contains(product.Id);
+            <div class="col-md-4 mb-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">@product.Name</h5>
+                        <p class="card-text">@product.Description</p>
+                        <p><strong>@product.Price kr</strong></p>
+
+                        @if (isFavorite)
+                        {
+                            <form asp-controller="Favorite" asp-action="Remove" method="post">
+                                <input type="hidden" name="productId" value="@product.Id" />
+                                <input type="hidden" name="returnUrl" value="Product" />
+                                <button type="submit" class="btn btn-danger">❤️ Sparad</button>
+                            </form>
+                        }
+                        else
+                        {
+                            <form asp-controller="Favorite" asp-action="Add" method="post">
+                                <input type="hidden" name="productId" value="@product.Id" />
+                                <button type="submit" class="btn btn-outline-danger">🤍 Spara som favorit</button>
+                            </form>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}

@@ -1,5 +1,4 @@
-namespace The_Snaxers.Models;
-
+namespace TheSnaxers.Models;
 public class ErrorViewModel
 {
     public string? RequestId { get; set; }
