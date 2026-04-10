@@ -30,9 +30,17 @@ public class ChocolateController : Controller
 
         foreach (var p in products)
         {
-            // Vi hämtar flaggan. 
-            // OBS: Se till att p.Category faktiskt innehåller ett land (t.ex. "Belgium")
-            var countryInfo = await _countryService.GetCountryInfoAsync(p.Category);
+            // "Ful-hack" för att mappa Hanitas kategorier till riktiga länder
+var searchCountry = p.Category switch
+{
+    "Mörk" => "Ecuador",
+    "Vit" => "Belgium",
+    "Mjölk" => "Switzerland",
+    _ => p.Category // Om det redan råkar vara ett land, använd det
+};
+
+var countryInfo = await _countryService.GetCountryInfoAsync(searchCountry);
+
 
             viewModel.Add(new ChocolateGalleryViewModel
             {
