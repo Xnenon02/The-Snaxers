@@ -32,7 +32,8 @@ public class ChocolateController : Controller
     public async Task<IActionResult> Index()
     {
         // 1. Hämta produkterna
-        var products = await _productService.GetAllProductsAsync();
+  // 1. Hämta produkterna
+var products = await _productService.GetAllProductsAsync();
 
         // 2. Hantera favoriter (Hanitas logik)
         var userId = _userManager.GetUserId(User);
