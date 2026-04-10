@@ -18,16 +18,16 @@ public class ProductRepository : IProductRepository
         return await _db.Products.ToListAsync();
     }
 
-    public async Task<List<Product>> SearchAsync(string searchTerm, int? minCocoa)
+   public async Task<List<Product>> SearchAsync(string searchTerm, int? minCocoa)
     {
-        var query = _db.Products.AsQueryable();
+    var query = _db.Products.AsQueryable();
 
-        if (!string.IsNullOrWhiteSpace(searchTerm))
-            query = query.Where(p => p.Name.Contains(searchTerm));
+    if (!string.IsNullOrWhiteSpace(searchTerm))
+        query = query.Where(p => p.Name.ToLower().Contains(searchTerm.ToLower()));
 
-        if (minCocoa.HasValue)
-            query = query.Where(p => p.CocoaPercentage >= minCocoa.Value);
+    if (minCocoa.HasValue)
+        query = query.Where(p => p.CocoaPercentage >= minCocoa.Value);
 
-        return await query.ToListAsync();
+    return await query.ToListAsync();
     }
 }
