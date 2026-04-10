@@ -26,15 +26,18 @@ public class FavoriteController : Controller
     }
 
     [HttpPost]
-    public async Task<IActionResult> Add(int productId)
-    {
-        var userId = _userManager.GetUserId(User);
-        if (userId == null) return RedirectToAction("Index", "Product");
+public async Task<IActionResult> Add(int productId, string returnUrl = "Favorite")
+{
+    var userId = _userManager.GetUserId(User);
+    if (userId == null) return RedirectToAction("Index", "Chocolate"); // Ändrat från Product
 
-        await _favoriteService.AddToFavoritesAsync(userId, productId);
+    await _favoriteService.AddToFavoritesAsync(userId, productId);
 
-        return RedirectToAction("Index", "Product");
-    }
+    // Om vi skickade med "Chocolate" som returnUrl, gå dit!
+    if (returnUrl == "Chocolate") return RedirectToAction("Index", "Chocolate");
+
+    return RedirectToAction("Index", "Product"); // Fallback
+}
 
     [HttpPost]
     public async Task<IActionResult> Remove(int productId, string returnUrl = "Favorite")
