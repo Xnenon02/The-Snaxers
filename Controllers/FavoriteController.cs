@@ -21,6 +21,8 @@ public class FavoriteController : Controller
     public async Task<IActionResult> Index()
     {
         var userId = _userManager.GetUserId(User);
+        if (userId == null) return RedirectToAction("Index", "Home");
+
         var favorites = await _favoriteService.GetUserFavoritesAsync(userId);
         return View(favorites);
     }
@@ -32,7 +34,6 @@ public class FavoriteController : Controller
         if (userId == null) return RedirectToAction("Index", "Product");
 
         await _favoriteService.AddToFavoritesAsync(userId, productId);
-
         return RedirectToAction("Index", "Product");
     }
 
@@ -40,11 +41,11 @@ public class FavoriteController : Controller
     public async Task<IActionResult> Remove(int productId, string returnUrl = "Favorite")
     {
         var userId = _userManager.GetUserId(User);
-        
+        if (userId == null) return RedirectToAction("Index", "Home");
+
         await _favoriteService.RemoveFromFavoritesAsync(userId, productId);
 
         if (returnUrl == "Product") return RedirectToAction("Index", "Product");
-
         return RedirectToAction("Index");
     }
 }
