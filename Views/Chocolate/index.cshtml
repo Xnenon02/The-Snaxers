@@ -10,8 +10,17 @@
 
 <div class="container mt-4">
     <h1 class="text-center mb-5 display-4 shadow-text">Vårt Chokladutbud</h1>
-
-    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+    @if (Model == null || !Model.Any())
+    {
+        <div class="text-center my-5 p-5 border rounded bg-light">
+            <i class="bi bi-search mb-3 d-block text-muted" style="font-size: 3rem;"></i>
+            <p class="lead text-muted">Ingen choklad hittades för tillfället.</p>
+            <p>Kom gärna tillbaka senare eller kontakta vår chokladmästare.</p>
+        </div>
+    }
+    else
+    {
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
         @foreach (var chocolate in Model)
         {
             var isFavorite = ((List<int>)ViewBag.FavoriteIds)?.Contains(chocolate.Id) ?? false;
@@ -51,7 +60,7 @@
                                 {
                                     <form asp-controller="Favorite" asp-action="Add" method="post" class="d-inline">
                                         <input type="hidden" name="productId" value="@chocolate.Id" />
-                                        @* HÄR ÄR ÄNDRINGEN: Vi skickar med returnUrl *@
+                                        
                                         <input type="hidden" name="returnUrl" value="Chocolate" />
                                         <button type="submit" class="btn btn-link p-0 text-decoration-none">
                                             <i class="bi bi-heart text-danger fs-4"></i>
@@ -64,5 +73,7 @@
                 </div>
             </div>
         }
+        
     </div>
+    }
 </div>
