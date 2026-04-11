@@ -30,7 +30,6 @@ public class ChocolateController : Controller
 
     public async Task<IActionResult> Index(string? searchTerm, int? minCocoa)
     {
-        // 1. Hämta produkterna med sökning/filtrering
         List<Product> products;
 
         if (!string.IsNullOrWhiteSpace(searchTerm) || minCocoa.HasValue)
@@ -38,7 +37,6 @@ public class ChocolateController : Controller
         else
             products = await _productService.GetAllProductsAsync();
 
-        // 2. Hantera favoriter
         var userId = _userManager.GetUserId(User);
         if (userId != null)
         {
@@ -53,20 +51,29 @@ public class ChocolateController : Controller
         ViewBag.SearchTerm = searchTerm;
         ViewBag.MinCocoa = minCocoa;
 
-        // 3. Mappa till ViewModel
         var viewModel = new List<ChocolateGalleryViewModel>();
 
         foreach (var p in products)
         {
-            var searchCountry = p.Category switch
+            // Använd Country-fältet direkt — category-hacket tas bort när CosmosDB är på plats
+            var searchCountry = !string.IsNullOrWhiteSpace(p.Country) ? p.Country : p.Category switch
             {
                 "Mörk" => "Ecuador",
                 "Vit" => "Belgium",
                 "Mjölk" => "Switzerland",
-                _ => p.Category
+                "Ruby" => "Belgium",
+                _ => "Sweden" // Default om inget land hittas
             };
 
-            var countryInfo = await _countryService.GetCountryInfoAsync(searchCountry);
+            CountryInfo? countryInfo = null;
+            try
+            {
+                countryInfo = await _countryService.GetCountryInfoAsync(searchCountry);
+            }
+            catch
+            {
+                // Om API:et failar, använd default
+            }
 
             viewModel.Add(new ChocolateGalleryViewModel
             {
@@ -75,9 +82,8 @@ public class ChocolateController : Controller
                 Brand = p.Brand,
                 CocoaPercentage = p.CocoaPercentage,
                 ImageUrl = p.ImageUrl,
-                CountryName = countryInfo?.Name ?? "Okänt land",
-                FlagUrl = countryInfo?.FlagUrl ?? "/images/world-icon.png"
-            });
+                CountryName = countryInfo?.Name ?? p.Country,
+                FlagUrl = countryInfo?.FlagUrl ?? "/images/flag-placeholder.svg"            });
         }
 
         return View(viewModel);

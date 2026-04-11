@@ -60,7 +60,14 @@
                         }
 
                         <div class="position-absolute bottom-0 end-0 m-2 shadow-sm bg-white p-1 rounded">
-                            <img src="@chocolate.FlagUrl" alt="@chocolate.CountryName" title="@chocolate.CountryName" class="flag-badge">
+                            @if (!string.IsNullOrEmpty(chocolate.FlagUrl))
+                            {
+                                <img src="@chocolate.FlagUrl" alt="@chocolate.CountryName" title="@chocolate.CountryName" class="flag-badge">
+                            }
+                            else
+                            {
+                                <span title="@chocolate.CountryName" style="font-size:20px;">🌍</span>
+                            }
                         </div>
                     </div>
                     <div class="card-body d-flex flex-column">

@@ -37,9 +37,10 @@ using (var scope = app.Services.CreateScope())
         // Lokalt: /images/products/filnamn.jpg
         // Produktion: https://snaxers.blob.core.windows.net/products/filnamn.jpg
         db.Products.AddRange(
-            new TheSnaxers.Models.Product { Name = "Mörk Tryffel", Description = "Intensiv mörk choklad med tryffelkärna", Price = 89.90m, Category = "Mörk", CocoaPercentage = 72, Brand = "Valrhona", Country = "Frankrike", ImageUrl = "/images/products/darkTruffle.jpg" },
-            new TheSnaxers.Models.Product { Name = "Hallon & Vit Choklad", Description = "Krämig vit choklad med hallonkräm", Price = 79.90m, Category = "Vit", CocoaPercentage = 30, Brand = "Lindt", Country = "Schweiz", ImageUrl = "/images/products/hallontryffel.jpg" },
-            new TheSnaxers.Models.Product { Name = "Saltkaramell", Description = "Mjölkchoklad med flytande saltkaramell", Price = 69.90m, Category = "Mjölk", CocoaPercentage = 45, Brand = "Fazer", Country = "Finland", ImageUrl = "/images/products/saltkaramelltryffel.jpg" }
+            new TheSnaxers.Models.Product { Name = "Mörk Tryffel", Description = "Intensiv mörk choklad med tryffelkärna", Price = 89.90m, Category = "Mörk", CocoaPercentage = 72, Brand = "Valrhona", Country = "France", ImageUrl = "/images/products/darkTruffle.jpg" },
+            new TheSnaxers.Models.Product { Name = "Hallon & Vit Choklad", Description = "Krämig vit choklad med hallonkräm", Price = 79.90m, Category = "Vit", CocoaPercentage = 30, Brand = "Lindt", Country = "Switzerland", ImageUrl = "/images/products/hallontryffel.jpg" },
+            new TheSnaxers.Models.Product { Name = "Saltkaramell", Description = "Mjölkchoklad med flytande saltkaramell", Price = 69.90m, Category = "Mjölk", CocoaPercentage = 45, Brand = "Fazer", Country = "Finland", ImageUrl = "/images/products/saltkaramelltryffel.jpg" },
+            new TheSnaxers.Models.Product { Name = "Ruby Choklad", Description = "Unik rosa choklad med bärsmak, utan tillsatta färger", Price = 99.90m, Category = "Ruby", CocoaPercentage = 47, Brand = "Callebaut", Country = "Belgium", ImageUrl = "/images/products/rubyChoklad.jpg" }
         );
         db.SaveChanges();
     }
