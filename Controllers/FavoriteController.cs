@@ -26,28 +26,30 @@ public class FavoriteController : Controller
     }
 
     [HttpPost]
-public async Task<IActionResult> Add(int productId, string returnUrl = "Favorite")
+public async Task<IActionResult> Add(int productId, string returnUrl = "Chocolate") // Ändrat default till Chocolate
 {
     var userId = _userManager.GetUserId(User);
-    if (userId == null) return RedirectToAction("Index", "Chocolate"); // Ändrat från Product
+    if (userId == null) return RedirectToAction("Index", "Chocolate");
 
     await _favoriteService.AddToFavoritesAsync(userId, productId);
 
-    // Om vi skickade med "Chocolate" som returnUrl, gå dit!
-    if (returnUrl == "Chocolate") return RedirectToAction("Index", "Chocolate");
-
-    return RedirectToAction("Index", "Product"); // Fallback
+    // Gå tillbaka till där användaren kom ifrån (nu med Chocolate som standard)
+    if (returnUrl == "Favorite") return RedirectToAction("Index", "Favorite");
+    
+    return RedirectToAction("Index", "Chocolate");
 }
 
-    [HttpPost]
-    public async Task<IActionResult> Remove(int productId, string returnUrl = "Favorite")
-    {
-        var userId = _userManager.GetUserId(User);
-        
-        await _favoriteService.RemoveFromFavoritesAsync(userId, productId);
+[HttpPost]
+public async Task<IActionResult> Remove(int productId, string returnUrl = "Chocolate") // Ändrat default till Chocolate
+{
+    var userId = _userManager.GetUserId(User);
+    
+    await _favoriteService.RemoveFromFavoritesAsync(userId, productId);
 
-        if (returnUrl == "Product") return RedirectToAction("Index", "Product");
+    // Om vi klickar "ta bort" inne i favoritlistan, stanna där. 
+    // Annars, gå tillbaka till galleriet.
+    if (returnUrl == "Favorite") return RedirectToAction("Index", "Favorite");
 
-        return RedirectToAction("Index");
-    }
+    return RedirectToAction("Index", "Chocolate");
+}
 }
