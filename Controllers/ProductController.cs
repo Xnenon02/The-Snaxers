@@ -2,6 +2,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Identity;
 using TheSnaxers.Models;
 using TheSnaxers.Services;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace TheSnaxers.Controllers;
 
@@ -21,14 +24,10 @@ public class ProductController : Controller
         _userManager = userManager;
     }
 
-    public async Task<IActionResult> Index(string? searchTerm, int? minCocoa)
+    // Ingen söklogik här längre - den ligger i ChocolateController!
+    public async Task<IActionResult> Index()
     {
-        List<Product> products;
-
-        if (!string.IsNullOrWhiteSpace(searchTerm) || minCocoa.HasValue)
-            products = await _productService.SearchProductsAsync(searchTerm!, minCocoa);
-        else
-            products = await _productService.GetAllProductsAsync();
+        var products = await _productService.GetAllProductsAsync();
 
         var userId = _userManager.GetUserId(User);
         var favoriteIds = userId != null
@@ -38,8 +37,6 @@ public class ProductController : Controller
             : new List<int>();
 
         ViewBag.FavoriteIds = favoriteIds;
-        ViewBag.SearchTerm = searchTerm;
-        ViewBag.MinCocoa = minCocoa;
 
         return View(products);
     }
