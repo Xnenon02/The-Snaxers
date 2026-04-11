@@ -51,6 +51,14 @@
                         <img src="@(string.IsNullOrEmpty(chocolate.ImageUrl) ? "/images/placeholder-choco.png" : chocolate.ImageUrl)" 
                              class="card-img-top p-3 choco-card-img" 
                              alt="@chocolate.Name">
+                        
+                        @if (chocolate.CocoaPercentage > 0)
+                        {
+                            <div class="position-absolute top-0 start-0 m-3 badge bg-dark fs-6 shadow-sm">
+                                @chocolate.CocoaPercentage% Kakao
+                            </div>
+                        }
+
                         <div class="position-absolute bottom-0 end-0 m-2 shadow-sm bg-white p-1 rounded">
                             <img src="@chocolate.FlagUrl" alt="@chocolate.CountryName" title="@chocolate.CountryName" class="flag-badge">
                         </div>

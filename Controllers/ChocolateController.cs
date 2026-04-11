@@ -72,6 +72,8 @@ public class ChocolateController : Controller
             {
                 Id = p.Id,
                 Name = p.Name,
+                Brand = p.Brand,
+                CocoaPercentage = p.CocoaPercentage,
                 ImageUrl = p.ImageUrl,
                 CountryName = countryInfo?.Name ?? "Okänt land",
                 FlagUrl = countryInfo?.FlagUrl ?? "/images/world-icon.png"

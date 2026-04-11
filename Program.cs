@@ -16,6 +16,8 @@ builder.Services.AddScoped<TheSnaxers.Repositories.IFavoriteRepository, TheSnaxe
 builder.Services.AddScoped<TheSnaxers.Services.IFavoriteService, TheSnaxers.Services.FavoriteService>();
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddHttpClient();
+builder.Services.AddScoped<ICountryService, CountryService>();
 
 builder.Services.AddDefaultIdentity<IdentityUser>(options => 
     options.SignIn.RequireConfirmedAccount = false)
