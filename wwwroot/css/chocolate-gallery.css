@@ -16,7 +16,8 @@
 /* Du kan också flytta in dina inline-styles här för att göra HTML-koden ännu renare */
 .choco-card-img {
     height: 250px;
-    object-fit: contain;
+    width: 100%;
+    object-fit: cover;
 }
 
 .flag-badge {
