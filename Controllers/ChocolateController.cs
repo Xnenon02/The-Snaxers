@@ -55,14 +55,14 @@ public class ChocolateController : Controller
 
         foreach (var p in products)
         {
-            // Använd Country-fältet direkt — category-hacket tas bort när CosmosDB är på plats
+            // TODO: Ta bort category-switch när CosmosDB är på plats och Country alltid är ifyllt
             var searchCountry = !string.IsNullOrWhiteSpace(p.Country) ? p.Country : p.Category switch
             {
-                "Mörk" => "Ecuador",
-                "Vit" => "Belgium",
-                "Mjölk" => "Switzerland",
+                "Mörk" => "France",
+                "Vit" => "Switzerland",
+                "Mjölk" => "Finland",
                 "Ruby" => "Belgium",
-                _ => "Sweden" // Default om inget land hittas
+            _   => "Sweden",
             };
 
             CountryInfo? countryInfo = null;
