@@ -81,9 +81,11 @@ public class ChocolateController : Controller
                 Name = p.Name,
                 Brand = p.Brand,
                 CocoaPercentage = p.CocoaPercentage,
+                Description = p.Description,
+                Price = p.Price,
                 ImageUrl = p.ImageUrl,
                 CountryName = countryInfo?.Name ?? p.Country,
-                FlagUrl = countryInfo?.FlagUrl ?? "/images/flag-placeholder.svg"            });
+                FlagUrl = countryInfo?.FlagUrl ?? ""            });
         }
 
         return View(viewModel);

@@ -6,8 +6,28 @@ public class ChocolateGalleryViewModel
     public string Name { get; set; } = string.Empty;
     public string Brand { get; set; } = string.Empty;
     public int CocoaPercentage { get; set; }
+    public string Description { get; set; } = string.Empty;
+    public decimal Price { get; set; }
     public string ImageUrl { get; set; } = string.Empty;
     public string CountryName { get; set; } = string.Empty;
     public string FlagUrl { get; set; } = string.Empty;
-    public string DisplayImage => string.IsNullOrEmpty(ImageUrl) ? "/images/placeholder.png" : ImageUrl;
+
+    // Generates a dynamic image path based on the product name if no ImageUrl is provided.
+    // Includes a fallback to a placeholder image.
+    public string DynamicImageUrl
+    {
+        get
+        {
+            if (!string.IsNullOrWhiteSpace(ImageUrl)) return ImageUrl;
+            if (string.IsNullOrWhiteSpace(Name)) return "/images/placeholder-choco.png";
+
+            var safeName = Name.ToLower()
+                               .Replace(" ", "-")
+                               .Replace("å", "a")
+                               .Replace("ä", "a")
+                               .Replace("ö", "o");
+
+            return $"/images/products/{safeName}.jpg";
+        }
+    }
 }
