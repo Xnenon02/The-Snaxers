@@ -24,3 +24,10 @@ docker run -p 8080:8080 thesnaxers
 ## Nästa steg
 - Pusha till Azure Container Registry (ACR)
 - Deploya via Azure Container Apps
+
+## ⚠️ Att göra inför produktion
+- Byt ASPNETCORE_ENVIRONMENT till Production
+- Lägg till Azure Key Vault URL som miljövariabel
+- Lägg till Application Insights connection string
+- Ta bort SQLite volume — ersätt med CosmosDB
+- Pusha imagen till Azure Container Registry

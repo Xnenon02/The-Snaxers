@@ -1,3 +1,5 @@
+# TODO: Lägg till miljövariabler för Azure Key Vault URL och App Insights när produktion är klar
+# TODO: Byt ASPNETCORE_ENVIRONMENT till Production vid deploy till Azure Container Apps
 # Build stage
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /app

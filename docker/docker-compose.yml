@@ -1,3 +1,5 @@
+# TODO: Byt snaxers.db volume mot CosmosDB connection string när migrering av databasen är gjord
+# TODO: Lägg till Azure Key Vault och App Insights miljövariabler i environment-sektionen
 version: '3.8'
 
 services:
