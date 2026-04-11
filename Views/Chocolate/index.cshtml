@@ -52,9 +52,9 @@
                         @* FRAMSIDA *@
                         <div class="flip-card-front">
                             <div class="position-relative">
-                                <img src="@(string.IsNullOrEmpty(chocolate.ImageUrl) ? "/images/placeholder-choco.png" : chocolate.ImageUrl)" 
-                                     class="card-img-top choco-card-img" 
-                                     alt="@chocolate.Name">
+                                <img src="@chocolate.DynamicImageUrl" 
+                                    class="card-img-top choco-card-img" 
+                                    alt="@chocolate.Name">
 
                                 @if (chocolate.CocoaPercentage > 0)
                                 {
