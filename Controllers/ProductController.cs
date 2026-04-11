@@ -24,7 +24,6 @@ public class ProductController : Controller
         _userManager = userManager;
     }
 
-    // Ingen söklogik här längre - den ligger i ChocolateController!
     public async Task<IActionResult> Index()
     {
         var products = await _productService.GetAllProductsAsync();
