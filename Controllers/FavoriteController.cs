@@ -28,17 +28,20 @@ public class FavoriteController : Controller
     }
 
     [HttpPost]
-    public async Task<IActionResult> Add(int productId)
+    public async Task<IActionResult> Add(int productId, string returnUrl = "Chocolate")
     {
         var userId = _userManager.GetUserId(User);
-        if (userId == null) return RedirectToAction("Index", "Product");
+        if (userId == null) return RedirectToAction("Index", "Chocolate");
 
         await _favoriteService.AddToFavoritesAsync(userId, productId);
-        return RedirectToAction("Index", "Product");
+
+        if (returnUrl == "Product") return RedirectToAction("Index", "Product");
+        if (returnUrl == "Favorite") return RedirectToAction("Index", "Favorite");
+        return RedirectToAction("Index", "Chocolate");
     }
 
     [HttpPost]
-    public async Task<IActionResult> Remove(int productId, string returnUrl = "Favorite")
+    public async Task<IActionResult> Remove(int productId, string returnUrl = "Chocolate")
     {
         var userId = _userManager.GetUserId(User);
         if (userId == null) return RedirectToAction("Index", "Home");
@@ -46,6 +49,7 @@ public class FavoriteController : Controller
         await _favoriteService.RemoveFromFavoritesAsync(userId, productId);
 
         if (returnUrl == "Product") return RedirectToAction("Index", "Product");
-        return RedirectToAction("Index");
+        if (returnUrl == "Favorite") return RedirectToAction("Index", "Favorite");
+        return RedirectToAction("Index", "Chocolate");
     }
 }
