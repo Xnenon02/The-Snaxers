@@ -18,12 +18,19 @@ public class FavoriteController : Controller
     }
 
     [ResponseCache(NoStore = true, Duration = 0)]
-    public async Task<IActionResult> Index()
+   public async Task<IActionResult> Index()
+{
+    var userId = _userManager.GetUserId(User);
+    
+    // Fix: Om userId är null, skicka användaren till Login eller hantera felet
+    if (string.IsNullOrEmpty(userId))
     {
-        var userId = _userManager.GetUserId(User);
-        var favorites = await _favoriteService.GetUserFavoritesAsync(userId);
-        return View(favorites);
+        return Challenge(); // Eller RedirectToAction("Login", "Account");
     }
+
+    var favorites = await _favoriteService.GetUserFavoritesAsync(userId);
+    return View(favorites);
+}
 
     [HttpPost]
 public async Task<IActionResult> Add(int productId, string returnUrl = "Favorite")
@@ -40,14 +47,19 @@ public async Task<IActionResult> Add(int productId, string returnUrl = "Favorite
 }
 
     [HttpPost]
-    public async Task<IActionResult> Remove(int productId, string returnUrl = "Favorite")
+public async Task<IActionResult> Remove(int productId, string returnUrl = "Chocolate")
+{
+    var userId = _userManager.GetUserId(User);
+
+    // Fix: Kontrollera att userId faktiskt har ett värde
+    if (string.IsNullOrEmpty(userId))
     {
-        var userId = _userManager.GetUserId(User);
-        
-        await _favoriteService.RemoveFromFavoritesAsync(userId, productId);
-
-        if (returnUrl == "Product") return RedirectToAction("Index", "Product");
-
-        return RedirectToAction("Index");
+        return Unauthorized();
     }
+
+    await _favoriteService.RemoveFromFavoritesAsync(userId, productId);
+    
+    if (returnUrl == "Favorite") return RedirectToAction("Index", "Favorite");
+    return RedirectToAction("Index", "Chocolate");
+}
 }
