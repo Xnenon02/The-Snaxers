@@ -1,11 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Identity; // Behövs för UserManager
+using Microsoft.AspNetCore.Identity;
 using TheSnaxers.Models;
 using TheSnaxers.ViewModels;
 using TheSnaxers.Services;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using System.Linq; // Behövs för .Select()
+using System.Linq;
 
 namespace TheSnaxers.Controllers;
 
@@ -14,9 +14,8 @@ public class ChocolateController : Controller
     private readonly IProductService _productService;
     private readonly ICountryService _countryService;
     private readonly IFavoriteService _favoriteService;
-    private readonly UserManager<IdentityUser> _userManager; // Lägg till denna
+    private readonly UserManager<IdentityUser> _userManager;
 
-    // Uppdaterad Constructor med 4 tjänster
     public ChocolateController(
         IProductService productService, 
         ICountryService countryService, 
@@ -29,32 +28,36 @@ public class ChocolateController : Controller
         _userManager = userManager;
     }
 
-    public async Task<IActionResult> Index()
+    public async Task<IActionResult> Index(string? searchTerm, int? minCocoa)
     {
-        // 1. Hämta produkterna
-  // 1. Hämta produkterna
-var products = await _productService.GetAllProductsAsync();
+        // 1. Hämta produkterna med sökning/filtrering
+        List<Product> products;
 
-        // 2. Hantera favoriter (Hanitas logik)
+        if (!string.IsNullOrWhiteSpace(searchTerm) || minCocoa.HasValue)
+            products = await _productService.SearchProductsAsync(searchTerm!, minCocoa);
+        else
+            products = await _productService.GetAllProductsAsync();
+
+        // 2. Hantera favoriter
         var userId = _userManager.GetUserId(User);
         if (userId != null)
         {
-            // Vi hämtar användarens favoriter och gör om dem till en lista med bara ID-nummer
             var favorites = await _favoriteService.GetUserFavoritesAsync(userId);
             ViewBag.FavoriteIds = favorites.Select(f => f.ProductId).ToList();
         }
         else
         {
-            // Om ingen är inloggad skickar vi en tom lista så vyn inte kraschar
             ViewBag.FavoriteIds = new List<int>();
         }
 
-        // 3. Mappa produkterna till din ViewModel
+        ViewBag.SearchTerm = searchTerm;
+        ViewBag.MinCocoa = minCocoa;
+
+        // 3. Mappa till ViewModel
         var viewModel = new List<ChocolateGalleryViewModel>();
 
         foreach (var p in products)
         {
-            // "Ful-hack" för länder
             var searchCountry = p.Category switch
             {
                 "Mörk" => "Ecuador",
@@ -69,13 +72,14 @@ var products = await _productService.GetAllProductsAsync();
             {
                 Id = p.Id,
                 Name = p.Name,
+                Brand = p.Brand,
+                CocoaPercentage = p.CocoaPercentage,
                 ImageUrl = p.ImageUrl,
                 CountryName = countryInfo?.Name ?? "Okänt land",
                 FlagUrl = countryInfo?.FlagUrl ?? "/images/world-icon.png"
             });
         }
 
-        // 4. Skicka din färdiga lista till vyn
         return View(viewModel);
     }
 }

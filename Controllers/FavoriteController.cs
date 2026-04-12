@@ -18,48 +18,44 @@ public class FavoriteController : Controller
     }
 
     [ResponseCache(NoStore = true, Duration = 0)]
-   public async Task<IActionResult> Index()
-{
-    var userId = _userManager.GetUserId(User);
-    
-    // Fix: Om userId är null, skicka användaren till Login eller hantera felet
-    if (string.IsNullOrEmpty(userId))
+    public async Task<IActionResult> Index()
     {
-        return Challenge(); // Eller RedirectToAction("Login", "Account");
+        var userId = _userManager.GetUserId(User);
+        
+        // Din fix: Hantera om userId saknas
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Challenge(); 
+        }
+
+        var favorites = await _favoriteService.GetUserFavoritesAsync(userId);
+        return View(favorites);
     }
 
-    var favorites = await _favoriteService.GetUserFavoritesAsync(userId);
-    return View(favorites);
-}
-
     [HttpPost]
-public async Task<IActionResult> Add(int productId, string returnUrl = "Favorite")
-{
-    var userId = _userManager.GetUserId(User);
-    if (userId == null) return RedirectToAction("Index", "Chocolate"); // Ändrat från Product
-
-    await _favoriteService.AddToFavoritesAsync(userId, productId);
-
-    // Om vi skickade med "Chocolate" som returnUrl, gå dit!
-    if (returnUrl == "Chocolate") return RedirectToAction("Index", "Chocolate");
-
-    return RedirectToAction("Index", "Product"); // Fallback
-}
-
-    [HttpPost]
-public async Task<IActionResult> Remove(int productId, string returnUrl = "Chocolate")
-{
-    var userId = _userManager.GetUserId(User);
-
-    // Fix: Kontrollera att userId faktiskt har ett värde
-    if (string.IsNullOrEmpty(userId))
+    public async Task<IActionResult> Add(int productId, string returnUrl = "Chocolate")
     {
-        return Unauthorized();
+        var userId = _userManager.GetUserId(User);
+        if (string.IsNullOrEmpty(userId)) return RedirectToAction("Index", "Chocolate");
+
+        await _favoriteService.AddToFavoritesAsync(userId, productId);
+
+        // Hanitas förbättrade redirect-logik
+        if (returnUrl == "Product") return RedirectToAction("Index", "Product");
+        if (returnUrl == "Favorite") return RedirectToAction("Index", "Favorite");
+        return RedirectToAction("Index", "Chocolate");
     }
 
-    await _favoriteService.RemoveFromFavoritesAsync(userId, productId);
-    
-    if (returnUrl == "Favorite") return RedirectToAction("Index", "Favorite");
-    return RedirectToAction("Index", "Chocolate");
-}
+    [HttpPost]
+    public async Task<IActionResult> Remove(int productId, string returnUrl = "Chocolate")
+    {
+        var userId = _userManager.GetUserId(User);
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+        await _favoriteService.RemoveFromFavoritesAsync(userId, productId);
+
+        if (returnUrl == "Product") return RedirectToAction("Index", "Product");
+        if (returnUrl == "Favorite") return RedirectToAction("Index", "Favorite");
+        return RedirectToAction("Index", "Chocolate");
+    }
 }
