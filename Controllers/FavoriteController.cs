@@ -21,7 +21,12 @@ public class FavoriteController : Controller
     public async Task<IActionResult> Index()
     {
         var userId = _userManager.GetUserId(User);
-        if (userId == null) return RedirectToAction("Index", "Home");
+        
+        // Din fix: Hantera om userId saknas
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Challenge(); 
+        }
 
         var favorites = await _favoriteService.GetUserFavoritesAsync(userId);
         return View(favorites);
@@ -31,10 +36,11 @@ public class FavoriteController : Controller
     public async Task<IActionResult> Add(int productId, string returnUrl = "Chocolate")
     {
         var userId = _userManager.GetUserId(User);
-        if (userId == null) return RedirectToAction("Index", "Chocolate");
+        if (string.IsNullOrEmpty(userId)) return RedirectToAction("Index", "Chocolate");
 
         await _favoriteService.AddToFavoritesAsync(userId, productId);
 
+        // Hanitas förbättrade redirect-logik
         if (returnUrl == "Product") return RedirectToAction("Index", "Product");
         if (returnUrl == "Favorite") return RedirectToAction("Index", "Favorite");
         return RedirectToAction("Index", "Chocolate");
@@ -44,7 +50,7 @@ public class FavoriteController : Controller
     public async Task<IActionResult> Remove(int productId, string returnUrl = "Chocolate")
     {
         var userId = _userManager.GetUserId(User);
-        if (userId == null) return RedirectToAction("Index", "Home");
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
         await _favoriteService.RemoveFromFavoritesAsync(userId, productId);
 

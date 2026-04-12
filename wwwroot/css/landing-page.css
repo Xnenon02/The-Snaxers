@@ -1,0 +1,43 @@
+/* Hero-bakgrund med en mörk chokladig overlay */
+.landing-hero {
+    background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), 
+                url('https://images.unsplash.com/photo-1511381939415-e44015466834?auto=format&fit=crop&q=80&w=2000');
+    background-size: cover;
+    background-position: center;
+    height: 90vh;
+    /* Justering för att täcka hela bredden trots containers */
+    margin-left: calc(-50vw + 50%);
+    margin-right: calc(-50vw + 50%);
+    border-radius: 0 0 20px 20px;
+}
+
+/* "Glassmorphism" effekt för textkortet */
+.glass-card {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px); /* För Safari */
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 25px;
+    max-width: 800px;
+    width: 90%; /* Responsiv bredd på mobilen */
+}
+
+/* Lyxig guldknapp */
+.btn-gold {
+    background: linear-gradient(45deg, #D4AF37, #F9E27D);
+    color: #3d2b1f !important;
+    border: none;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.btn-gold:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+    background: linear-gradient(45deg, #F9E27D, #D4AF37);
+}
+
+.italic {
+    font-style: italic;
+}
