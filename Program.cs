@@ -26,11 +26,15 @@ if (builder.Environment.IsProduction())
 // ===================================================
 // APPLICATION INSIGHTS
 // ===================================================
-// TODO: Lägg till riktig ConnectionString i Azure Key Vault när Tom satt upp miljön
-builder.Services.AddApplicationInsightsTelemetry(options =>
+var appInsightsConnectionString = builder.Configuration["ApplicationInsights:ConnectionString"];
+if (!string.IsNullOrEmpty(appInsightsConnectionString) && appInsightsConnectionString != "placeholder")
 {
-    options.ConnectionString = builder.Configuration["ApplicationInsights:ConnectionString"];
-});
+    // TODO: Lägg till riktig ConnectionString i Azure Key Vault när Tom satt upp miljön
+    builder.Services.AddApplicationInsightsTelemetry(options =>
+    {
+        options.ConnectionString = appInsightsConnectionString;
+    });
+}
 
 // Add services
 builder.Services.AddControllersWithViews();
