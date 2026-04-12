@@ -1,0 +1,25 @@
+/* wwwroot/css/chocolate-gallery.css */
+
+.hover-shadow:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+}
+
+.transition {
+    transition: all 0.3s ease;
+}
+
+.shadow-text {
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Du kan också flytta in dina inline-styles här för att göra HTML-koden ännu renare */
+.choco-card-img {
+    height: 250px;
+    object-fit: contain;
+}
+
+.flag-badge {
+    width: 30px;
+    display: block;
+}

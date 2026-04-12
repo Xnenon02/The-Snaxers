@@ -2,9 +2,29 @@
 
 <h2>🍫 Våra lyxchoklader</h2>
 
+<form asp-controller="Product" asp-action="Index" method="get" class="mb-4">
+    <div class="row g-2">
+        <div class="col-md-6">
+            <input type="text" name="searchTerm" value="@ViewBag.SearchTerm"
+                   class="form-control" placeholder="Sök på namn..." />
+        </div>
+        <div class="col-md-4">
+            <select name="minCocoa" class="form-select">
+                <option value="">Alla kakaohalter</option>
+                <option value="50" selected="@(ViewBag.MinCocoa == 50)">50% eller mer</option>
+                <option value="70" selected="@(ViewBag.MinCocoa == 70)">70% eller mer</option>
+                <option value="85" selected="@(ViewBag.MinCocoa == 85)">85% eller mer</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-dark w-100">Sök</button>
+        </div>
+    </div>
+</form>
+
 @if (!Model.Any())
 {
-    <p>Inga produkter finns ännu.</p>
+    <p class="text-muted">Inga produkter matchade din sökning. 🍫</p>
 }
 else
 {
@@ -18,6 +38,10 @@ else
                         <h5 class="card-title">@product.Name</h5>
                         <p class="card-text">@product.Description</p>
                         <p><strong>@product.Price kr</strong></p>
+                        @if (product.CocoaPercentage > 0)
+                        {
+                            <p class="text-muted small">🍫 Kakaohalt: @product.CocoaPercentage%</p>
+                        }
 
                         @if (isFavorite)
                         {
