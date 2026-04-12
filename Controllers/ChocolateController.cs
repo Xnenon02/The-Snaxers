@@ -28,66 +28,54 @@ public class ChocolateController : Controller
         _userManager = userManager;
     }
 
-    public async Task<IActionResult> Index(string? searchTerm, int? minCocoa)
+   public async Task<IActionResult> Index(string? searchTerm, int? minCocoa)
+{
+    // 1. Hämta produkterna
+    List<Product> products;
+    if (!string.IsNullOrWhiteSpace(searchTerm) || minCocoa.HasValue)
+        products = await _productService.SearchProductsAsync(searchTerm!, minCocoa);
+    else
+        products = await _productService.GetAllProductsAsync();
+
+    // 2. Hantera favoriter
+    var userId = _userManager.GetUserId(User);
+    ViewBag.FavoriteIds = userId != null 
+        ? (await _favoriteService.GetUserFavoritesAsync(userId)).Select(f => f.ProductId).ToList() 
+        : new List<int>();
+
+    ViewBag.SearchTerm = searchTerm;
+    ViewBag.MinCocoa = minCocoa;
+
+    // 3. Mappa till ViewModel
+    var viewModel = new List<ChocolateGalleryViewModel>();
+    foreach (var p in products)
     {
-        List<Product> products;
-
-        if (!string.IsNullOrWhiteSpace(searchTerm) || minCocoa.HasValue)
-            products = await _productService.SearchProductsAsync(searchTerm!, minCocoa);
-        else
-            products = await _productService.GetAllProductsAsync();
-
-        var userId = _userManager.GetUserId(User);
-        if (userId != null)
+        var searchCountry = !string.IsNullOrWhiteSpace(p.Country) ? p.Country : p.Category switch
         {
-            var favorites = await _favoriteService.GetUserFavoritesAsync(userId);
-            ViewBag.FavoriteIds = favorites.Select(f => f.ProductId).ToList();
-        }
-        else
+            "Mörk" => "France",
+            "Vit" => "Switzerland",
+            "Mjölk" => "Finland",
+            "Ruby" => "Belgium",
+            _ => "Sweden"
+        };
+
+        CountryInfo? countryInfo = null;
+        try { countryInfo = await _countryService.GetCountryInfoAsync(searchCountry); }
+        catch { /* Fallback */ }
+
+        viewModel.Add(new ChocolateGalleryViewModel
         {
-            ViewBag.FavoriteIds = new List<int>();
-        }
-
-        ViewBag.SearchTerm = searchTerm;
-        ViewBag.MinCocoa = minCocoa;
-
-        var viewModel = new List<ChocolateGalleryViewModel>();
-
-        foreach (var p in products)
-        {
-            // TODO: Ta bort category-switch när CosmosDB är på plats och Country alltid är ifyllt
-            var searchCountry = !string.IsNullOrWhiteSpace(p.Country) ? p.Country : p.Category switch
-            {
-                "Mörk" => "France",
-                "Vit" => "Switzerland",
-                "Mjölk" => "Finland",
-                "Ruby" => "Belgium",
-            _   => "Sweden",
-            };
-
-            CountryInfo? countryInfo = null;
-            try
-            {
-                countryInfo = await _countryService.GetCountryInfoAsync(searchCountry);
-            }
-            catch
-            {
-                // Om API:et failar, använd default
-            }
-
-            viewModel.Add(new ChocolateGalleryViewModel
-            {
-                Id = p.Id,
-                Name = p.Name,
-                Brand = p.Brand,
-                CocoaPercentage = p.CocoaPercentage,
-                Description = p.Description,
-                Price = p.Price,
-                ImageUrl = p.ImageUrl,
-                CountryName = countryInfo?.Name ?? p.Country,
-                FlagUrl = countryInfo?.FlagUrl ?? ""            });
-        }
-
-        return View(viewModel);
+            Id = p.Id,
+            Name = p.Name,
+            Brand = p.Brand,
+            CocoaPercentage = p.CocoaPercentage,
+            Description = p.Description,
+            Price = p.Price,
+            ImageUrl = p.ImageUrl,
+            CountryName = countryInfo?.Name ?? p.Country ?? "Okänt",
+            FlagUrl = countryInfo?.FlagUrl ?? ""
+        });
     }
+    return View(viewModel);
+}
 }

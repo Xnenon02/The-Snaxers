@@ -22,35 +22,35 @@ public class FavoriteController : Controller
     public async Task<IActionResult> Index()
     {
         var userId = _userManager.GetUserId(User);
+        if (userId == null) return RedirectToAction("Index", "Home");
+
         var favorites = await _favoriteService.GetUserFavoritesAsync(userId);
         return View(favorites);
     }
 
     [HttpPost]
-public async Task<IActionResult> Add(int productId, string returnUrl = "Chocolate") // Ändrat default till Chocolate
-{
-    var userId = _userManager.GetUserId(User);
-    if (userId == null) return RedirectToAction("Index", "Chocolate");
+    public async Task<IActionResult> Add(int productId, string returnUrl = "Chocolate")
+    {
+        var userId = _userManager.GetUserId(User);
+        if (userId == null) return RedirectToAction("Index", "Chocolate");
 
-    await _favoriteService.AddToFavoritesAsync(userId, productId);
+        await _favoriteService.AddToFavoritesAsync(userId, productId);
 
-    // Gå tillbaka till där användaren kom ifrån (nu med Chocolate som standard)
-    if (returnUrl == "Favorite") return RedirectToAction("Index", "Favorite");
-    
-    return RedirectToAction("Index", "Chocolate");
-}
+        if (returnUrl == "Product") return RedirectToAction("Index", "Product");
+        if (returnUrl == "Favorite") return RedirectToAction("Index", "Favorite");
+        return RedirectToAction("Index", "Chocolate");
+    }
 
-[HttpPost]
-public async Task<IActionResult> Remove(int productId, string returnUrl = "Chocolate") // Ändrat default till Chocolate
-{
-    var userId = _userManager.GetUserId(User);
-    
-    await _favoriteService.RemoveFromFavoritesAsync(userId, productId);
+    [HttpPost]
+    public async Task<IActionResult> Remove(int productId, string returnUrl = "Chocolate")
+    {
+        var userId = _userManager.GetUserId(User);
+        if (userId == null) return RedirectToAction("Index", "Home");
 
-    // Om vi klickar "ta bort" inne i favoritlistan, stanna där. 
-    // Annars, gå tillbaka till galleriet.
-    if (returnUrl == "Favorite") return RedirectToAction("Index", "Favorite");
+        await _favoriteService.RemoveFromFavoritesAsync(userId, productId);
 
-    return RedirectToAction("Index", "Chocolate");
-}
+        if (returnUrl == "Product") return RedirectToAction("Index", "Product");
+        if (returnUrl == "Favorite") return RedirectToAction("Index", "Favorite");
+        return RedirectToAction("Index", "Chocolate");
+    }
 }

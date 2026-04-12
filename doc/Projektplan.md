@@ -18,14 +18,13 @@ Bygga, containerisera och deploya en lyxchokladapp på Azure med CI/CD, IaC, log
 
 ---
 
-## 👥 Rollfördelning
+## 👥 **Rollfördelning
 
-| **Person**   | **User Stories**                               | **Tekniskt ansvar**                               |
-| ------------ | ---------------------------------------------- | ------------------------------------------------- |
-| **Person 1** | US1 ✅, US4 (Sökning)                           | Key Vault, Application Insights, Managed Identity |
-| **Person 2** | US2 (Galleri), US6 (Admin), US5 (Blob Storage) | Docker, CI/CD, GitHub Actions                     |
-| **Person 3** | US7 (Miljöhantering), US3 (Google OAuth)       | IaC (Bicep), CosmosDB (EF Core), Azure-setup      |
-
+| Person        | User Stories                                   | Tekniskt ansvar                                           |
+| ------------- | ---------------------------------------------- | --------------------------------------------------------- |
+| Person 1 (du) | US1 ✅, US4 ✅                                   | Docker, Key Vault, Application Insights, Managed Identity |
+| Person 2      | US2 (Galleri), US6 (Admin), US5 (Blob Storage) | CI/CD, GitHub Actions, Rollhantering                      |
+| Person 3      | US3 (Google OAuth), US7 (Miljöhantering)       | IaC (Bicep), CosmosDB, Azure-setup                        |
 > **Viktigt:** Alla hjälps åt med allt men har huvudansvar för sitt område. Alla ska kunna förklara _hela_ lösningen vid examination.
 
 ---
@@ -37,7 +36,7 @@ Bygga, containerisera och deploya en lyxchokladapp på Azure med CI/CD, IaC, log
 | **US1** | Favoritlista (migreras till CosmosDB i v3)     | Person 1   | 1         | ✅ Klar     |
 | **US2** | Produktgalleri (grid, flaggor, REST Countries) | Person 2   | 2         | ⏳          |
 | **US3** | Google OAuth + Key Vault                       | Person 3   | 3         | ⏳          |
-| **US4** | Sökning och filtrering                         | Person 1   | 5         | ⏳          |
+| **US4** | Sökning och filtrering                         | Person 1   | 2         | ⏳          |
 | **US5** | Azure Blob Storage (produktbilder)             | Person 2   | 6         | ⏳          |
 | **US6** | Admin-panel (CRUD, rollskyddad)                | Person 2   | 5         | ⏳          |
 | **US7** | Miljöhantering dev/staging/prod                | Person 3   | 6–7       | ⏳          |
@@ -75,45 +74,45 @@ Bygga, containerisera och deploya en lyxchokladapp på Azure med CI/CD, IaC, log
     
 - **Person 2:** US2 — Produktgalleri (grid, kort, placeholder-bild, REST Countries API) + enhetstester för produktlogik.
     
-- **Person 3:** **Skriv första IaC (Bicep)** för att sätta upp resursgrupp och CosmosDB (undvik manuella klick i Azure-portalen).
+- **Person 3:** Sätt CosmosDB manuellt i portalen. **Skriv första IaC (Bicep)** för att sätta upp resursgrupp och CosmosDB (undvik manuella klick i Azure-portalen).
     
 
 ### Vecka 3 — Auth + Docker + Databas
 
-- **Person 1:** US3 — Google OAuth + Key Vault (lokalt med User Secrets). **Konfigurera Managed Identity** för Azure-miljön (Passwordless koppling till Key Vault/Cosmos).
+- Person 1: Docker — Dockerfile + kör appen i container lokalt + taggningsstrategi för images
     
-- **Person 2:** Docker — Dockerfile + kör appen i container lokalt + taggningsstrategi för images (`v1.0.0`, `latest`…).
+- Person 2: GitHub Actions CI/CD-pipeline — bygg, testa och deploya till Azure
     
-- **Person 3:** Google OAuth + Key Vault (lokalt med User Secrets). Migrera även databas från SQLite → CosmosDB **med hjälp av EF Core Cosmos Provider** (tack vare Repository-mönstret blir detta smidigt).
+- Person 3: Google OAuth + Key Vault + migrera SQLite → CosmosDB. Börja dokumentera kvarstående manuella steg för att automatisera så mycket som möjligt i Bicep. 
     
 
 > ⚠️ _När CosmosDB är på plats är US1 fullt klar enligt AC4._
 
 ### Vecka 4 — CI/CD + Azure Deploy
 
-- **Person 1:** Koppla Key Vault i produktion, testa Google OAuth mot Azure.
+- Person 1: Koppla Key Vault i produktion + konfigurera Managed Identity (Passwordless koppling till CosmosDB och Key Vault)
     
-- **Person 2:** GitHub Actions pipeline — bygg, testa (pipeline kör enhetstester automatiskt) och deploya till Azure.
+- Person 2: GitHub Actions pipeline — bygg, testa (pipeline kör enhetstester automatiskt) och deploya till Azure
     
-- **Person 3:** Azure Container Registry + App Service/Container Apps + ACR retention-policy (rensa gamla images).
+- Person 3: Azure Container Registry + App Service/Container Apps + ACR retention-policy (rensa gamla images) + testa Google OAuth mot Azure
     
 
 ### Vecka 5 — IaC + Admin + Sökning
 
-- **Person 1:** US4 — Sökning och filtrering av produkter.
+- Person 1: ~~US4 — Sökning och filtrering av produkter~~ → US4 klar (vecka 2), stödja + code review
     
-- **Person 2:** US6 — Admin-panel (CRUD för produkter, rollskyddad med `[Authorize(Roles="Admin")]`).
+- Person 2: US6 — Admin-panel (CRUD för produkter, rollskyddad med `[Authorize(Roles="Admin")]`)
     
-- **Person 3:** Expandera IaC med Bicep — parametriserade miljöer (`dev`/`staging`/`prod`) för CosmosDB, Key Vault och App Service/ACA.
+- Person 3: Expandera IaC med Bicep — parametriserade miljöer (`dev`/`staging`/`prod`) för CosmosDB, Key Vault och App Service/ACA
     
 
 ### Vecka 6 — Blob Storage + Logging + Felsökning
 
-- **Person 1:** Application Insights — logging i controllers, alerts, dashboard. **Skapa ett konkret felsöknings-case** (t.ex. en `/api/test-error` endpoint som kastar ett fel) och dokumentera spårningen i App Insights för rapporten.
+- Person 1: Application Insights — logging i controllers, alerts, dashboard. Skapa ett konkret felsöknings-case (t.ex. en `/api/test-error` endpoint som kastar ett fel) och dokumentera spårningen i App Insights för rapporten
     
-- **Person 2:** US5 — Azure Blob Storage för produktbilder.
+- Person 2: US5 — Azure Blob Storage för produktbilder
     
-- **Person 3:** US7 — Miljöhantering dev/staging/prod med olika konfigurationer.
+- Person 3: US7 — Miljöhantering dev/staging/prod med olika konfigurationer
     
 
 ### Vecka 7 — Polish + Skalbarhet + Livscykel
@@ -155,8 +154,8 @@ Bygga, containerisera och deploya en lyxchokladapp på Azure med CI/CD, IaC, log
 | Uppdatera Product-modellen & sätt upp 3-tier (Service + Repository interfaces) | Alla       | 1-2       | —                  |
 | Skapa grundläggande IaC (Bicep)                                                | Person 3   | 2         | IaC                |
 | Enhetstester (produktlogik)                                                    | Person 2   | 2         | —                  |
-| Docker + Dockerfile                                                            | Person 2   | 3         | Containerisering   |
-| Taggningsstrategi för images                                                   | Person 2   | 3         | Livscykelhantering |
+| Docker + Dockerfile                                                            | Person 1   | 3         | Containerisering   |
+| Taggningsstrategi för images                                                   | Person 1   | 3         | Livscykelhantering |
 | Migrera till CosmosDB (EF Core Cosmos Provider)                                | Person 3   | 3         | Molntjänster       |
 | GitHub Actions CI/CD (inkl. testkörning)                                       | Person 2   | 4         | CI/CD              |
 | ACR + retention-policy                                                         | Person 3   | 4         | Livscykelhantering |
@@ -188,19 +187,10 @@ Bygga, containerisera och deploya en lyxchokladapp på Azure med CI/CD, IaC, log
 
 ## ⚠️ Viktiga beslut tagna / att ta
 
-1. **Arkitekturmönster (v1/v2):** **3-tier arkitektur**. En strikt regel införs att Controllers aldrig får prata direkt med databasen. Allt går via Service-lagret. Detta gör appen lätt att enhetstesta för Person 2, och gör databasmigreringen smärtfri för Person 3.
-Följer 3 tier
+1. **Säkerhet (v3):** Managed Identity används för anslutningar för att slippa hantera connection strings.
+?ö
     
-2. **Databas (v3):** EF Core med Cosmos Provider används framför Cosmos SDK för att spara tid och minska komplexitet.
-EF Core
-    
-3. **IaC (v2):** Bicep används direkt från start, inga manuella klick i Azure-portalen.
-Bicep
-    
-4. **Säkerhet (v3):** Managed Identity används för anslutningar för att slippa hantera connection strings.
-?
-    
-5. **Drift (v2):** Besluta Container Apps vs App Service — dokumentera motiveringen direkt.
+2. **Drift (v2):** Besluta Container Apps vs App Service — dokumentera motiveringen direkt.
 ?
     
 
@@ -208,7 +198,7 @@ Bicep
 
 ## 📝 Acceptanskriterier (AC)
 
-### US1 — Favoritlista
+### US1 — Favoritlista - Jag
 
 Som en chokladälskare vill jag kunna spara specifika produkter i en favoritlista så att jag enkelt kan hitta tillbaka till mina lyxval.
 
@@ -253,7 +243,7 @@ Som en användare vill jag kunna logga in smidigt med mitt Google-konto.
 - **AC5:** Inloggad användares namn/bild visas i navigationen.
     
 
-### US4 — Sökning och filtrering
+### US4 — Sökning och filtrering - Jag
 
 Som en besökare vill jag kunna söka och filtrera produkter.
 
@@ -313,18 +303,18 @@ Som en utvecklare vill jag att applikationen använder separata konfigurationer 
 
 - **Kod:** Favoritlista och Sökning/Filtrering.
     
-- **Moln/Tech:** Key Vault, Managed Identity, Application Insights.
+- **Moln/Tech:** Docker, Key Vault, Managed Identity, Application Insights.
     
-- **Varför det är tungt:** Att sätta upp "Passwordless" infrastruktur mot Azure Key Vault och CosmosDB via Managed Identity är klurigt och kräver djup förståelse för Azures behörighetssystem (RBAC). Du ansvarar för att täppa till alla säkerhetshål och bygga spårbarhet (App Insights) så att teamet kan hitta fel i produktion.
+- **Varför det är tungt:** Att få Docker-containern att snurra korrekt i molnet + Att sätta upp "Passwordless" infrastruktur mot Azure Key Vault och CosmosDB via Managed Identity är klurigt och kräver djup förståelse för Azures behörighetssystem (RBAC). Du ansvarar för att täppa till alla säkerhetshål och bygga spårbarhet (App Insights) så att teamet kan hitta fel i produktion. 
     
 
 **Person 2: DevOps & Filer**
 
 - **Kod:** Produktgalleri, Admin-panel (CRUD), integrera Blob Storage.
     
-- **Moln/Tech:** Docker, GitHub Actions (CI/CD), Rollhantering.
+- **Moln/Tech:** GitHub Actions (CI/CD), Rollhantering.
     
-- **Varför det är tungt:** CI/CD-pipelines är ökända för att ta tid ("varför bygger den lokalt men inte i GitHub Actions?!"). Att få Docker-containern att snurra korrekt i molnet, kombinerat med att hantera filströmmar (bilduppladdning till Blob Storage) och rollhantering, är ett stort och viktigt lass.
+- **Varför det är tungt:** CI/CD-pipelines är ökända för att ta tid ("varför bygger den lokalt men inte i GitHub Actions?!"). Hantera filströmmar (bilduppladdning till Blob Storage) och rollhantering, är ett stort och viktigt lass.
     
 
 **Person 3: Infrastruktur & Databas (Den tunga motorn)**
