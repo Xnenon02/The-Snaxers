@@ -36,14 +36,20 @@
                             <td>@item.Brand</td>
                             <td><span class="badge bg-info text-dark">@item.CocoaPercentage%</span></td>
                             <td class="text-end">
-                                <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-outline-primary btn-sm me-1">
-                                    <i class="bi bi-pencil"></i> Ändra
-                                </a>
-                                <a asp-action="Delete" asp-route-id="@item.Id" 
-   class="btn btn-outline-danger btn-sm"
-   onclick="return confirm('Är du helt säker på att du vill ta bort @item.Name?')">
-    <i class="bi bi-trash"></i> Ta bort
-</a>
+                                <div class="d-flex justify-content-end gap-2">
+                                    @* Ändra-knappen är fortfarande en vanlig länk (GET) *@
+                                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-outline-primary btn-sm">
+                                        <i class="bi bi-pencil"></i> Ändra
+                                    </a>
+
+                                    @* Ta bort-knappen är nu ett FORM för att fungera med [HttpPost] *@
+                                    <form asp-action="Delete" asp-route-id="@item.Id" method="post" 
+                                          onsubmit="return confirm('Är du helt säker på att du vill ta bort @item.Name?')">
+                                        <button type="submit" class="btn btn-outline-danger btn-sm">
+                                            <i class="bi bi-trash"></i> Ta bort
+                                        </button>
+                                    </form>
+                                </div>
                             </td>
                         </tr>
                     }
