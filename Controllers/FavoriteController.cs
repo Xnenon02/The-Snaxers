@@ -5,6 +5,7 @@ using TheSnaxers.Services;
 
 namespace TheSnaxers.Controllers;
 
+// TODO: Verifiera att [Authorize] fungerar korrekt med Google OAuth (US3)
 [Authorize]
 public class FavoriteController : Controller
 {

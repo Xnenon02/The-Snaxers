@@ -5,20 +5,22 @@
 @if (SignInManager.IsSignedIn(User))
 {
     <li class="nav-item">
-        <span class="nav-link text-dark">👤 @UserManager.GetUserName(User)</span>
+        @* Changed text to white to match the dark chocolate navbar theme *@
+        <span class="nav-link text-white">👤 @UserManager.GetUserName(User)</span>
     </li>
     <li class="nav-item">
         <form asp-area="Identity" asp-page="/Account/Logout" method="post">
-            <button type="submit" class="nav-link btn btn-link text-dark">Logga ut</button>
+            <button type="submit" class="nav-link btn btn-link text-white">Logga ut</button>
         </form>
     </li>
 }
 else
 {
     <li class="nav-item">
-        <a class="nav-link text-dark" asp-area="Identity" asp-page="/Account/Register">Registrera</a>
+        @* Ensuring login and register links are visible against the dark background *@
+        <a class="nav-link text-white" asp-area="Identity" asp-page="/Account/Register">Registrera</a>
     </li>
     <li class="nav-item">
-        <a class="nav-link text-dark" asp-area="Identity" asp-page="/Account/Login">Logga in</a>
+        <a class="nav-link text-white" asp-area="Identity" asp-page="/Account/Login">Logga in</a>
     </li>
 }

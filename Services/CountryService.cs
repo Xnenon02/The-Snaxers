@@ -13,9 +13,11 @@ public class CountryService : ICountryService
 
     public async Task<CountryInfo> GetCountryInfoAsync(string countryName)
     {
+        if (string.IsNullOrWhiteSpace(countryName))
+            return new CountryInfo { Name = "Okänt land", FlagUrl = "" };
+
         try 
         {
-            // Vi anropar API:et. "fields=name,flags" gör att vi bara får det vi behöver.
             var response = await _http.GetFromJsonAsync<List<RestCountryResponse>>(
                 $"https://restcountries.com/v3.1/name/{countryName}?fullText=true&fields=name,flags");
 
@@ -24,17 +26,16 @@ public class CountryService : ICountryService
             return new CountryInfo
             {
                 Name = country?.Name?.Common ?? countryName,
-                FlagUrl = country?.Flags?.Png ?? "/images/placeholder-flag.png"
+                FlagUrl = country?.Flags?.Png ?? ""
             };
         }
         catch 
         {
-            return new CountryInfo { Name = countryName, FlagUrl = "/images/placeholder-flag.png" };
+            return new CountryInfo { Name = countryName, FlagUrl = "" };
         }
     }
 }
 
-// Hjälpklasser för att läsa API-svaret
 public class RestCountryResponse {
     public CountryNameResponse Name { get; set; } = new();
     public CountryFlagResponse Flags { get; set; } = new();
