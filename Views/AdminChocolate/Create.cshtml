@@ -1,0 +1,58 @@
+@model TheSnaxers.Models.Product
+
+@{
+    ViewData["Title"] = "Lägg till ny choklad";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-dark text-white">
+                    <h2 class="h4 mb-0">Registrera ny choklad</h2>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Create" method="post">
+                        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                        <div class="mb-3">
+        <label asp-for="Name" class="form-label">Namn</label>
+        <input asp-for="Name" class="form-control" />
+        <span asp-validation-for="Name" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Brand" class="form-label">Märke</label>
+        <input asp-for="Brand" class="form-control" />
+        <span asp-validation-for="Brand" class="text-danger"></span>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label asp-for="Price" class="form-label">Pris (kr)</label>
+            <input asp-for="Price" type="number" step="0.01" class="form-control" />
+            <span asp-validation-for="Price" class="text-danger"></span>
+        </div>
+        <div class="col-md-6 mb-3">
+            <label asp-for="CocoaPercentage" class="form-label">Kakaohalt (%)</label>
+            <input asp-for="CocoaPercentage" type="number" class="form-control" />
+            <span asp-validation-for="CocoaPercentage" class="text-danger"></span>
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="ImageUrl" class="form-label">Bild-URL</label>
+        <input asp-for="ImageUrl" class="form-control" />
+        <span asp-validation-for="ImageUrl" class="text-danger"></span>
+    </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">Spara choklad</button>
+                            <a asp-action="Index" class="btn btn-outline-secondary">Avbryt</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
