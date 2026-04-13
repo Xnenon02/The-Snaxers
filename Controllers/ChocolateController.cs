@@ -6,6 +6,8 @@ using TheSnaxers.Services;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Linq;
+using Microsoft.Extensions.Logging;
+using System;
 
 namespace TheSnaxers.Controllers;
 
@@ -31,29 +33,9 @@ public class ChocolateController : Controller
         _logger = logger;
     }
 
-   public async Task<IActionResult> Index(string? searchTerm, int? minCocoa)
-{
-    // 1. Hämta produkterna
-    List<Product> products;
-    if (!string.IsNullOrWhiteSpace(searchTerm) || minCocoa.HasValue)
-        products = await _productService.SearchProductsAsync(searchTerm!, minCocoa);
-    else
-        products = await _productService.GetAllProductsAsync();
-
-    // 2. Hantera favoriter
-    var userId = _userManager.GetUserId(User);
-    ViewBag.FavoriteIds = userId != null 
-        ? (await _favoriteService.GetUserFavoritesAsync(userId)).Select(f => f.ProductId).ToList() 
-        : new List<int>();
-
-    ViewBag.SearchTerm = searchTerm;
-    ViewBag.MinCocoa = minCocoa;
-
-    // 3. Mappa till ViewModel
-    var viewModel = new List<ChocolateGalleryViewModel>();
-    foreach (var p in products)
+    public async Task<IActionResult> Index(string? searchTerm, int? minCocoa)
     {
-        // 1. Hämta produkterna
+        // 1. Hämta produkterna baserat på sökning eller hämta alla
         List<Product> products;
         if (!string.IsNullOrWhiteSpace(searchTerm) || minCocoa.HasValue)
         {
@@ -67,7 +49,7 @@ public class ChocolateController : Controller
 
         _logger.LogInformation("Retrieved {ProductCount} products", products.Count);
 
-        // 2. Hantera favoriter
+        // 2. Hantera favoriter för den inloggade användaren
         var userId = _userManager.GetUserId(User);
         ViewBag.FavoriteIds = userId != null 
             ? (await _favoriteService.GetUserFavoritesAsync(userId)).Select(f => f.ProductId).ToList() 
@@ -76,7 +58,7 @@ public class ChocolateController : Controller
         ViewBag.SearchTerm = searchTerm;
         ViewBag.MinCocoa = minCocoa;
 
-        // 3. Mappa till ViewModel
+        // 3. Mappa produkterna till ViewModels
         var viewModel = new List<ChocolateGalleryViewModel>();
         foreach (var p in products)
         {
@@ -113,33 +95,7 @@ public class ChocolateController : Controller
                 FlagUrl = countryInfo?.FlagUrl ?? ""
             });
         }
+
         return View(viewModel);
-        var searchCountry = !string.IsNullOrWhiteSpace(p.Country) ? p.Country : p.Category switch
-        {
-            "Mörk" => "France",
-            "Vit" => "Switzerland",
-            "Mjölk" => "Finland",
-            "Ruby" => "Belgium",
-            _ => "Sweden"
-        };
-
-        CountryInfo? countryInfo = null;
-        try { countryInfo = await _countryService.GetCountryInfoAsync(searchCountry); }
-        catch { /* Fallback */ }
-
-        viewModel.Add(new ChocolateGalleryViewModel
-        {
-            Id = p.Id,
-            Name = p.Name,
-            Brand = p.Brand,
-            CocoaPercentage = p.CocoaPercentage,
-            Description = p.Description,
-            Price = p.Price,
-            ImageUrl = p.ImageUrl,
-            CountryName = countryInfo?.Name ?? p.Country ?? "Okänt",
-            FlagUrl = countryInfo?.FlagUrl ?? ""
-        });
     }
-    return View(viewModel);
-}
 }
