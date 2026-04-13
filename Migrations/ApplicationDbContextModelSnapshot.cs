@@ -242,18 +242,7 @@ namespace The_Snaxers.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("Brand")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
                     b.Property<string>("Category")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("CocoaPercentage")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Country")
                         .IsRequired()
                         .HasColumnType("TEXT");
 

@@ -2,13 +2,7 @@ name: CI — Build, Test & Docker
 
 on:
   push:
-    branches: [ main, develop, us4-search-filter, docker-setup ]
-=======
-name: CI — Build & Test
-
-on:
-  push:
-    branches: [ main, develop, us4-search-filter ]
+    branches: [ '**' ]
   pull_request:
     branches: [ main, develop ]
 
@@ -35,4 +29,3 @@ jobs:
 
     - name: Docker build
       run: docker build -t thesnaxers:latest .
-      run: dotnet test --no-build --verbosity normal
