@@ -70,12 +70,19 @@ using (var scope = app.Services.CreateScope())
             new TheSnaxers.Models.Product { Name = "Madagaskar Mörk", Description = "Fruktigt och komplex mörk choklad från Madagascar", Price = 109.90m, Category = "Mörk", CocoaPercentage = 75, Brand = "Valrhona", Country = "Madagascar", ImageUrl = "/images/products/madagascarDark.jpg" },
             new TheSnaxers.Models.Product { Name = "Peruansk Mjölkchoklad", Description = "Krämig mjölkchoklad med karamellnoter från Peru", Price = 79.90m, Category = "Mjölk", CocoaPercentage = 38, Brand = "Pacari", Country = "Peru", ImageUrl = "/images/products/peruvianMilk.jpg" },
             new TheSnaxers.Models.Product { Name = "Belgisk Vit", Description = "Klassisk krämig vit choklad från Belgien", Price = 69.90m, Category = "Vit", CocoaPercentage = 28, Brand = "Callebaut", Country = "Belgium", ImageUrl = "/images/products/belgianWhite.jpg" },
+            // Bas-choklader
+            new TheSnaxers.Models.Product { Name = "Madagaskar Mörk", Description = "Fruktigt och komplex mörk choklad från Madagascar", Price = 109.90m, Category = "Mörk", CocoaPercentage = 75, Brand = "Valrhona", Country = "Madagascar", ImageUrl = "/images/products/madagascarDark.jpg" },
+            new TheSnaxers.Models.Product { Name = "Peruansk Mjölkchoklad", Description = "Krämig mjölkchoklad med karamellnoter från Peru", Price = 79.90m, Category = "Mjölk", CocoaPercentage = 38, Brand = "Pacari", Country = "Peru", ImageUrl = "/images/products/peruvianMilk.jpg" },
+            new TheSnaxers.Models.Product { Name = "Belgisk Vit", Description = "Klassisk krämig vit choklad från Belgien", Price = 69.90m, Category = "Vit", CocoaPercentage = 28, Brand = "Callebaut", Country = "Belgium", ImageUrl = "/images/products/belgianWhite.jpg" },
+            // Spännande smaker
             new TheSnaxers.Models.Product { Name = "Pistagemousse", Description = "Lyxig mörk choklad fylld med pistagemousse från Sicilien", Price = 129.90m, Category = "Mörk", CocoaPercentage = 65, Brand = "Amedei", Country = "Italy", ImageUrl = "/images/products/italyPistage.jpg" },
             new TheSnaxers.Models.Product { Name = "Yuzu & Vit Choklad", Description = "Japansk yuzu-citrus möter krämig vit choklad", Price = 119.90m, Category = "Vit", CocoaPercentage = 33, Brand = "Royce", Country = "Japan", ImageUrl = "/images/products/japanYuzu.jpg" },
             new TheSnaxers.Models.Product { Name = "Mörk Tryffel", Description = "Intensiv mörk choklad med tryffelkärna", Price = 89.90m, Category = "Mörk", CocoaPercentage = 72, Brand = "Valrhona", Country = "France", ImageUrl = "/images/products/darkTruffle.jpg" },
             new TheSnaxers.Models.Product { Name = "Hallon & Vit Choklad", Description = "Krämig vit choklad med hallonkräm", Price = 79.90m, Category = "Vit", CocoaPercentage = 30, Brand = "Lindt", Country = "Switzerland", ImageUrl = "/images/products/hallontryffel.jpg" },
             new TheSnaxers.Models.Product { Name = "Saltkaramell", Description = "Mjölkchoklad med flytande saltkaramell", Price = 69.90m, Category = "Mjölk", CocoaPercentage = 45, Brand = "Fazer", Country = "Finland", ImageUrl = "/images/products/saltkaramelltryffel.jpg" },
             new TheSnaxers.Models.Product { Name = "Ruby Choklad", Description = "Unik rosa choklad med bärsmak, utan tillsatta färger", Price = 99.90m, Category = "Ruby", CocoaPercentage = 47, Brand = "Callebaut", Country = "Belgium", ImageUrl = "/images/products/rubyChoklad.jpg" }
+
+
         );
         db.SaveChanges();
     }
