@@ -1,0 +1,26 @@
+@model List<TheSnaxers.Models.Favorite>
+
+@* TODO: Uppdatera layout när US6 (Admin) *@
+<h2>❤️ Mina favoriter</h2>
+
+@if (!Model.Any())
+{
+    <p>Du har inga favoriter ännu. Börja utforska choklad! 🍫</p>
+}
+else
+{
+    <ul>
+        @foreach (var item in Model)
+        {
+            <li>
+                <strong>@item.Product?.Name</strong> - @item.Product?.Price kr
+
+                <form asp-controller="Favorite" asp-action="Remove" method="post" style="display:inline;">
+                    <input type="hidden" name="productId" value="@item.ProductId" />
+                    <input type="hidden" name="returnUrl" value="Favorite" />
+                    <button type="submit">Ta bort</button>
+                </form>
+            </li>
+        }
+    </ul>
+}

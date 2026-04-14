@@ -1,9 +1,8 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
-using The_Snaxers.Models;
+using TheSnaxers.Models;
 
-namespace The_Snaxers.Controllers;
-
+namespace TheSnaxers.Controllers;
 public class HomeController : Controller
 {
     public IActionResult Index()
