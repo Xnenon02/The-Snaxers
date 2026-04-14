@@ -67,9 +67,6 @@ using (var scope = app.Services.CreateScope())
         // Lokalt: /images/products/filnamn.jpg
         // Produktion: https://snaxers.blob.core.windows.net/products/filnamn.jpg
         db.Products.AddRange(
-            new TheSnaxers.Models.Product { Name = "Madagaskar Mörk", Description = "Fruktigt och komplex mörk choklad från Madagascar", Price = 109.90m, Category = "Mörk", CocoaPercentage = 75, Brand = "Valrhona", Country = "Madagascar", ImageUrl = "/images/products/madagascarDark.jpg" },
-            new TheSnaxers.Models.Product { Name = "Peruansk Mjölkchoklad", Description = "Krämig mjölkchoklad med karamellnoter från Peru", Price = 79.90m, Category = "Mjölk", CocoaPercentage = 38, Brand = "Pacari", Country = "Peru", ImageUrl = "/images/products/peruvianMilk.jpg" },
-            new TheSnaxers.Models.Product { Name = "Belgisk Vit", Description = "Klassisk krämig vit choklad från Belgien", Price = 69.90m, Category = "Vit", CocoaPercentage = 28, Brand = "Callebaut", Country = "Belgium", ImageUrl = "/images/products/belgianWhite.jpg" },
             // Bas-choklader
             new TheSnaxers.Models.Product { Name = "Madagaskar Mörk", Description = "Fruktigt och komplex mörk choklad från Madagascar", Price = 109.90m, Category = "Mörk", CocoaPercentage = 75, Brand = "Valrhona", Country = "Madagascar", ImageUrl = "/images/products/madagascarDark.jpg" },
             new TheSnaxers.Models.Product { Name = "Peruansk Mjölkchoklad", Description = "Krämig mjölkchoklad med karamellnoter från Peru", Price = 79.90m, Category = "Mjölk", CocoaPercentage = 38, Brand = "Pacari", Country = "Peru", ImageUrl = "/images/products/peruvianMilk.jpg" },
