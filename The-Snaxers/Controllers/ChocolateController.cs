@@ -66,12 +66,12 @@ public class ChocolateController : Controller
         viewModel.Add(new ChocolateGalleryViewModel
         {
             Id = p.Id,
-            Name = p.Name,
-            Brand = p.Brand,
+            Name = p.Name ?? "Okänt",
+            Brand = p.Brand ?? "Okänt",
             CocoaPercentage = p.CocoaPercentage,
-            Description = p.Description,
+            Description = p.Description ?? "",
             Price = p.Price,
-            ImageUrl = p.ImageUrl,
+            ImageUrl = p.ImageUrl ?? "",
             CountryName = countryInfo?.Name ?? p.Country ?? "Okänt",
             FlagUrl = countryInfo?.FlagUrl ?? ""
         });
