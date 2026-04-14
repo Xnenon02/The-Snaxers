@@ -22,7 +22,7 @@ Bygga, containerisera och deploya en lyxchokladapp på Azure med CI/CD, IaC, log
 
 | Person        | User Stories                                   | Tekniskt ansvar                                           |
 | ------------- | ---------------------------------------------- | --------------------------------------------------------- |
-| Person 1 (du) | US1 ✅, US4 ✅                                   | Docker, Key Vault, Application Insights, Managed Identity |
+| Person 1 (du) | US1 Favoritlista ✅, US4 Sökning✅               | Docker, Key Vault, Application Insights, Managed Identity |
 | Person 2      | US2 (Galleri), US6 (Admin), US5 (Blob Storage) | CI/CD, GitHub Actions, Rollhantering                      |
 | Person 3      | US3 (Google OAuth), US7 (Miljöhantering)       | IaC (Bicep), CosmosDB, Azure-setup                        |
 > **Viktigt:** Alla hjälps åt med allt men har huvudansvar för sitt område. Alla ska kunna förklara _hela_ lösningen vid examination.
@@ -34,16 +34,18 @@ Bygga, containerisera och deploya en lyxchokladapp på Azure med CI/CD, IaC, log
 | **US**  | **Beskrivning**                                | **Person** | **Vecka** | **Status** |
 | ------- | ---------------------------------------------- | ---------- | --------- | ---------- |
 | **US1** | Favoritlista (migreras till CosmosDB i v3)     | Person 1   | 1         | ✅ Klar     |
-| **US2** | Produktgalleri (grid, flaggor, REST Countries) | Person 2   | 2         | ⏳          |
-| **US3** | Google OAuth + Key Vault                       | Person 3   | 3         | ⏳          |
-| **US4** | Sökning och filtrering                         | Person 1   | 2         | ⏳          |
-| **US5** | Azure Blob Storage (produktbilder)             | Person 2   | 6         | ⏳          |
-| **US6** | Admin-panel (CRUD, rollskyddad)                | Person 2   | 5         | ⏳          |
-| **US7** | Miljöhantering dev/staging/prod                | Person 3   | 6–7       | ⏳          |
+| **US2** | Produktgalleri (grid, flaggor, REST Countries) | Person 2   | 1         | ✅ Klar     |
+| **US3** | Google OAuth + Key Vault                       | Person 3   | 2         | ⏳          |
+| **US4** | Sökning och filtrering                         | Person 1   | 1         | ⏳          |
+| **US5** | Azure Blob Storage (produktbilder)             | Person 2   | 2         | ⏳          |
+| **US6** | Admin-panel (CRUD, rollskyddad)                | Person 2   | 2         | ⏳          |
+| **US7** | Miljöhantering dev/staging/prod                | Person 3   | 3         | ⏳          |
+| **US8** | Varukorg                                       | Person 1   | 2         | ⏳          |
+| **US9** | Dynamiska bilder Blob storage                  | Person 1   | 2         | ⏳          |
 
 ---
 
-## 📅 Veckoplan
+## 📅 Veckoplan (den är inte korrekt uppdaterad, vi kör vårt race)
 
 ### Vecka 1 ✅ (klar)
 
@@ -291,6 +293,33 @@ Som en utvecklare vill jag att applikationen använder separata konfigurationer 
 - **AC4:** Om miljövariabeln saknas loggas ett fel och appen startar inte.
 
 
+### US8: Varukorg
+Som en kund vill jag kunna lägga produkter i en varukorg så att jag kan samla mina inköp innan jag betalar.
+
+- AC1: Klick på en "Lägg i varukorg"-knapp lägger till vald produkt i varukorgen. 
+     
+- AC2: Varukorgsvyn visar en lista med de valda produkterna (bild, namn, styckpris och valt antal). - AC3: Varukorgen räknar automatiskt ut och visar totalsumman för hela beställningen. 
+    
+- AC4: Kunden kan öka, minska eller helt ta bort produkter direkt i varukorgen (och totalsumman uppdateras direkt). 
+    
+- AC5: En varukorgsikon i huvudmenyn visar alltid en siffra på aktuellt antal varor i korgen.
+    
+
+### **US9 — Dynamisk och säker bildhantering för chokladprodukter**
+
+**Som en** administratör **vill jag** kunna ladda upp, hantera och radera unika produktbilder för varje chokladtyp via ett säkert gränssnitt, **så att** kunderna får en korrekt, högkvalitativ visuell representation av sortimentet och galleriet förblir dynamiskt.
+
+#### **📝 Acceptanskriterier (AC)**
+
+- **AC1: Säker bilduppladdning.** Via Admin-panelen (US6) kan jag ladda upp en ny bild för en specifik produkt. Bilden sparas i Azure Blob Storage (US5) och URL:en sparas automatiskt på produkten i CosmosDB.
+    
+- **AC2: Visuell fallback.** Om en produkt saknar en uppladdad bild, eller om länken är bruten, visas automatiskt en lokal standardbild (placeholder-choco.png) i produktgalleriet (US2).
+    
+- **AC3: Säkerhet och validering.** Systemet accepterar endast giltiga bildformat (.jpg, .png, .webp) med en maximal filstorlek på 2 MB. Otillåtna filer avvisas med ett tydligt felmeddelande.
+    
+- **AC4: Molnstädning (Livscykel).** Om en chokladprodukt raderas helt från databasen (via Admin-panelen), raderas även tillhörande bildfil permanent från Azure Blob Storage för att undvika onödiga lagringskostnader.
+    
+- **AC5: Dynamisk uppdatering.** Om jag laddar upp en ny bild på en befintlig produkt skrivs den gamla bilden över eller raderas, och det nya utseendet reflekteras direkt på sidan.
 
 ![[Hemsidan Snaxers.png]]
 
