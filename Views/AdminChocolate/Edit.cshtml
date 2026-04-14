@@ -14,42 +14,77 @@
                 <div class="card-body">
                     <form asp-action="Edit" method="post">
     <input type="hidden" asp-for="Id" />
-    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-
-    <div class="mb-3">
-        <label asp-for="Name" class="form-label">Namn</label>
-        <input asp-for="Name" class="form-control" />
-        <span asp-validation-for="Name" class="text-danger"></span>
-    </div>
-
-    <div class="mb-3">
-        <label asp-for="Brand" class="form-label">Märke</label>
-        <input asp-for="Brand" class="form-control" />
-        <span asp-validation-for="Brand" class="text-danger"></span>
-    </div>
 
     <div class="row">
-        <div class="col-md-6 mb-3">
-            <label asp-for="Price" class="form-label">Pris (kr)</label>
-            <input asp-for="Price" type="number" step="0.01" class="form-control" />
-            <span asp-validation-for="Price" class="text-danger"></span>
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label asp-for="Name" class="form-label fw-bold">Produktnamn</label>
+                <input asp-for="Name" class="form-control shadow-sm" />
+                <span asp-validation-for="Name" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Brand" class="form-label fw-bold">Varumärke</label>
+                <input asp-for="Brand" class="form-control shadow-sm" />
+                <span asp-validation-for="Brand" class="text-danger"></span>
+            </div>
+
+            <div class="row">
+                <div class="col-6">
+                    <div class="mb-3">
+                        <label asp-for="Price" class="form-label fw-bold">Pris (kr)</label>
+                        <input asp-for="Price" type="number" step="0.01" class="form-control shadow-sm" />
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="mb-3">
+                        <label asp-for="CocoaPercentage" class="form-label fw-bold">Kakaohalt (%)</label>
+                        <input asp-for="CocoaPercentage" type="number" class="form-control shadow-sm" />
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="col-md-6 mb-3">
-            <label asp-for="CocoaPercentage" class="form-label">Kakaohalt (%)</label>
-            <input asp-for="CocoaPercentage" type="number" class="form-control" />
-            <span asp-validation-for="CocoaPercentage" class="text-danger"></span>
+
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label asp-for="Country" class="form-label fw-bold">Ursprungsland</label>
+                <input asp-for="Country" class="form-control shadow-sm" />
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Category" class="form-label fw-bold">Kategori</label>
+                <select asp-for="Category" class="form-select shadow-sm">
+                    <option value="">-- Välj kategori --</option>
+                    <option value="Mörk Choklad">Mörk Choklad</option>
+                    <option value="Ljus Choklad">Ljus Choklad</option>
+                    <option value="Vit Choklad">Vit Choklad</option>
+                    <option value="Smaksatt">Smaksatt</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="col-12 mt-2">
+            <div class="mb-3">
+                <label asp-for="ImageUrl" class="form-label fw-bold text-dark">Bild-URL (Används tills BlobStorage är redo)</label>
+                <input asp-for="ImageUrl" class="form-control shadow-sm bg-light" placeholder="https://..." />
+            </div>
+        </div>
+
+        <div class="col-12 mt-2">
+            <div class="mb-3">
+                <label asp-for="Description" class="form-label fw-bold">Beskrivning</label>
+                <textarea asp-for="Description" class="form-control shadow-sm" rows="4"></textarea>
+            </div>
         </div>
     </div>
 
-    <div class="mb-3">
-        <label asp-for="ImageUrl" class="form-label">Bild-URL</label>
-        <input asp-for="ImageUrl" class="form-control" />
-        <span asp-validation-for="ImageUrl" class="text-danger"></span>
-    </div>
-
-    <div class="d-grid gap-2">
-        <button type="submit" class="btn btn-success">Spara ändringar</button>
-        <a asp-action="Index" class="btn btn-outline-secondary">Avbryt</a>
+    <div class="mt-4 pt-3 border-top">
+        <button type="submit" class="btn btn-primary px-4 shadow-sm">
+            <i class="bi bi-save2"></i> Spara ändringar
+        </button>
+        <a asp-action="Index" class="btn btn-outline-secondary px-4 shadow-sm">
+            <i class="bi bi-arrow-left-circle"></i> Tillbaka till listan
+        </a>
     </div>
 </form>
                 </div>

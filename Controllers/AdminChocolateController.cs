@@ -6,6 +6,7 @@ using TheSnaxers.Models;
 namespace TheSnaxers.Controllers;
 
 [Authorize] 
+//[Authorize(Roles = "Admin")] <---Vi ändrar till detta när vi har rollhantering på plats, just nu kan alla inloggade se adminvyn
 public class AdminChocolateController : Controller
 {
     private readonly IProductService _productService;
