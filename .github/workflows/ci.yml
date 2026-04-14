@@ -29,4 +29,4 @@ jobs:
 
     - name: Docker build
       # Kör build från roten så Docker ser både mappen och filerna
-      run: docker build -t thesnaxers:latest -f ./The-Snaxers/Dockerfile .
+      run: docker build -t thesnaxers:latest -f The-Snaxers/Dockerfile .
