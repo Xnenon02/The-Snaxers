@@ -17,6 +17,7 @@ builder.Services.AddScoped<IFavoriteRepository, FavoriteRepository>();
 builder.Services.AddScoped<IFavoriteService, FavoriteService>();;
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<IBlobService, BlobService>();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<ICountryService, CountryService>();
 
