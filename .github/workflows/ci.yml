@@ -18,7 +18,6 @@ jobs:
       with:
         dotnet-version: '10.0.x'
 
-    # Vi kör restore/build/test direkt på mappen
     - name: Restore dependencies
       run: dotnet restore
 
@@ -28,6 +27,5 @@ jobs:
     - name: Test
       run: dotnet test --no-build --verbosity normal
 
-    # Docker behöver fortfarande veta var Dockerfile ligger relativt till roten
     - name: Docker build
       run: docker build -t thesnaxers:latest -f The-Snaxers/Dockerfile .
