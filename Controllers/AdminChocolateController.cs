@@ -6,7 +6,6 @@ using TheSnaxers.Models;
 namespace TheSnaxers.Controllers;
 
 [Authorize] 
-//[Authorize(Roles = "Admin")] <---Vi ändrar till detta när vi har rollhantering på plats, just nu kan alla inloggade se adminvyn
 public class AdminChocolateController : Controller
 {
     private readonly IProductService _productService;
@@ -16,33 +15,23 @@ public class AdminChocolateController : Controller
         _productService = productService;
     }
 
-    // 1. Listan på all choklad (Admin-vyn)
     public async Task<IActionResult> Index()
     {
         var products = await _productService.GetAllProductsAsync();
         return View(products);
     }
 
-    // 2. Visa formuläret "Skapa ny"
     public IActionResult Create()
     {
         return View();
     }
 
-    // 3. Ta emot datan från formuläret och spara
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(Product product)
     {
-        // 1. Fixa bilden FÖRST
-        if (string.IsNullOrWhiteSpace(product.ImageUrl))
-        {
-            product.ImageUrl = "/images/placeholder-choco.png"; 
-        }
-
-        // 2. Rensa eventuella valideringsfel för ImageUrl eftersom vi nu har satt ett värde
-        ModelState.Remove("ImageUrl");
-
+        // Bild-logiken är borttagen! Den sköts nu automatiskt av modellen.
+        
         if (ModelState.IsValid)
         {
             await _productService.AddProductAsync(product);
@@ -51,7 +40,6 @@ public class AdminChocolateController : Controller
         return View(product);
     }
 
-    // 4. Visa formuläret (förifyllt)
     public async Task<IActionResult> Edit(int id)
     {
         var product = await _productService.GetProductByIdAsync(id); 
@@ -60,19 +48,15 @@ public class AdminChocolateController : Controller
         return View(product);
     }
 
-    // 5. Ta emot ändringarna
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(Product product)
+    public async Task<IActionResult> Edit(int id, Product product) // Lade till int id här
     {
-        // 1. Fixa bilden FÖRST så att databasen aldrig får en tom sträng (NULL)
-        if (string.IsNullOrWhiteSpace(product.ImageUrl))
+        // HANITAS SÄKERHETSKONTROLL: Matchar id i URL:en med id i bodyn?
+        if (id != product.Id)
         {
-            product.ImageUrl = "/images/placeholder-choco.png";
+            return BadRequest("ID mismatch - Manipulation detekterad.");
         }
-
-        // 2. Berätta för valideringen att ImageUrl är okej nu
-        ModelState.Remove("ImageUrl");
 
         if (ModelState.IsValid)
         {
@@ -82,7 +66,6 @@ public class AdminChocolateController : Controller
         return View(product);
     }
 
-    // 6. Radera produkt
     [HttpPost] 
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Delete(int id)
