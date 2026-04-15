@@ -28,4 +28,4 @@ jobs:
       run: dotnet test --no-build --verbosity normal
 
     - name: Docker build
-      run: docker build -t thesnaxers:latest .
+      run: docker build -t thesnaxers:latest -f The-Snaxers/Dockerfile .
