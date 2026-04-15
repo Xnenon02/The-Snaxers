@@ -6,6 +6,8 @@ using TheSnaxers.Services;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Linq;
+using Microsoft.Extensions.Logging;
+using System;
 
 namespace TheSnaxers.Controllers;
 
@@ -15,67 +17,85 @@ public class ChocolateController : Controller
     private readonly ICountryService _countryService;
     private readonly IFavoriteService _favoriteService;
     private readonly UserManager<IdentityUser> _userManager;
+    private readonly ILogger<ChocolateController> _logger;
 
     public ChocolateController(
         IProductService productService, 
         ICountryService countryService, 
         IFavoriteService favoriteService,
-        UserManager<IdentityUser> userManager)
+        UserManager<IdentityUser> userManager,
+        ILogger<ChocolateController> logger)
     {
         _productService = productService;
         _countryService = countryService;
         _favoriteService = favoriteService;
         _userManager = userManager;
+        _logger = logger;
     }
 
-   public async Task<IActionResult> Index(string? searchTerm, int? minCocoa)
-{
-    // 1. Hämta produkterna
-    List<Product> products;
-    if (!string.IsNullOrWhiteSpace(searchTerm) || minCocoa.HasValue)
-        products = await _productService.SearchProductsAsync(searchTerm!, minCocoa);
-    else
-        products = await _productService.GetAllProductsAsync();
-
-    // 2. Hantera favoriter
-    var userId = _userManager.GetUserId(User);
-    ViewBag.FavoriteIds = userId != null 
-        ? (await _favoriteService.GetUserFavoritesAsync(userId)).Select(f => f.ProductId).ToList() 
-        : new List<int>();
-
-    ViewBag.SearchTerm = searchTerm;
-    ViewBag.MinCocoa = minCocoa;
-
-    // 3. Mappa till ViewModel
-    var viewModel = new List<ChocolateGalleryViewModel>();
-    foreach (var p in products)
+    public async Task<IActionResult> Index(string? searchTerm, int? minCocoa)
     {
-        var searchCountry = !string.IsNullOrWhiteSpace(p.Country) ? p.Country : p.Category switch
+        // 1. Hämta produkterna från ProductService (som nu kör mot Cosmos DB)
+        List<Product> products;
+        if (!string.IsNullOrWhiteSpace(searchTerm) || minCocoa.HasValue)
         {
-            "Mörk" => "France",
-            "Vit" => "Switzerland",
-            "Mjölk" => "Finland",
-            "Ruby" => "Belgium",
-            _ => "Sweden"
-        };
-
-        CountryInfo? countryInfo = null;
-        try { countryInfo = await _countryService.GetCountryInfoAsync(searchCountry); }
-        catch { /* Fallback */ }
-
-        viewModel.Add(new ChocolateGalleryViewModel
+            _logger.LogInformation("Searching products with term '{SearchTerm}' and minCocoa {MinCocoa}", searchTerm, minCocoa);
+            products = await _productService.SearchProductsAsync(searchTerm ?? "", minCocoa);
+        }
+        else
         {
-            Id = p.Id,
-            Name = p.Name ?? "Okänt",
-            Brand = p.Brand ?? "Okänt",
-            CocoaPercentage = p.CocoaPercentage,
-            Description = p.Description ?? "",
-            Price = p.Price,
-            ImageUrl = p.ImageUrl ?? "",
-            CountryName = countryInfo?.Name ?? p.Country ?? "Okänt",
-            FlagUrl = countryInfo?.FlagUrl ?? ""
-        });
+            products = await _productService.GetAllProductsAsync();
+        }
+
+        _logger.LogInformation("Retrieved {ProductCount} products", products.Count);
+
+        // 2. Hantera favoriter för den inloggade användaren
+        var userId = _userManager.GetUserId(User);
+        ViewBag.FavoriteIds = userId != null 
+            ? (await _favoriteService.GetUserFavoritesAsync(userId)).Select(f => f.ProductId).ToList() 
+            : new List<int>();
+
+        ViewBag.SearchTerm = searchTerm;
+        ViewBag.MinCocoa = minCocoa;
+
+        // 3. Mappa produkterna till ViewModels och berika med CountryInfo
+        var viewModel = new List<ChocolateGalleryViewModel>();
+        foreach (var p in products)
+        {
+            // Fallback-logik för land om data saknas i Cosmos
+            var searchCountry = !string.IsNullOrWhiteSpace(p.Country) ? p.Country : p.Category switch
+            {
+                "Mörk" => "France",
+                "Vit" => "Switzerland",
+                "Mjölk" => "Finland",
+                "Ruby" => "Belgium",
+                _ => "Sweden"
+            };
+
+            CountryInfo? countryInfo = null;
+            try 
+            { 
+                countryInfo = await _countryService.GetCountryInfoAsync(searchCountry); 
+            }
+            catch (Exception ex)
+            { 
+                _logger.LogWarning(ex, "Failed to fetch country info for {Country}", searchCountry);
+            }
+
+            viewModel.Add(new ChocolateGalleryViewModel
+            {
+                Id = p.Id,
+                Name = p.Name ?? "Okänt",
+                Brand = p.Brand ?? "Okänt",
+                CocoaPercentage = p.CocoaPercentage,
+                Description = p.Description ?? "",
+                Price = p.Price,
+                ImageUrl = p.ImageUrl ?? "",
+                CountryName = countryInfo?.Name ?? p.Country ?? "Okänt",
+                FlagUrl = countryInfo?.FlagUrl ?? ""
+            });
+        }
+
+        return View(viewModel);
     }
-    return View(viewModel);
-}
 }
