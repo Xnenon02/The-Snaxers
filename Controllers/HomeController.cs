@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using TheSnaxers.Models;
+using Microsoft.AspNetCore.Authorization; 
 
 namespace TheSnaxers.Controllers;
 
@@ -28,8 +29,8 @@ public class HomeController : Controller
     // ===================================================
     // TEST-ENDPOINT FÖR APPLICATION INSIGHTS FELSÖKNING
     // Används för att demonstrera spårning i App Insights
-    // TODO: Ta bort eller skydda med [Authorize(Roles="Admin")] i produktion
     // ===================================================
+    [Authorize(Roles = "Admin")] 
     [Route("api/test-error")]
     public IActionResult TestError()
     {
