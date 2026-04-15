@@ -18,57 +18,59 @@ public class CosmosFavoriteRepository : IFavoriteRepository
 
     public async Task<List<Favorite>> GetFavoritesByUserIdAsync(string userId)
     {
-        var query = new QueryDefinition(
+        // Steg 1 — Hämta alla favoriter för användaren
+        var favQuery = new QueryDefinition(
             "SELECT * FROM c WHERE c.UserId = @userId")
             .WithParameter("@userId", userId);
 
-        var results = new List<Favorite>();
-        var iterator = _container.GetItemQueryIterator<CosmosFavorite>(query);
+        var cosmosFavorites = new List<CosmosFavorite>();
+        var favIterator = _container.GetItemQueryIterator<CosmosFavorite>(favQuery);
 
-        while (iterator.HasMoreResults)
+        while (favIterator.HasMoreResults)
         {
-            var response = await iterator.ReadNextAsync();
-            foreach (var f in response)
+            var response = await favIterator.ReadNextAsync();
+            cosmosFavorites.AddRange(response);
+        }
+
+        if (!cosmosFavorites.Any())
+            return new List<Favorite>();
+
+        // Steg 2 — Hämta alla produkter i ett enda anrop med IN-operator
+        var productIds = string.Join(",", cosmosFavorites.Select(f => f.ProductId));
+        var productQuery = new QueryDefinition(
+            $"SELECT * FROM c WHERE c.Id IN ({productIds})");
+
+        var productMap = new Dictionary<int, Product>();
+        var productIterator = _productsContainer.GetItemQueryIterator<CosmosProductDocument>(productQuery);
+
+        while (productIterator.HasMoreResults)
+        {
+            var response = await productIterator.ReadNextAsync();
+            foreach (var doc in response)
             {
-                var productQuery = new QueryDefinition(
-                    "SELECT * FROM c WHERE c.Id = @productId")
-                    .WithParameter("@productId", f.ProductId);
-
-                var productIterator = _productsContainer.GetItemQueryIterator<CosmosProductDocument>(productQuery);
-                Product? product = null;
-
-                while (productIterator.HasMoreResults)
+                productMap[doc.Id] = new Product
                 {
-                    var productResponse = await productIterator.ReadNextAsync();
-                    var doc = productResponse.FirstOrDefault();
-                    if (doc != null)
-                    {
-                        product = new Product
-                        {
-                            Id = doc.Id,
-                            Name = doc.Name,
-                            Brand = doc.Brand,
-                            CocoaPercentage = doc.CocoaPercentage,
-                            Country = doc.Country,
-                            Description = doc.Description,
-                            Price = doc.Price,
-                            Category = doc.Category,
-                            ImageUrl = doc.ImageUrl
-                        };
-                    }
-                }
-
-                results.Add(new Favorite
-                {
-                    UserId = f.UserId,
-                    ProductId = f.ProductId,
-                    SavedAt = f.SavedAt,
-                    Product = product
-                });
+                    Id = doc.Id,
+                    Name = doc.Name,
+                    Brand = doc.Brand,
+                    CocoaPercentage = doc.CocoaPercentage,
+                    Country = doc.Country,
+                    Description = doc.Description,
+                    Price = doc.Price,
+                    Category = doc.Category,
+                    ImageUrl = doc.ImageUrl
+                };
             }
         }
 
-        return results;
+        // Steg 3 — Sätt ihop favoriter med produktdata
+        return cosmosFavorites.Select(f => new Favorite
+        {
+            UserId = f.UserId,
+            ProductId = f.ProductId,
+            SavedAt = f.SavedAt,
+            Product = productMap.TryGetValue(f.ProductId, out var product) ? product : null
+        }).ToList();
     }
 
     public async Task<bool> ExistsAsync(string userId, int productId)
@@ -91,12 +93,12 @@ public class CosmosFavoriteRepository : IFavoriteRepository
 
     public async Task AddAsync(Favorite favorite)
     {
-        var doc = new
+        var doc = new CosmosFavoriteDocument
         {
             id = Guid.NewGuid().ToString(),
-            favorite.UserId,
-            favorite.ProductId,
-            favorite.SavedAt
+            UserId = favorite.UserId,
+            ProductId = favorite.ProductId,
+            SavedAt = favorite.SavedAt
         };
 
         await _container.CreateItemAsync(doc, new PartitionKey(favorite.UserId));
@@ -142,6 +144,22 @@ public class CosmosFavoriteRepository : IFavoriteRepository
     private class CosmosDocument
     {
         public string id { get; set; } = string.Empty;
+    }
+
+    // Hjälpklass för att skriva favoriter till Cosmos
+    private class CosmosFavoriteDocument
+    {
+        [JsonProperty("id")]
+        public string id { get; set; } = string.Empty;
+
+        [JsonProperty("userId")]
+        public string UserId { get; set; } = string.Empty;
+
+        [JsonProperty("productId")]
+        public int ProductId { get; set; }
+
+        [JsonProperty("savedAt")]
+        public DateTime SavedAt { get; set; }
     }
 
     // Hjälpklass för deserialisering av produkter från Cosmos
