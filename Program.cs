@@ -1,13 +1,42 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
+using Azure.Identity;
 using TheSnaxers.Data;
 using TheSnaxers.Services;
 using TheSnaxers.Repositories;
-using Azure.Identity;
 using Microsoft.Azure.Cosmos;
 using TheSnaxers.Models;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// ===================================================
+// KEY VAULT — Azure Key Vault i produktion, User Secrets lokalt
+// ===================================================
+if (builder.Environment.IsProduction())
+{
+    var keyVaultUrl = builder.Configuration["KeyVault:Url"];
+    if (!string.IsNullOrEmpty(keyVaultUrl))
+    {
+        // Managed Identity — ingen hårdkodad connection string
+        // TODO: Sätt KeyVault:Url i Azure Container Apps miljövariabler
+        builder.Configuration.AddAzureKeyVault(
+            new Uri(keyVaultUrl),
+            new DefaultAzureCredential());
+    }
+}
+
+// ===================================================
+// APPLICATION INSIGHTS
+// ===================================================
+var appInsightsConnectionString = builder.Configuration["ApplicationInsights:ConnectionString"];
+if (!string.IsNullOrEmpty(appInsightsConnectionString) && appInsightsConnectionString != "placeholder")
+{
+    // TODO: Lägg till riktig ConnectionString i Azure Key Vault när Tom satt upp miljön
+    builder.Services.AddApplicationInsightsTelemetry(options =>
+    {
+        options.ConnectionString = appInsightsConnectionString;
+    });
+}
 
 // Add services
 builder.Services.AddControllersWithViews();
@@ -59,6 +88,7 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     db.Database.EnsureCreated();
+
 }
 
 // Configure pipeline

@@ -20,8 +20,8 @@ public class ChocolateGalleryViewModel
 
     public string ImageUrl { get; set; } = string.Empty;
 
-    public string CountryName { get; set; } = string.Empty;
-
+    public string CountryName { get; set; } = "Okänt";
+    
     public string FlagUrl { get; set; } = string.Empty;
 
 
