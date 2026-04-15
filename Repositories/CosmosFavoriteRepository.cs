@@ -34,13 +34,28 @@ public class CosmosFavoriteRepository : IFavoriteRepository
                     "SELECT * FROM c WHERE c.Id = @productId")
                     .WithParameter("@productId", f.ProductId);
 
-                var productIterator = _productsContainer.GetItemQueryIterator<Product>(productQuery);
+                var productIterator = _productsContainer.GetItemQueryIterator<CosmosProductDocument>(productQuery);
                 Product? product = null;
 
                 while (productIterator.HasMoreResults)
                 {
                     var productResponse = await productIterator.ReadNextAsync();
-                    product = productResponse.FirstOrDefault();
+                    var doc = productResponse.FirstOrDefault();
+                    if (doc != null)
+                    {
+                        product = new Product
+                        {
+                            Id = doc.Id,
+                            Name = doc.Name,
+                            Brand = doc.Brand,
+                            CocoaPercentage = doc.CocoaPercentage,
+                            Country = doc.Country,
+                            Description = doc.Description,
+                            Price = doc.Price,
+                            Category = doc.Category,
+                            ImageUrl = doc.ImageUrl
+                        };
+                    }
                 }
 
                 results.Add(new Favorite
@@ -127,5 +142,22 @@ public class CosmosFavoriteRepository : IFavoriteRepository
     private class CosmosDocument
     {
         public string id { get; set; } = string.Empty;
+    }
+
+    // Hjälpklass för deserialisering av produkter från Cosmos
+    private class CosmosProductDocument
+    {
+        [JsonProperty("id")]
+        public string id { get; set; } = string.Empty;
+
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Brand { get; set; } = string.Empty;
+        public int CocoaPercentage { get; set; }
+        public string Country { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public decimal Price { get; set; }
+        public string Category { get; set; } = string.Empty;
+        public string ImageUrl { get; set; } = string.Empty;
     }
 }
