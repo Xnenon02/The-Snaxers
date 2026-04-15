@@ -4,6 +4,8 @@ using Azure.Identity;
 using TheSnaxers.Data;
 using TheSnaxers.Services;
 using TheSnaxers.Repositories;
+using Azure.Identity;
+using Microsoft.Azure.Cosmos;
 using TheSnaxers.Models;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -40,23 +42,49 @@ if (!string.IsNullOrEmpty(appInsightsConnectionString) && appInsightsConnectionS
 // Add services
 builder.Services.AddControllersWithViews();
 
+// SQLite - används endast för Identity tills VM är uppsatt
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlite("Data Source=snaxers.db"));
 
-builder.Services.AddScoped<IFavoriteRepository, FavoriteRepository>();
-builder.Services.AddScoped<IFavoriteService, FavoriteService>();;
-builder.Services.AddScoped<IProductRepository, ProductRepository>();
+// Cosmos DB client
+builder.Services.AddSingleton(sp =>
+{
+    var configuration = sp.GetRequiredService<IConfiguration>();
+    var endpoint = configuration["CosmosDb:AccountEndpoint"];
+
+    if (string.IsNullOrWhiteSpace(endpoint))
+        throw new InvalidOperationException("CosmosDb:AccountEndpoint saknas i konfigurationen.");
+
+    var credential = new DefaultAzureCredential(new DefaultAzureCredentialOptions
+    {
+        TenantId = configuration["CosmosDb:TenantId"]
+    });
+
+    return new CosmosClient(endpoint, credential);
+});
+
+// Favoriter - Cosmos DB
+builder.Services.AddScoped<TheSnaxers.Repositories.IFavoriteRepository, TheSnaxers.Repositories.CosmosFavoriteRepository>();
+builder.Services.AddScoped<TheSnaxers.Services.IFavoriteService, TheSnaxers.Services.FavoriteService>();
+
+// Produkter - Cosmos DB
+builder.Services.AddScoped<IProductRepository, CosmosProductRepository>();
+
+// Produkter - gammal lokal SQLite-version sparad men kommenterad
+// builder.Services.AddScoped<IProductRepository, ProductRepository>();
+
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<ICountryService, CountryService>();
 
-builder.Services.AddDefaultIdentity<IdentityUser>(options => 
+// Identity - SQLite tills VM är uppsatt
+builder.Services.AddDefaultIdentity<IdentityUser>(options =>
     options.SignIn.RequireConfirmedAccount = false)
     .AddEntityFrameworkStores<ApplicationDbContext>();
 
 var app = builder.Build();
 
-// Seed testprodukter
+// Säkerställ att SQLite-databasen finns för Identity
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
