@@ -9,9 +9,6 @@ param environmentName string = 'dev'
 @description('Azure region')
 param location string = resourceGroup().location
 
-@description('Name of the existing Container App (for Managed Identity binding)')
-param containerAppName string
-
 // ===================================================
 // USER-ASSIGNED MANAGED IDENTITY
 // ===================================================
