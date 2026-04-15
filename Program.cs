@@ -4,7 +4,6 @@ using Azure.Identity;
 using TheSnaxers.Data;
 using TheSnaxers.Services;
 using TheSnaxers.Repositories;
-using Azure.Identity;
 using Microsoft.Azure.Cosmos;
 using TheSnaxers.Models;
 
