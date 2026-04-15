@@ -9,10 +9,12 @@ namespace TheSnaxers.Controllers;
 public class AdminChocolateController : Controller
 {
     private readonly IProductService _productService;
+    private readonly IBlobService _blobService;
 
-    public AdminChocolateController(IProductService productService)
+    public AdminChocolateController(IProductService productService, IBlobService blobService)
     {
         _productService = productService;
+        _blobService = blobService;
     }
 
     public async Task<IActionResult> Index()
@@ -27,18 +29,28 @@ public class AdminChocolateController : Controller
     }
 
     [HttpPost]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create(Product product)
+[ValidateAntiForgeryToken]
+public async Task<IActionResult> Create(Product product, IFormFile? imageFile)
+{
+    if (imageFile != null && imageFile.Length > 0)
     {
-        // Bild-logiken är borttagen! Den sköts nu automatiskt av modellen.
+        // Öppna en ström till filen och skicka till molnet!
+        using var stream = imageFile.OpenReadStream();
+        string imageUrl = await _blobService.UploadImageAsync(stream, imageFile.FileName);
         
-        if (ModelState.IsValid)
-        {
-            await _productService.AddProductAsync(product);
-            return RedirectToAction(nameof(Index));
-        }
-        return View(product);
+        // Spara den nya moln-URL:en i produkten
+        product.ImageUrl = imageUrl;
     }
+    
+    ModelState.Remove("ImageUrl"); // Se till att valideringen inte klagar på URL:en
+
+    if (ModelState.IsValid)
+    {
+        await _productService.AddProductAsync(product);
+        return RedirectToAction(nameof(Index));
+    }
+    return View(product);
+}
 
     public async Task<IActionResult> Edit(int id)
     {
