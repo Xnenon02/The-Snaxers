@@ -147,7 +147,7 @@ public class CosmosProductRepository : IProductRepository
             Name = doc.Name,
             Brand = doc.Brand,
             CocoaPercentage = doc.CocoaPercentage,
-            Country = doc.Country,
+            Country = doc.Country ?? "Okänt",
             Description = doc.Description,
             Price = doc.Price,
             Category = doc.Category,
@@ -164,7 +164,7 @@ public class CosmosProductRepository : IProductRepository
             Name = product.Name,
             Brand = product.Brand,
             CocoaPercentage = product.CocoaPercentage,
-            Country = product.Country,
+            Country = product.Country ?? "Okänt",
             Description = product.Description,
             Price = product.Price,
             Category = product.Category,
@@ -181,7 +181,7 @@ public class CosmosProductRepository : IProductRepository
         public string Name { get; set; } = string.Empty;
         public string Brand { get; set; } = string.Empty;
         public int CocoaPercentage { get; set; }
-        public string Country { get; set; } = string.Empty;
+        public string? Country { get; set; }
         public string Description { get; set; } = string.Empty;
         public decimal Price { get; set; }
         public string Category { get; set; } = string.Empty;

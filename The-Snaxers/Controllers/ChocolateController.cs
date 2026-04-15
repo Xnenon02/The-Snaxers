@@ -35,12 +35,12 @@ public class ChocolateController : Controller
 
     public async Task<IActionResult> Index(string? searchTerm, int? minCocoa)
     {
-        // 1. Hämta produkterna baserat på sökning eller hämta alla
+        // 1. Hämta produkterna från ProductService (som nu kör mot Cosmos DB)
         List<Product> products;
         if (!string.IsNullOrWhiteSpace(searchTerm) || minCocoa.HasValue)
         {
             _logger.LogInformation("Searching products with term '{SearchTerm}' and minCocoa {MinCocoa}", searchTerm, minCocoa);
-            products = await _productService.SearchProductsAsync(searchTerm!, minCocoa);
+            products = await _productService.SearchProductsAsync(searchTerm ?? "", minCocoa);
         }
         else
         {
@@ -58,11 +58,11 @@ public class ChocolateController : Controller
         ViewBag.SearchTerm = searchTerm;
         ViewBag.MinCocoa = minCocoa;
 
-        // 3. Mappa produkterna till ViewModels
+        // 3. Mappa produkterna till ViewModels och berika med CountryInfo
         var viewModel = new List<ChocolateGalleryViewModel>();
         foreach (var p in products)
         {
-            // TODO: Ta bort category-switch när CosmosDB är på plats och Country alltid är ifyllt
+            // Fallback-logik för land om data saknas i Cosmos
             var searchCountry = !string.IsNullOrWhiteSpace(p.Country) ? p.Country : p.Category switch
             {
                 "Mörk" => "France",
@@ -85,12 +85,12 @@ public class ChocolateController : Controller
             viewModel.Add(new ChocolateGalleryViewModel
             {
                 Id = p.Id,
-                Name = p.Name,
-                Brand = p.Brand,
+                Name = p.Name ?? "Okänt",
+                Brand = p.Brand ?? "Okänt",
                 CocoaPercentage = p.CocoaPercentage,
-                Description = p.Description,
+                Description = p.Description ?? "",
                 Price = p.Price,
-                ImageUrl = p.ImageUrl,
+                ImageUrl = p.ImageUrl ?? "",
                 CountryName = countryInfo?.Name ?? p.Country ?? "Okänt",
                 FlagUrl = countryInfo?.FlagUrl ?? ""
             });

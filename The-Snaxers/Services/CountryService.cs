@@ -14,7 +14,7 @@ public class CountryService : ICountryService
     public async Task<CountryInfo> GetCountryInfoAsync(string countryName)
     {
         if (string.IsNullOrWhiteSpace(countryName))
-            return new CountryInfo { Name = "Okänt land", FlagUrl = "" };
+           return new CountryInfo { Name = "Okänt land", FlagUrl = "" };
 
         try 
         {
