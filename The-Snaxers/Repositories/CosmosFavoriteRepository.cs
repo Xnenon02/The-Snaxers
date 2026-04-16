@@ -18,7 +18,6 @@ public class CosmosFavoriteRepository : IFavoriteRepository
 
     public async Task<List<Favorite>> GetFavoritesByUserIdAsync(string userId)
     {
-        // Steg 1 — Hämta alla favoriter för användaren
         var favQuery = new QueryDefinition(
             "SELECT * FROM c WHERE c.UserId = @userId")
             .WithParameter("@userId", userId);
@@ -35,7 +34,6 @@ public class CosmosFavoriteRepository : IFavoriteRepository
         if (!cosmosFavorites.Any())
             return new List<Favorite>();
 
-        // Steg 2 — Hämta alla produkter i ett enda anrop med IN-operator
         var productIds = string.Join(",", cosmosFavorites.Select(f => f.ProductId));
         var productQuery = new QueryDefinition(
             $"SELECT * FROM c WHERE c.Id IN ({productIds})");
@@ -63,7 +61,6 @@ public class CosmosFavoriteRepository : IFavoriteRepository
             }
         }
 
-        // Steg 3 — Sätt ihop favoriter med produktdata
         return cosmosFavorites.Select(f => new Favorite
         {
             UserId = f.UserId,
@@ -124,19 +121,12 @@ public class CosmosFavoriteRepository : IFavoriteRepository
         }
     }
 
-    // Hjälpklass för deserialisering från Cosmos
+    // Hjälpklass för deserialisering från Cosmos — ingen JsonProperty, PascalCase matchar /UserId
     private class CosmosFavorite
     {
-        [JsonProperty("id")]
         public string id { get; set; } = string.Empty;
-
-        [JsonProperty("userId")]
         public string UserId { get; set; } = string.Empty;
-
-        [JsonProperty("productId")]
         public int ProductId { get; set; }
-
-        [JsonProperty("savedAt")]
         public DateTime SavedAt { get; set; }
     }
 
@@ -146,19 +136,12 @@ public class CosmosFavoriteRepository : IFavoriteRepository
         public string id { get; set; } = string.Empty;
     }
 
-    // Hjälpklass för att skriva favoriter till Cosmos
+    // Hjälpklass för att skriva favoriter till Cosmos — ingen JsonProperty, PascalCase matchar /UserId
     private class CosmosFavoriteDocument
     {
-        [JsonProperty("id")]
         public string id { get; set; } = string.Empty;
-
-        [JsonProperty("userId")]
         public string UserId { get; set; } = string.Empty;
-
-        [JsonProperty("productId")]
         public int ProductId { get; set; }
-
-        [JsonProperty("savedAt")]
         public DateTime SavedAt { get; set; }
     }
 
@@ -167,7 +150,6 @@ public class CosmosFavoriteRepository : IFavoriteRepository
     {
         [JsonProperty("id")]
         public string id { get; set; } = string.Empty;
-
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
         public string Brand { get; set; } = string.Empty;
