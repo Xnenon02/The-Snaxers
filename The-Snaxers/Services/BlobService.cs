@@ -16,21 +16,32 @@ public class BlobService : IBlobService
     }
 
     public async Task<string> UploadImageAsync(Stream fileStream, string fileName)
+{
+    var containerClient = _blobServiceClient.GetBlobContainerClient(ContainerName);
+    await containerClient.CreateIfNotExistsAsync(PublicAccessType.Blob);
+
+    // Skapa ett unikt namn
+    var uniqueFileName = $"{Guid.NewGuid()}-{fileName}";
+    var blobClient = containerClient.GetBlobClient(uniqueFileName);
+
+    // Säkerställ att vi börjar läsa filen från början
+    if (fileStream.CanSeek)
     {
-        // 1. Hämta en referens till containern
-        var containerClient = _blobServiceClient.GetBlobContainerClient(ContainerName);
-        
-        // 2. Skapa containern om den inte finns (bra säkerhetsåtgärd)
-        await containerClient.CreateIfNotExistsAsync(PublicAccessType.Blob);
-
-        // 3. Skapa en unik referens för filen (vi kan lägga till ett Guid för att undvika namnkrockar)
-        var uniqueFileName = $"{Guid.NewGuid()}-{fileName}";
-        var blobClient = containerClient.GetBlobClient(uniqueFileName);
-
-        // 4. Ladda upp filen
-        await blobClient.UploadAsync(fileStream, new BlobHttpHeaders { ContentType = "image/jpeg" });
-
-        // 5. Returnera URL:en till den nya bilden
-        return blobClient.Uri.ToString();
+        fileStream.Position = 0;
     }
+
+    // Detektera filtyp baserat på ändelse (enklare än att gissa!)
+    var contentType = fileName.ToLower().EndsWith(".png") ? "image/png" : 
+                     fileName.ToLower().EndsWith(".gif") ? "image/gif" : "image/jpeg";
+
+    var options = new BlobUploadOptions
+    {
+        HttpHeaders = new BlobHttpHeaders { ContentType = contentType }
+    };
+
+    // Ladda upp
+    await blobClient.UploadAsync(fileStream, options);
+
+    return blobClient.Uri.ToString();
+}
 }

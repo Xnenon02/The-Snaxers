@@ -61,22 +61,34 @@ public async Task<IActionResult> Create(Product product, IFormFile? imageFile)
     }
 
     [HttpPost]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(int id, Product product) // Lade till int id här
+[ValidateAntiForgeryToken]
+public async Task<IActionResult> Edit(int id, Product product, IFormFile? imageFile) // Lade till imageFile här
+{
+    if (id != product.Id)
     {
-        // HANITAS SÄKERHETSKONTROLL: Matchar id i URL:en med id i bodyn?
-        if (id != product.Id)
-        {
-            return BadRequest("ID mismatch - Manipulation detekterad.");
-        }
-
-        if (ModelState.IsValid)
-        {
-            await _productService.UpdateProductAsync(product);
-            return RedirectToAction(nameof(Index));
-        }
-        return View(product);
+        return BadRequest("ID mismatch - Manipulation detekterad.");
     }
+
+    if (imageFile != null && imageFile.Length > 0)
+    {
+        // Ladda upp den nya bilden
+        using var stream = imageFile.OpenReadStream();
+        string imageUrl = await _blobService.UploadImageAsync(stream, imageFile.FileName);
+        
+        // Uppdatera URL:en till den nya
+        product.ImageUrl = imageUrl;
+    }
+    // Om imageFile är null behålls den existerande product.ImageUrl (från den dolda inputen i vyn)
+
+    ModelState.Remove("imageFile"); // Validera inte själva filen som en del av modellen
+
+    if (ModelState.IsValid)
+    {
+        await _productService.UpdateProductAsync(product);
+        return RedirectToAction(nameof(Index));
+    }
+    return View(product);
+}
 
     [HttpPost] 
     [ValidateAntiForgeryToken]
