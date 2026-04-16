@@ -41,7 +41,9 @@ if (!string.IsNullOrEmpty(appInsightsConnectionString) && appInsightsConnectionS
 // Add services
 builder.Services.AddControllersWithViews();
 
-// SQLite - används endast för Identity tills VM är uppsatt
+// ===================================================
+// SQLITE — AC1: Development använder lokal SQLite och User Secrets
+// ===================================================
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlite("Data Source=snaxers.db"));
 
