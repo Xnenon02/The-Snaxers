@@ -10,8 +10,8 @@
             <h2 class="mb-0">Lägg till ny choklad i lagret</h2>
         </div>
         <div class="card-body p-4">
-            <form asp-action="Create" method="post">
-                @* Ingen Hidden ID här! *@
+            @* MODIFIERING 1: Vi lägger till enctype för att formuläret ska kunna skicka filer *@
+            <form asp-action="Create" method="post" enctype="multipart/form-data">
 
                 <div class="row">
                     <div class="col-md-6">
@@ -61,10 +61,16 @@
                         </div>
                     </div>
 
+                    @* MODIFIERING 2: Vi byter ut Text-input mot en Fil-input *@
                     <div class="col-12 mt-2">
                         <div class="mb-3">
-                            <label asp-for="ImageUrl" class="form-label fw-bold">Bild-URL</label>
-                            <input asp-for="ImageUrl" class="form-control shadow-sm bg-light" placeholder="/images/products/exempel.jpg" />
+                            <label class="form-label fw-bold">Ladda upp produktbild</label>
+                            <input type="file" name="imageFile" class="form-control shadow-sm" accept="image/*" />
+                            <span class="text-muted small">Välj en bild från din dator för att ladda upp till galleriet.</span>
+                            
+                            @* Vi behåller den dolda ImageUrl så att modellen fortfarande är giltig, 
+                               men användaren ser den inte *@
+                            <input type="hidden" asp-for="ImageUrl" />
                         </div>
                     </div>
 

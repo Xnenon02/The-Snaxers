@@ -73,6 +73,7 @@ builder.Services.AddScoped<IProductRepository, CosmosProductRepository>();
 // builder.Services.AddScoped<IProductRepository, ProductRepository>();
 
 builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<IBlobService, BlobService>();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<ICountryService, CountryService>();
 

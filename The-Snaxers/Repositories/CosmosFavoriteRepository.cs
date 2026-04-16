@@ -12,15 +12,20 @@ public class CosmosFavoriteRepository : IFavoriteRepository
     private readonly ILogger<CosmosFavoriteRepository> _logger;
 
     public CosmosFavoriteRepository(
-        CosmosClient cosmosClient, 
-        IConfiguration configuration,
-        ILogger<CosmosFavoriteRepository> logger)
-    {
-        var databaseName = configuration["CosmosDb:DatabaseName"];
-        _container = cosmosClient.GetContainer(databaseName, "Favorites");
-        _productsContainer = cosmosClient.GetContainer(databaseName, "Products");
-        _logger = logger;
-    }
+    CosmosClient cosmosClient, 
+    IConfiguration configuration,
+    ILogger<CosmosFavoriteRepository> logger)
+{
+    var databaseName = configuration["CosmosDb:DatabaseName"];
+    
+    // Hämta från config istället för hårdkodat!
+    var favoriteContainerName = configuration["CosmosDb:FavoritesContainerName"] ?? "Favorites";
+    var productContainerName = configuration["CosmosDb:ContainerName"] ?? "Products";
+
+    _container = cosmosClient.GetContainer(databaseName, favoriteContainerName);
+    _productsContainer = cosmosClient.GetContainer(databaseName, productContainerName);
+    _logger = logger;
+}
 
     public async Task<List<Favorite>> GetFavoritesByUserIdAsync(string userId)
     {

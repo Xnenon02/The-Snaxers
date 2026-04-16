@@ -12,8 +12,7 @@
                     <h2 class="h4 mb-0">Redigera @Model.Name</h2>
                 </div>
                 <div class="card-body">
-                    <form asp-action="Edit" method="post">
-    <input type="hidden" asp-for="Id" />
+                    <form asp-action="Create" method="post" enctype="multipart/form-data">
 
     <div class="row">
         <div class="col-md-6">
@@ -63,12 +62,18 @@
             </div>
         </div>
 
-        <div class="col-12 mt-2">
-            <div class="mb-3">
-                <label asp-for="ImageUrl" class="form-label fw-bold text-dark">Bild-URL (Används tills BlobStorage är redo)</label>
-                <input asp-for="ImageUrl" class="form-control shadow-sm bg-light" placeholder="https://..." />
-            </div>
-        </div>
+        @* MODIFIERING 2: Vi byter ut Text-input mot en Fil-input *@
+                    <div class="col-12 mt-2">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Ladda upp produktbild</label>
+                            <input type="file" name="imageFile" class="form-control shadow-sm" accept="image/*" />
+                            <span class="text-muted small">Välj en bild från din dator för att ladda upp till galleriet.</span>
+                            
+                            @* Vi behåller den dolda ImageUrl så att modellen fortfarande är giltig, 
+                               men användaren ser den inte *@
+                            <input type="hidden" asp-for="ImageUrl" />
+                        </div>
+                    </div>
 
         <div class="col-12 mt-2">
             <div class="mb-3">
