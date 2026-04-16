@@ -1,14 +1,19 @@
 ﻿using Microsoft.Azure.Cosmos;
 using Newtonsoft.Json;
 using TheSnaxers.Models;
+using Microsoft.Extensions.Logging;
 
 namespace TheSnaxers.Repositories;
 
 public class CosmosProductRepository : IProductRepository
 {
     private readonly Container _container;
+    private readonly ILogger<CosmosProductRepository> _logger;
 
-    public CosmosProductRepository(CosmosClient cosmosClient, IConfiguration configuration)
+    public CosmosProductRepository(
+        CosmosClient cosmosClient, 
+        IConfiguration configuration,
+        ILogger<CosmosProductRepository> logger)
     {
         var databaseName = configuration["CosmosDb:DatabaseName"];
         var containerName = configuration["CosmosDb:ContainerName"];
@@ -20,10 +25,13 @@ public class CosmosProductRepository : IProductRepository
             throw new InvalidOperationException("CosmosDb:ContainerName saknas i konfigurationen.");
 
         _container = cosmosClient.GetContainer(databaseName, containerName);
+        _logger = logger;
     }
 
     public async Task<List<Product>> GetAllAsync()
     {
+        _logger.LogInformation("Fetching all products from Cosmos DB.");
+
         var query = new QueryDefinition("SELECT * FROM c");
         var iterator = _container.GetItemQueryIterator<CosmosProductDocument>(query);
         var products = new List<Product>();
@@ -34,6 +42,7 @@ public class CosmosProductRepository : IProductRepository
             products.AddRange(response.Select(MapToProduct));
         }
 
+        _logger.LogInformation("Successfully retrieved {ProductCount} products.", products.Count);
         return products;
     }
 
@@ -73,6 +82,8 @@ public class CosmosProductRepository : IProductRepository
         {
             product.Id = Math.Abs(Guid.NewGuid().GetHashCode());
         }
+
+        _logger.LogInformation("Adding new product: {ProductName} to category {Category}.", product.Name, product.Category);
 
         var document = MapToDocument(product);
         await _container.CreateItemAsync(document, new PartitionKey(document.Category));
