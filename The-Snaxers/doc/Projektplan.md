@@ -20,28 +20,29 @@ Bygga, containerisera och deploya en lyxchokladapp på Azure med CI/CD, IaC, log
 
 ## 👥 **Rollfördelning
 
-| Person        | User Stories                                   | Tekniskt ansvar                                           |
-| ------------- | ---------------------------------------------- | --------------------------------------------------------- |
-| Person 1 (du) | US1 Favoritlista ✅, US4 Sökning✅               | Docker, Key Vault, Application Insights, Managed Identity |
-| Person 2      | US2 (Galleri), US6 (Admin), US5 (Blob Storage) | CI/CD, GitHub Actions, Rollhantering                      |
-| Person 3      | US3 (Google OAuth), US7 (Miljöhantering)       | IaC (Bicep), CosmosDB, Azure-setup                        |
+| Person   | User Stories                                                                   | Tekniskt ansvar                                                                  |
+| -------- | ------------------------------------------------------------------------------ | -------------------------------------------------------------------------------- |
+| Person 1 | US1 Favoritlista ✅, US4 Sökning✅                                               | Docker, Key Vault, Application Insights, Managed Identity, CI/CD, GitHub Actions |
+| Person 2 | US2 (Galleri), US6 (Admin), US5 (Blob Storage), US8 (Vaurkorg), US10 (Flaggor) | Rollhantering                                                                    |
+| Person 3 | US3 (Google OAuth), US7 (Miljöhantering)                                       | IaC (Bicep), CosmosDB, Azure-setup                                               |
 > **Viktigt:** Alla hjälps åt med allt men har huvudansvar för sitt område. Alla ska kunna förklara _hela_ lösningen vid examination.
 
 ---
 
 ## 📋 User Stories
 
-| **US**  | **Beskrivning**                                | **Person** | **Vecka** | **Status** |
-| ------- | ---------------------------------------------- | ---------- | --------- | ---------- |
-| **US1** | Favoritlista (migreras till CosmosDB i v3)     | Person 1   | 1         | ✅ Klar     |
-| **US2** | Produktgalleri (grid, flaggor, REST Countries) | Person 2   | 1         | ✅ Klar     |
-| **US3** | Google OAuth + Key Vault                       | Person 3   | 2         | ⏳          |
-| **US4** | Sökning och filtrering                         | Person 1   | 1         | ⏳          |
-| **US5** | Azure Blob Storage (produktbilder)             | Person 2   | 2         | ⏳          |
-| **US6** | Admin-panel (CRUD, rollskyddad)                | Person 2   | 2         | ⏳          |
-| **US7** | Miljöhantering dev/staging/prod                | Person 3   | 3         | ⏳          |
-| **US8** | Varukorg                                       | Person 1   | 2         | ⏳          |
-| **US9** | Dynamiska bilder Blob storage                  | Person 1   | 2         | ⏳          |
+| **US**   | **Beskrivning**                                | **Person** | **Vecka** | **Status** |
+| -------- | ---------------------------------------------- | ---------- | --------- | ---------- |
+| **US1**  | Favoritlista (migreras till CosmosDB i v3)     | Person 1   | 1         | ✅ Klar     |
+| **US2**  | Produktgalleri (grid, flaggor, REST Countries) | Person 2   | 1         | ✅ Klar     |
+| **US3**  | Google OAuth + Key Vault                       | Person 3   | 2         | ⏳          |
+| **US4**  | Sökning och filtrering                         | Person 1   | 1         | ✅ Klar     |
+| **US5**  | Azure Blob Storage (produktbilder)             | Person 2   | 2         | ⏳          |
+| **US6**  | Admin-panel (CRUD, rollskyddad)                | Person 2   | 2         | ⏳          |
+| **US7**  | Miljöhantering dev/staging/prod                | Person 3   | 3         | ⏳          |
+| **US8**  | Varukorg                                       | Person 2   | 4         | ⏳          |
+| **US9**  | Dynamiska bilder Blob storage                  | Person 1   | 2         | ⏳          |
+| **US10** | Info om länder                                 | Person 2   | 3         | ⏳          |
 
 ---
 
@@ -64,7 +65,7 @@ Bygga, containerisera och deploya en lyxchokladapp på Azure med CI/CD, IaC, log
 - **AI-logg ska innehålla:** _US/Task_ (Vad det gäller) ➔ _Verktyg_ (Vilken AI) ➔ _Prompt_ (Vad ni frågade) ➔ _Resultat_ (Vad ni fick ut och justerade).
     
 
-### Vecka 2 — Produktgalleri, Modell & IaC-grund
+### Vecka 2 — Produktgalleri, Modell & IaC-grund ✅ Klar
 
 - **Gemensamt:** Uppdatera Product-modellen (`Brand`, `CocoaPercentage`, `Country`).
     
@@ -190,7 +191,7 @@ Bygga, containerisera och deploya en lyxchokladapp på Azure med CI/CD, IaC, log
 ## ⚠️ Viktiga beslut tagna / att ta
 
 1. **Säkerhet (v3):** Managed Identity används för anslutningar för att slippa hantera connection strings.
-?ö
+?
     
 2. **Drift (v2):** Besluta Container Apps vs App Service — dokumentera motiveringen direkt.
 ?
@@ -305,11 +306,9 @@ Som en kund vill jag kunna lägga produkter i en varukorg så att jag kan samla 
 - AC5: En varukorgsikon i huvudmenyn visar alltid en siffra på aktuellt antal varor i korgen.
     
 
-### **US9 — Dynamisk och säker bildhantering för chokladprodukter**
+### US9 — Dynamisk och säker bildhantering för chokladprodukter
 
 **Som en** administratör **vill jag** kunna ladda upp, hantera och radera unika produktbilder för varje chokladtyp via ett säkert gränssnitt, **så att** kunderna får en korrekt, högkvalitativ visuell representation av sortimentet och galleriet förblir dynamiskt.
-
-#### **📝 Acceptanskriterier (AC)**
 
 - **AC1: Säker bilduppladdning.** Via Admin-panelen (US6) kan jag ladda upp en ny bild för en specifik produkt. Bilden sparas i Azure Blob Storage (US5) och URL:en sparas automatiskt på produkten i CosmosDB.
     
@@ -321,16 +320,32 @@ Som en kund vill jag kunna lägga produkter i en varukorg så att jag kan samla 
     
 - **AC5: Dynamisk uppdatering.** Om jag laddar upp en ny bild på en befintlig produkt skrivs den gamla bilden över eller raderas, och det nya utseendet reflekteras direkt på sidan.
 
-![[Hemsidan Snaxers.png]]
+### US10 - Flaggor
+
+Som användare vill jag kunna klicka på en flagga och få mer info om landet chokladen kommer ifrån
+
+- **AC1: Interaktiv flagga** Varje produkt i galleriet som har ett ursprungsland ska visa landets flagga (som ikon eller emoji). Flaggan ska vara klickbar.
+    
+- **AC2: Informationsvy (Modal/Popup)** Vid klick på flaggan ska en modal eller en snygg popup dyka upp (utan att användaren lämnar galleriet).
+    
+- **AC3: Dynamisk information** Informationen i modalen ska innehålla minst:
+    
+    - Landets namn.
+        
+    - En kort text om landets chokladtradition eller kakaoproduktion (kan hämtas via ett enkelt API eller en hårdkodad "CountryService").
+        
+- **AC4: Felhantering (Fallback)** Om information om ett specifikt land saknas i systemet, ska en vänlig text visas (t.ex. _"Vi fyller på med information om [Land] inom kort!"_) istället för att modalen är tom eller kraschar.
+    
+- **AC5: Stängningsfunktion** Användaren ska enkelt kunna stänga modalen via ett "X" eller genom att klicka utanför rutan för att återgå till galleriet.
 
 
+--- 
 
-
-### 🕵️‍♂️ Analys av arbetsbördan
+### 🕵️‍♂️ Analys av arbetsbördan - Detta stämmer ej mer då vi ändrat lite, se ovan
 
 **Person 1: Säkerhet & Övervakning**
 
-- **Kod:** Favoritlista och Sökning/Filtrering.
+- **Kod:** Favoritlista, Dynamisk bildhantering, Unit tester och Sökning/Filtrering.
     
 - **Moln/Tech:** Docker, Key Vault, Managed Identity, Application Insights.
     
@@ -339,7 +354,7 @@ Som en kund vill jag kunna lägga produkter i en varukorg så att jag kan samla 
 
 **Person 2: DevOps & Filer**
 
-- **Kod:** Produktgalleri, Admin-panel (CRUD), integrera Blob Storage.
+- **Kod:** Produktgalleri, Varukorg, Admin-panel (CRUD), integrera Blob Storage.
     
 - **Moln/Tech:** GitHub Actions (CI/CD), Rollhantering.
     
@@ -357,7 +372,7 @@ Som en kund vill jag kunna lägga produkter i en varukorg så att jag kan samla 
 
 ---
 
-### Slutsats
+### Slutsats - Detta stämmer ej mer då vi ändrat lite, se ovan
 
 Ni har lyckats skapa tre helt unika specialistroller:
 
@@ -366,3 +381,7 @@ Ni har lyckats skapa tre helt unika specialistroller:
 2. **DevOps & Fullstack Engineer** (Person 2)
     
 3. **Cloud Infrastructure & Data Engineer** (Person 3)
+
+
+![[Hemsidan Snaxers.png]]
+
