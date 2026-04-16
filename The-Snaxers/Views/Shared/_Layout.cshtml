@@ -31,8 +31,27 @@
                         <li class="nav-item">
                             <a class="nav-link text-white" asp-area="" asp-controller="Favorite" asp-action="Index">❤️ Mina favoriter</a>
                         </li>
+                        
+
                     </ul>
                     <ul class="navbar-nav">
+                        @* Vi kan förbereda med en if-sats som alltid är true nu, 
+   men som vi ändrar till User.IsInRole("Admin") senare! *@
+@{
+    var showAdminLink = true; // Ändra till false sen för att dölja
+}
+                        @if (showAdminLink)
+{
+    <li class="nav-item">
+        <a class="nav-link text-dark shadow-sm rounded-pill px-3" 
+           asp-area="" 
+           asp-controller="AdminChocolate" 
+           asp-action="Index" 
+           style="background-color: #fdf2f8; border: 1px solid #f9a8d4; margin-left: 10px;">
+           ✨ Admin
+        </a>
+    </li>
+}
                         <partial name="_LoginPartial" />
                     </ul>
                 </div>
