@@ -199,31 +199,32 @@ public class CosmosProductRepository : IProductRepository
         return new Product
         {
             Id = doc.Id,
-            Name = doc.Name,
-            Brand = doc.Brand,
+            Name = doc.Name ?? string.Empty,
+            Brand = doc.Brand ?? string.Empty,
             CocoaPercentage = doc.CocoaPercentage,
             Country = doc.Country ?? "Okänt",
-            Description = doc.Description,
+            Description = doc.Description ?? string.Empty,
             Price = doc.Price,
-            Category = doc.Category,
-            ImageUrl = doc.ImageUrl
+            Category = doc.Category ?? string.Empty,
+            ImageUrl = doc.ImageUrl ?? string.Empty
         };
     }
 
     private static CosmosProductDocument MapToDocument(Product product, string? cosmosId = null)
     {
+        // Säkrar upp data som sparas till Cosmos DB
         return new CosmosProductDocument
         {
             id = cosmosId ?? Guid.NewGuid().ToString(),
             Id = product.Id,
-            Name = product.Name,
-            Brand = product.Brand,
+            Name = product.Name ?? string.Empty,
+            Brand = product.Brand ?? string.Empty,
             CocoaPercentage = product.CocoaPercentage,
             Country = product.Country ?? "Okänt",
-            Description = product.Description,
+            Description = product.Description ?? string.Empty,
             Price = product.Price,
-            Category = product.Category,
-            ImageUrl = product.ImageUrl
+            Category = product.Category ?? string.Empty,
+            ImageUrl = product.ImageUrl ?? string.Empty
         };
     }
 
@@ -236,7 +237,7 @@ public class CosmosProductRepository : IProductRepository
         public string Name { get; set; } = string.Empty;
         public string Brand { get; set; } = string.Empty;
         public int CocoaPercentage { get; set; }
-        public string? Country { get; set; }
+        public string Country { get; set; } = "Okänt"; 
         public string Description { get; set; } = string.Empty;
         public decimal Price { get; set; }
         public string Category { get; set; } = string.Empty;
