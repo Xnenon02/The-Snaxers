@@ -20,11 +20,11 @@ Bygga, containerisera och deploya en lyxchokladapp på Azure med CI/CD, IaC, log
 
 ## 👥 **Rollfördelning
 
-| Person   | User Stories                                   | Tekniskt ansvar                                           |
-| -------- | ---------------------------------------------- | --------------------------------------------------------- |
-| Person 1 | US1 Favoritlista ✅, US4 Sökning✅               | Docker, Key Vault, Application Insights, Managed Identity |
-| Person 2 | US2 (Galleri), US6 (Admin), US5 (Blob Storage) | CI/CD, GitHub Actions, Rollhantering                      |
-| Person 3 | US3 (Google OAuth), US7 (Miljöhantering)       | IaC (Bicep), CosmosDB, Azure-setup                        |
+| Person   | User Stories                                                                   | Tekniskt ansvar                                                                  |
+| -------- | ------------------------------------------------------------------------------ | -------------------------------------------------------------------------------- |
+| Person 1 | US1 Favoritlista ✅, US4 Sökning✅                                               | Docker, Key Vault, Application Insights, Managed Identity, CI/CD, GitHub Actions |
+| Person 2 | US2 (Galleri), US6 (Admin), US5 (Blob Storage), US8 (Vaurkorg), US10 (Flaggor) | Rollhantering                                                                    |
+| Person 3 | US3 (Google OAuth), US7 (Miljöhantering)                                       | IaC (Bicep), CosmosDB, Azure-setup                                               |
 > **Viktigt:** Alla hjälps åt med allt men har huvudansvar för sitt område. Alla ska kunna förklara _hela_ lösningen vid examination.
 
 ---
@@ -40,7 +40,7 @@ Bygga, containerisera och deploya en lyxchokladapp på Azure med CI/CD, IaC, log
 | **US5**  | Azure Blob Storage (produktbilder)             | Person 2   | 2         | ⏳          |
 | **US6**  | Admin-panel (CRUD, rollskyddad)                | Person 2   | 2         | ⏳          |
 | **US7**  | Miljöhantering dev/staging/prod                | Person 3   | 3         | ⏳          |
-| **US8**  | Varukorg                                       | Person 1   | 2         | ⏳          |
+| **US8**  | Varukorg                                       | Person 2   | 4         | ⏳          |
 | **US9**  | Dynamiska bilder Blob storage                  | Person 1   | 2         | ⏳          |
 | **US10** | Info om länder                                 | Person 2   | 3         | ⏳          |
 
@@ -306,11 +306,9 @@ Som en kund vill jag kunna lägga produkter i en varukorg så att jag kan samla 
 - AC5: En varukorgsikon i huvudmenyn visar alltid en siffra på aktuellt antal varor i korgen.
     
 
-### **US9 — Dynamisk och säker bildhantering för chokladprodukter**
+### US9 — Dynamisk och säker bildhantering för chokladprodukter
 
 **Som en** administratör **vill jag** kunna ladda upp, hantera och radera unika produktbilder för varje chokladtyp via ett säkert gränssnitt, **så att** kunderna får en korrekt, högkvalitativ visuell representation av sortimentet och galleriet förblir dynamiskt.
-
-#### **📝 Acceptanskriterier (AC)**
 
 - **AC1: Säker bilduppladdning.** Via Admin-panelen (US6) kan jag ladda upp en ny bild för en specifik produkt. Bilden sparas i Azure Blob Storage (US5) och URL:en sparas automatiskt på produkten i CosmosDB.
     
@@ -322,7 +320,7 @@ Som en kund vill jag kunna lägga produkter i en varukorg så att jag kan samla 
     
 - **AC5: Dynamisk uppdatering.** Om jag laddar upp en ny bild på en befintlig produkt skrivs den gamla bilden över eller raderas, och det nya utseendet reflekteras direkt på sidan.
 
-# US10 - Flaggor
+### US10 - Flaggor
 
 Som användare vill jag kunna klicka på en flagga och få mer info om landet chokladen kommer ifrån
 
@@ -340,12 +338,10 @@ Som användare vill jag kunna klicka på en flagga och få mer info om landet ch
     
 - **AC5: Stängningsfunktion** Användaren ska enkelt kunna stänga modalen via ett "X" eller genom att klicka utanför rutan för att återgå till galleriet.
 
-![[Hemsidan Snaxers.png]]
 
+--- 
 
-
-
-### 🕵️‍♂️ Analys av arbetsbördan
+### 🕵️‍♂️ Analys av arbetsbördan - Detta stämmer ej mer då vi ändrat lite, se ovan
 
 **Person 1: Säkerhet & Övervakning**
 
@@ -376,7 +372,7 @@ Som användare vill jag kunna klicka på en flagga och få mer info om landet ch
 
 ---
 
-### Slutsats
+### Slutsats - Detta stämmer ej mer då vi ändrat lite, se ovan
 
 Ni har lyckats skapa tre helt unika specialistroller:
 
@@ -387,5 +383,5 @@ Ni har lyckats skapa tre helt unika specialistroller:
 3. **Cloud Infrastructure & Data Engineer** (Person 3)
 
 
+![[Hemsidan Snaxers.png]]
 
-[[Lektion 08.04.26 Moln advanced]]
