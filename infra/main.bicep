@@ -24,6 +24,9 @@ param keyVaultUri string
 @description('Log Analytics workspace ID — from monitoring.bicep output')
 param logAnalyticsWorkspaceId string
 
+@description('Application Insights connection string — from monitoring.bicep output')
+param appInsightsConnectionString string = ''
+
 // ===================================================
 // AZURE CONTAINER REGISTRY (ACR)
 // ===================================================
@@ -115,6 +118,7 @@ resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
               value: keyVaultUri
             }
             {
+              // TODO: Ersätt med parameter från database.bicep när US5 är klar (Martina)
               name: 'CosmosDb__AccountEndpoint'
               value: 'https://snaxers.documents.azure.com:443/'
             }
@@ -125,6 +129,14 @@ resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
             {
               name: 'CosmosDb__ContainerName'
               value: 'Products'
+            }
+            {
+              name: 'CosmosDb__FavoritesContainerName'
+              value: 'Favorites'
+            }
+            {
+              name: 'ApplicationInsights__ConnectionString'
+              value: appInsightsConnectionString
             }
             {
               name: 'AZURE_CLIENT_ID'
