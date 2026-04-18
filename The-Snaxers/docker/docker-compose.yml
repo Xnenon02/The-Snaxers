@@ -1,19 +1,18 @@
-# TODO: Byt snaxers_data volume mot CosmosDB connection string när migrering av databasen är gjord
-# TODO: Lägg till Azure Key Vault och App Insights miljövariabler i environment-sektionen
-version: '3.8'
+# Docker Compose för lokal utveckling av The Snaxers
+# Kör från Snaxers-Solution/The-Snaxers/docker/ med:
+# docker compose up -d --build
 
 services:
   web:
     build:
-      context: .
+      # Context pekar på The-Snaxers/ där Dockerfile ligger
+      context: ..
       dockerfile: Dockerfile
+    container_name: the-snaxers
+    restart: unless-stopped
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-    volumes:
-      # Använder en namngiven volym istället för en hårdkodad filsökväg
-      - snaxers_data:/app
-
-volumes:
-  snaxers_data:
+      # CosmosDB och Key Vault konfigureras via User Secrets lokalt
+      # I produktion används Azure Container Apps miljövariabler
