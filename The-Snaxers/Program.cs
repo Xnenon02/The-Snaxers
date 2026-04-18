@@ -71,34 +71,17 @@ builder.Services.AddHttpClient();
 builder.Services.AddScoped<ICountryService, CountryService>();
 
 // Identity med rollstöd
-builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
+builder.Services.AddDefaultIdentity<IdentityUser>(options =>
     options.SignIn.RequireConfirmedAccount = false)
-    .AddEntityFrameworkStores<ApplicationDbContext>()
-    .AddDefaultUI()
-    .AddDefaultTokenProviders();
+    .AddEntityFrameworkStores<ApplicationDbContext>();
 
 var app = builder.Build();
 
-// Seed: Säkerställ databas, roller och adminanvändare
+// Säkerställ att SQLite-databasen finns för Identity
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     db.Database.EnsureCreated();
-
-    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
-
-    if (!await roleManager.RoleExistsAsync("Admin"))
-        await roleManager.CreateAsync(new IdentityRole("Admin"));
-
-    var adminEmail = "admin@snaxers.se";
-    var adminUser = await userManager.FindByEmailAsync(adminEmail);
-    if (adminUser == null)
-    {
-        adminUser = new IdentityUser { UserName = adminEmail, Email = adminEmail };
-        await userManager.CreateAsync(adminUser, "Admin123!");
-        await userManager.AddToRoleAsync(adminUser, "Admin");
-    }
 }
 
 // Configure pipeline
