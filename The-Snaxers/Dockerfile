@@ -1,7 +1,8 @@
 # ===================================================
 # Multi-stage Dockerfile för The Snaxers
-# Build: docker build -t the-snaxers .
-# Multi-platform: docker buildx build --platform linux/amd64,linux/arm64 -t the-snaxers --push .
+# Build (från solution-rot): docker build -t the-snaxers -f The-Snaxers/Dockerfile .
+# Build (från The-Snaxers/): stöds ej — kör alltid från solution-roten
+# Multi-platform: docker buildx build --platform linux/amd64,linux/arm64 -t hanita970/the-snaxers:1.0 --push -f The-Snaxers/Dockerfile .
 # ===================================================
 
 # Stage 1 — Build
@@ -13,11 +14,12 @@ WORKDIR /src
 # Restore-first pattern:
 # Kopierar .csproj FÖRST för att utnyttja Docker layer cache
 # dotnet restore körs bara om .csproj ändrats — inte vid varje kodändring
-COPY ["The-Snaxers.csproj", "."]
-RUN dotnet restore "The-Snaxers.csproj"
+COPY ["The-Snaxers/The-Snaxers.csproj", "The-Snaxers/"]
+RUN dotnet restore "The-Snaxers/The-Snaxers.csproj"
 
 # Kopiera resten av koden och publicera i Release-läge
 COPY . .
+WORKDIR "/src/The-Snaxers"
 RUN dotnet publish "The-Snaxers.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
 # ===================================================
