@@ -48,7 +48,7 @@ public class AdminChocolateController : Controller
             var validationError = ValidateImageFile(imageFile);
             if (validationError != null)
             {
-                ModelState.AddModelError("imageFile", validationError);
+                ViewData["imageFileError"] = validationError;
                 return View(product);
             }
 
@@ -136,25 +136,28 @@ public class AdminChocolateController : Controller
 
     // AC3 — Validering av filtyp och storlek
     private static string? ValidateImageFile(IFormFile file)
-    {
-        if (file.Length > MaxFileSizeBytes)
-            return "Filen är för stor. Max 2 MB tillåts.";
+{
+    if (file.Length > MaxFileSizeBytes)
+        return "Filen är för stor. Max 2 MB tillåts.";
 
-        var extension = Path.GetExtension(file.FileName).ToLower();
-        if (!AllowedExtensions.Contains(extension))
-            return "Otillåtet filformat. Endast .jpg, .png och .webp tillåts.";
+    var extension = Path.GetExtension(file.FileName).ToLower();
+    if (!AllowedExtensions.Contains(extension))
+        return "Otillåtet filformat. Endast .jpg, .png och .webp tillåts.";
 
-        // Magic bytes-validering — kontrollera faktiskt filinnehåll
-        using var stream = file.OpenReadStream();
-        var header = new byte[4];
-        stream.ReadExactly(header, 0, header.Length);
-        
-        var isValidImage = ImageMagicBytes.Any(magic =>
-            header.Take(magic.Length).SequenceEqual(magic));
+    // Magic bytes-validering — kontrollera faktiskt filinnehåll
+    using var stream = file.OpenReadStream();
+    var header = new byte[4];
+    var bytesRead = stream.Read(header, 0, header.Length);
 
-        if (!isValidImage)
-            return "Filen verkar inte vara en giltig bild.";
+    if (bytesRead < 3)
+        return "Filen verkar inte vara en giltig bild.";
 
-        return null;
-    }
+    var isValidImage = ImageMagicBytes.Any(magic =>
+        header.Take(magic.Length).SequenceEqual(magic));
+
+    if (!isValidImage)
+        return "Filen verkar inte vara en giltig bild.";
+
+    return null;
+}
 }
