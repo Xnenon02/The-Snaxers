@@ -147,8 +147,8 @@ public class AdminChocolateController : Controller
         // Magic bytes-validering — kontrollera faktiskt filinnehåll
         using var stream = file.OpenReadStream();
         var header = new byte[4];
-        stream.Read(header, 0, header.Length);
-
+        stream.ReadExactly(header, 0, header.Length);
+        
         var isValidImage = ImageMagicBytes.Any(magic =>
             header.Take(magic.Length).SequenceEqual(magic));
 
