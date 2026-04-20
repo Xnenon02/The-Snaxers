@@ -38,6 +38,9 @@ if (!string.IsNullOrEmpty(appInsightsConnectionString) && appInsightsConnectionS
 
 // Add services
 builder.Services.AddControllersWithViews();
+builder.Services.AddHealthChecks();
+builder.Services.AddLogging();
+
 
 // SQLite - används endast för Identity
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -104,6 +107,7 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
+app.MapStaticAssets();
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -114,6 +118,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.MapStaticAssets();
+app.MapHealthChecks("/health");
 
 app.MapControllerRoute(
     name: "default",
