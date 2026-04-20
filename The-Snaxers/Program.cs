@@ -10,21 +10,25 @@ using TheSnaxers.Models;
 var builder = WebApplication.CreateBuilder(args);
 
 // ===================================================
-// KEY VAULT — Azure Key Vault i produktion, User Secrets lokalt
+// KEY VAULT — AC2/AC3: Staging och Production hämtar hemligheter från Key Vault
+// AC4: Kastar fel om KeyVault:Url saknas i staging/prod
 // ===================================================
-if (builder.Environment.IsProduction())
+if (builder.Environment.IsProduction() || builder.Environment.IsStaging())
 {
     var keyVaultUrl = builder.Configuration["KeyVault:Url"];
-    if (!string.IsNullOrEmpty(keyVaultUrl))
-    {
-        builder.Configuration.AddAzureKeyVault(
-            new Uri(keyVaultUrl),
-            new DefaultAzureCredential());
-    }
+
+    if (string.IsNullOrEmpty(keyVaultUrl))
+        throw new InvalidOperationException(
+            $"[AC4] KeyVault:Url saknas för miljö '{builder.Environment.EnvironmentName}'. " +
+            "Sätt miljövariabeln KeyVault__Url i Azure Container Apps.");
+
+    builder.Configuration.AddAzureKeyVault(
+        new Uri(keyVaultUrl),
+        new DefaultAzureCredential());
 }
 
 // ===================================================
-// APPLICATION INSIGHTS
+// APPLICATION INSIGHTS — AC2/AC3: Staging och Production
 // ===================================================
 var appInsightsConnectionString = builder.Configuration["ApplicationInsights:ConnectionString"];
 if (!string.IsNullOrEmpty(appInsightsConnectionString) && appInsightsConnectionString != "placeholder")
@@ -40,30 +44,47 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddHealthChecks();
 builder.Services.AddLogging();
 
+// ===================================================
+// SQLITE — AC1: Development använder lokal SQLite och User Secrets
+// Staging/Prod: Identity-databas hanteras separat (se tech debt)
+// ===================================================
+if (builder.Environment.IsDevelopment())
+{
+    builder.Services.AddDbContext<ApplicationDbContext>(options =>
+        options.UseSqlite("Data Source=snaxers.db"));
+}
+else
+{
+    // TODO: Konfigurera Identity-databas för Staging/Prod i separat ticket
+    builder.Services.AddDbContext<ApplicationDbContext>(options =>
+        options.UseSqlite("Data Source=snaxers.db"));
+}
 
-// SQLite - används endast för Identity
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlite("Data Source=snaxers.db"));
-
-// Cosmos DB client
-// Använder AccountKey om den finns (lokal Docker/dev), annars Managed Identity (produktion)
+// ===================================================
+// COSMOS DB — AC1/AC2/AC3: Olika databaser per miljö
+// Dev: TheSnaxersDb, Staging: TheSnaxersDb-staging, Prod: TheSnaxersDb
+// AC4: Kastar fel om AccountEndpoint saknas i staging/prod
+// ===================================================
 builder.Services.AddSingleton(sp =>
 {
     var configuration = sp.GetRequiredService<IConfiguration>();
     var endpoint = configuration["CosmosDb:AccountEndpoint"];
 
     if (string.IsNullOrWhiteSpace(endpoint))
-        throw new InvalidOperationException("CosmosDb:AccountEndpoint saknas i konfigurationen.");
-
-    // ⚠️ ENDAST lokalt via .env — aldrig i staging/prod
-    // Produktion använder Managed Identity (Passwordless)
-    var accountKey = configuration["CosmosDb:AccountKey"];
-    if (!string.IsNullOrWhiteSpace(accountKey))
     {
-        return new CosmosClient(endpoint, accountKey);
+        if (!builder.Environment.IsDevelopment())
+            throw new InvalidOperationException(
+                $"[AC4] CosmosDb:AccountEndpoint saknas för miljö '{builder.Environment.EnvironmentName}'.");
+
+        throw new InvalidOperationException("CosmosDb:AccountEndpoint saknas i konfigurationen.");
     }
 
-    // Produktion — Managed Identity (Passwordless)
+    // ⚠️ AccountKey ENDAST i Development — aldrig i staging/prod
+    var accountKey = configuration["CosmosDb:AccountKey"];
+    if (builder.Environment.IsDevelopment() && !string.IsNullOrWhiteSpace(accountKey))
+        return new CosmosClient(endpoint, accountKey);
+
+    // Staging/Prod — Managed Identity (Passwordless)
     var credential = new DefaultAzureCredential(new DefaultAzureCredentialOptions
     {
         TenantId = configuration["CosmosDb:TenantId"]
