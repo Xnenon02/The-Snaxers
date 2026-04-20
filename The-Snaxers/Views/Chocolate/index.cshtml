@@ -53,10 +53,11 @@
                             <div class="flip-card-front card h-100 shadow-sm hover-shadow transition">
                                 <div class="position-relative">
                                     
+                                    @* TECH DEBT FIX: Vi tog bort DynamicImageUrl och använder nu ImageUrl direkt för att matcha Azure Blob Storage *@
                                     @* Bild med fallback *@
-                                    <img src="@(string.IsNullOrEmpty(chocolate.DynamicImageUrl) ? "/images/placeholder-choco.png" : chocolate.DynamicImageUrl)" 
-                                         class="card-img-top choco-card-img" 
-                                         alt="@chocolate.Name">
+                                    <img src="@chocolate.ImageUrl" 
+                                        class="card-img-top choco-card-img" 
+                                        alt="@chocolate.Name">
 
                                     @if (chocolate.CocoaPercentage > 0)
                                     {
