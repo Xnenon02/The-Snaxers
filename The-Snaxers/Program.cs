@@ -17,8 +17,6 @@ if (builder.Environment.IsProduction())
     var keyVaultUrl = builder.Configuration["KeyVault:Url"];
     if (!string.IsNullOrEmpty(keyVaultUrl))
     {
-        // Managed Identity — ingen hårdkodad connection string
-        // TODO: Sätt KeyVault:Url i Azure Container Apps miljövariabler
         builder.Configuration.AddAzureKeyVault(
             new Uri(keyVaultUrl),
             new DefaultAzureCredential());
@@ -31,7 +29,6 @@ if (builder.Environment.IsProduction())
 var appInsightsConnectionString = builder.Configuration["ApplicationInsights:ConnectionString"];
 if (!string.IsNullOrEmpty(appInsightsConnectionString) && appInsightsConnectionString != "placeholder")
 {
-    // TODO: Lägg till riktig ConnectionString i Azure Key Vault när Tom satt upp miljön
     builder.Services.AddApplicationInsightsTelemetry(options =>
     {
         options.ConnectionString = appInsightsConnectionString;
@@ -41,7 +38,7 @@ if (!string.IsNullOrEmpty(appInsightsConnectionString) && appInsightsConnectionS
 // Add services
 builder.Services.AddControllersWithViews();
 
-// SQLite - används endast för Identity tills VM är uppsatt
+// SQLite - används endast för Identity
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlite("Data Source=snaxers.db"));
 
@@ -68,16 +65,12 @@ builder.Services.AddScoped<TheSnaxers.Services.IFavoriteService, TheSnaxers.Serv
 
 // Produkter - Cosmos DB
 builder.Services.AddScoped<IProductRepository, CosmosProductRepository>();
-
-// Produkter - gammal lokal SQLite-version sparad men kommenterad
-// builder.Services.AddScoped<IProductRepository, ProductRepository>();
-
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IBlobService, BlobService>();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<ICountryService, CountryService>();
 
-// Identity - SQLite tills VM är uppsatt
+// Identity med rollstöd
 builder.Services.AddDefaultIdentity<IdentityUser>(options =>
     options.SignIn.RequireConfirmedAccount = false)
     .AddEntityFrameworkStores<ApplicationDbContext>();
@@ -89,7 +82,6 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     db.Database.EnsureCreated();
-
 }
 
 // Configure pipeline
