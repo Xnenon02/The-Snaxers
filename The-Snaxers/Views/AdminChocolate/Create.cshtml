@@ -12,6 +12,7 @@
         <div class="card-body p-4">
             @* MODIFIERING 1: Vi lägger till enctype för att formuläret ska kunna skicka filer *@
             <form asp-action="Create" method="post" enctype="multipart/form-data">
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
 
                 <div class="row">
                     <div class="col-md-6">
@@ -66,6 +67,8 @@
                         <div class="mb-3">
                             <label class="form-label fw-bold">Ladda upp produktbild</label>
                             <input type="file" name="imageFile" class="form-control shadow-sm" accept="image/*" />
+                            <span asp-validation-for="ImageUrl" class="text-danger"></span>
+                            <span class="text-danger">@ViewData["imageFileError"]</span>
                             <span class="text-muted small">Välj en bild från din dator för att ladda upp till galleriet.</span>
                             
                             @* Vi behåller den dolda ImageUrl så att modellen fortfarande är giltig, 
