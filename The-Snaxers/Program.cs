@@ -10,28 +10,29 @@ using TheSnaxers.Models;
 var builder = WebApplication.CreateBuilder(args);
 
 // ===================================================
-// KEY VAULT — Azure Key Vault i produktion, User Secrets lokalt
+// KEY VAULT — AC2/AC3: Staging och Production hämtar hemligheter från Key Vault
+// AC4: Kastar fel om KeyVault:Url saknas i staging/prod
 // ===================================================
-if (builder.Environment.IsProduction())
+if (builder.Environment.IsProduction() || builder.Environment.IsStaging())
 {
     var keyVaultUrl = builder.Configuration["KeyVault:Url"];
-    if (!string.IsNullOrEmpty(keyVaultUrl))
-    {
-        // Managed Identity — ingen hårdkodad connection string
-        // TODO: Sätt KeyVault:Url i Azure Container Apps miljövariabler
-        builder.Configuration.AddAzureKeyVault(
-            new Uri(keyVaultUrl),
-            new DefaultAzureCredential());
-    }
+
+    if (string.IsNullOrEmpty(keyVaultUrl))
+        throw new InvalidOperationException(
+            $"[AC4] KeyVault:Url saknas för miljö '{builder.Environment.EnvironmentName}'. " +
+            "Sätt miljövariabeln KeyVault__Url i Azure Container Apps.");
+
+    builder.Configuration.AddAzureKeyVault(
+        new Uri(keyVaultUrl),
+        new DefaultAzureCredential());
 }
 
 // ===================================================
-// APPLICATION INSIGHTS
+// APPLICATION INSIGHTS — AC2/AC3: Staging och Production
 // ===================================================
 var appInsightsConnectionString = builder.Configuration["ApplicationInsights:ConnectionString"];
 if (!string.IsNullOrEmpty(appInsightsConnectionString) && appInsightsConnectionString != "placeholder")
 {
-    // TODO: Lägg till riktig ConnectionString i Azure Key Vault när Tom satt upp miljön
     builder.Services.AddApplicationInsightsTelemetry(options =>
     {
         options.ConnectionString = appInsightsConnectionString;
@@ -47,14 +48,24 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlite("Data Source=snaxers.db"));
 
-// Cosmos DB client
+// ===================================================
+// COSMOS DB — AC1/AC2/AC3: Olika databaser per miljö
+// Dev: TheSnaxersDb-dev, Staging: TheSnaxersDb-staging, Prod: TheSnaxersDb
+// AC4: Kastar fel om AccountEndpoint saknas i staging/prod
+// ===================================================
 builder.Services.AddSingleton(sp =>
 {
     var configuration = sp.GetRequiredService<IConfiguration>();
     var endpoint = configuration["CosmosDb:AccountEndpoint"];
 
     if (string.IsNullOrWhiteSpace(endpoint))
+    {
+        if (!builder.Environment.IsDevelopment())
+            throw new InvalidOperationException(
+                $"[AC4] CosmosDb:AccountEndpoint saknas för miljö '{builder.Environment.EnvironmentName}'.");
+
         throw new InvalidOperationException("CosmosDb:AccountEndpoint saknas i konfigurationen.");
+    }
 
     var credential = new DefaultAzureCredential(new DefaultAzureCredentialOptions
     {
@@ -70,16 +81,12 @@ builder.Services.AddScoped<TheSnaxers.Services.IFavoriteService, TheSnaxers.Serv
 
 // Produkter - Cosmos DB
 builder.Services.AddScoped<IProductRepository, CosmosProductRepository>();
-
-// Produkter - gammal lokal SQLite-version sparad men kommenterad
-// builder.Services.AddScoped<IProductRepository, ProductRepository>();
-
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IBlobService, BlobService>();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<ICountryService, CountryService>();
 
-// Identity - SQLite tills VM är uppsatt
+// Identity med rollstöd
 builder.Services.AddDefaultIdentity<IdentityUser>(options =>
     options.SignIn.RequireConfirmedAccount = false)
     .AddEntityFrameworkStores<ApplicationDbContext>();
@@ -91,7 +98,6 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     db.Database.EnsureCreated();
-
 }
 
 // Configure pipeline
