@@ -33,12 +33,14 @@
                                 <div class="mb-3">
                                     <label asp-for="Price" class="form-label fw-bold">Pris (kr)</label>
                                     <input asp-for="Price" type="number" step="0.01" class="form-control shadow-sm" />
+                                    <span asp-validation-for="Price" class="text-danger"></span>
                                 </div>
                             </div>
                             <div class="col-6">
                                 <div class="mb-3">
                                     <label asp-for="CocoaPercentage" class="form-label fw-bold">Kakaohalt (%)</label>
                                     <input asp-for="CocoaPercentage" type="number" class="form-control shadow-sm" />
+                                    <span asp-validation-for="CocoaPercentage" class="text-danger"></span>
                                 </div>
                             </div>
                         </div>
@@ -48,6 +50,7 @@
                         <div class="mb-3">
                             <label asp-for="Country" class="form-label fw-bold">Ursprungsland</label>
                             <input asp-for="Country" class="form-control shadow-sm" placeholder="T.ex. Belgien" />
+                            <span asp-validation-for="Country" class="text-danger"></span>
                         </div>
 
                         <div class="mb-3">
@@ -59,6 +62,7 @@
                                 <option value="Vit Choklad">Vit Choklad</option>
                                 <option value="Smaksatt">Smaksatt</option>
                             </select>
+                            <span asp-validation-for="Category" class="text-danger"></span>
                         </div>
                     </div>
 
@@ -81,6 +85,7 @@
                         <div class="mb-3">
                             <label asp-for="Description" class="form-label fw-bold">Beskrivning</label>
                             <textarea asp-for="Description" class="form-control shadow-sm" rows="4" placeholder="Berätta mer om chokladens karaktär..."></textarea>
+                            <span asp-validation-for="Description" class="text-danger"></span>
                         </div>
                     </div>
                 </div>
