@@ -1,5 +1,21 @@
-bin/
-obj/
-*.db
+# Build outputs
+**/bin/
+**/obj/
+
+# Git
+.git
+.gitignore
+
+# Local development
+**/appsettings.Development.json
+**/*.db
+**/*.db-shm
+**/*.db-wal
+
+# IDE
+.vscode/
 .vs/
-.git/
+
+# Docs
+**/doc/
+README.md
