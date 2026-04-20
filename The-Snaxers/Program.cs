@@ -41,6 +41,8 @@ if (!string.IsNullOrEmpty(appInsightsConnectionString) && appInsightsConnectionS
 
 // Add services
 builder.Services.AddControllersWithViews();
+builder.Services.AddHealthChecks();
+builder.Services.AddLogging();
 
 // ===================================================
 // SQLITE — AC1: Development använder lokal SQLite och User Secrets
@@ -50,7 +52,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 // ===================================================
 // COSMOS DB — AC1/AC2/AC3: Olika databaser per miljö
-// Dev: TheSnaxersDb-dev, Staging: TheSnaxersDb-staging, Prod: TheSnaxersDb
+// Dev: TheSnaxersDb, Staging: TheSnaxersDb-staging, Prod: TheSnaxersDb
 // AC4: Kastar fel om AccountEndpoint saknas i staging/prod
 // ===================================================
 builder.Services.AddSingleton(sp =>
@@ -110,10 +112,11 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
+app.MapStaticAssets();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapStaticAssets();
+app.MapHealthChecks("/health");
 
 app.MapControllerRoute(
     name: "default",
