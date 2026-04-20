@@ -46,9 +46,19 @@ builder.Services.AddLogging();
 
 // ===================================================
 // SQLITE — AC1: Development använder lokal SQLite och User Secrets
+// Staging/Prod: Identity-databas hanteras separat (se tech debt)
 // ===================================================
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlite("Data Source=snaxers.db"));
+if (builder.Environment.IsDevelopment())
+{
+    builder.Services.AddDbContext<ApplicationDbContext>(options =>
+        options.UseSqlite("Data Source=snaxers.db"));
+}
+else
+{
+    // TODO: Konfigurera Identity-databas för Staging/Prod i separat ticket
+    builder.Services.AddDbContext<ApplicationDbContext>(options =>
+        options.UseSqlite("Data Source=snaxers.db"));
+}
 
 // ===================================================
 // COSMOS DB — AC1/AC2/AC3: Olika databaser per miljö
@@ -69,13 +79,12 @@ builder.Services.AddSingleton(sp =>
         throw new InvalidOperationException("CosmosDb:AccountEndpoint saknas i konfigurationen.");
     }
 
-    // ⚠️ ENDAST lokalt via .env — aldrig i staging/prod
-    // Produktion använder Managed Identity (Passwordless)
+    // ⚠️ AccountKey ENDAST i Development — aldrig i staging/prod
     var accountKey = configuration["CosmosDb:AccountKey"];
-    if (!string.IsNullOrWhiteSpace(accountKey))
+    if (builder.Environment.IsDevelopment() && !string.IsNullOrWhiteSpace(accountKey))
         return new CosmosClient(endpoint, accountKey);
 
-    // Produktion — Managed Identity (Passwordless)
+    // Staging/Prod — Managed Identity (Passwordless)
     var credential = new DefaultAzureCredential(new DefaultAzureCredentialOptions
     {
         TenantId = configuration["CosmosDb:TenantId"]
