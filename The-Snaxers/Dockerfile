@@ -7,13 +7,10 @@
 
 # Stage 1 — Build
 # SDK-imagen (~900MB) används endast för att kompilera
-# Den ingår INTE i den slutliga imagen
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
 # Restore-first pattern:
-# Kopierar .csproj FÖRST för att utnyttja Docker layer cache
-# dotnet restore körs bara om .csproj ändrats — inte vid varje kodändring
 COPY ["The-Snaxers/The-Snaxers.csproj", "The-Snaxers/"]
 RUN dotnet restore "The-Snaxers/The-Snaxers.csproj"
 
@@ -24,14 +21,12 @@ RUN dotnet publish "The-Snaxers.csproj" -c Release -o /app/publish /p:UseAppHost
 
 # ===================================================
 # Stage 2 — Runtime
-# ASP.NET runtime-imagen (~220MB) — ingen SDK, ingen kompilator
-# Endast det som behövs för att köra appen
+# ASP.NET runtime-imagen (~220MB)
 # ===================================================
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 
-# Kopiera endast publish-outputen från build-staget
-# Allt annat (SDK, källkod, NuGet-cache) lämnas kvar och ingår inte i imagen
+# Kopiera endast publish-outputen från build-staget (ENDAST EN GÅNG)
 COPY --from=build /app/publish .
 
 # Appen lyssnar på port 8080 (ASP.NET Core default i containers)

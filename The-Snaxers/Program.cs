@@ -55,6 +55,8 @@ builder.Services.AddSingleton(sp =>
     if (string.IsNullOrWhiteSpace(endpoint))
         throw new InvalidOperationException("CosmosDb:AccountEndpoint saknas i konfigurationen.");
 
+    // ⚠️ ENDAST lokalt via .env — aldrig i staging/prod
+    // Produktion använder Managed Identity (Passwordless)
     var accountKey = configuration["CosmosDb:AccountKey"];
     if (!string.IsNullOrWhiteSpace(accountKey))
     {

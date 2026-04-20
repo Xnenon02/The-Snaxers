@@ -22,3 +22,9 @@ services:
       - CosmosDb__DatabaseName=${COSMOS_DATABASE}
       - CosmosDb__ContainerName=${COSMOS_CONTAINER}
       - CosmosDb__AccountKey=${COSMOS_KEY}
+    volumes:
+      - snaxers_data:/app
+
+# Volym-deklaration för att persistera SQLite (Identity-användare)
+volumes:
+  snaxers_data:
