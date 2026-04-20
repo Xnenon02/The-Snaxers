@@ -62,42 +62,36 @@ public class ChocolateController : Controller
         ViewBag.MinCocoa = minCocoa;
 
         // 3. Mappa produkterna till ViewModels och berika med CountryInfo
-        var viewModel = new List<ChocolateGalleryViewModel>();
-        foreach (var p in products)
-        {
-            // Fallback-logik för land om data saknas i Cosmos
-            var searchCountry = !string.IsNullOrWhiteSpace(p.Country) ? p.Country : p.Category switch
-            {
-                "Mörk" => "France",
-                "Vit" => "Switzerland",
-                "Mjölk" => "Finland",
-                "Ruby" => "Belgium",
-                _ => "Sweden"
-            };
+    var viewModel = new List<ChocolateGalleryViewModel>();
+    foreach (var p in products)
+    {
+        // TECH DEBT FIX: Vi använder p.Country direkt och skippar switch-satsen för kategorier
+        var searchCountry = !string.IsNullOrWhiteSpace(p.Country) ? p.Country : "Sweden";
 
-            CountryInfo? countryInfo = null;
-            try 
-            { 
-                countryInfo = await _countryService.GetCountryInfoAsync(searchCountry); 
-            }
-            catch (Exception ex)
-            { 
-                _logger.LogWarning(ex, "Failed to fetch country info for {Country}", searchCountry);
-            }
-
-            viewModel.Add(new ChocolateGalleryViewModel
-            {
-                Id = p.Id,
-                Name = p.Name ?? "Okänt",
-                Brand = p.Brand ?? "Okänt",
-                CocoaPercentage = p.CocoaPercentage,
-                Description = p.Description ?? "",
-                Price = p.Price,
-                ImageUrl = p.ImageUrl ?? "",
-                CountryName = countryInfo?.Name ?? p.Country ?? "Okänt",
-                FlagUrl = countryInfo?.FlagUrl ?? ""
-            });
+        CountryInfo? countryInfo = null;
+        try 
+        { 
+            countryInfo = await _countryService.GetCountryInfoAsync(searchCountry); 
         }
+        catch (Exception ex)
+        { 
+            _logger.LogWarning(ex, "Failed to fetch country info for {Country}", searchCountry);
+        }
+
+        viewModel.Add(new ChocolateGalleryViewModel
+        {
+            Id = p.Id,
+            Name = p.Name ?? "Okänt",
+            Brand = p.Brand ?? "Okänt",
+            CocoaPercentage = p.CocoaPercentage,
+            Description = p.Description ?? "",
+            Price = p.Price,
+            // TECH DEBT FIX: Om ImageUrl är tom i DB används standardvärdet från ViewModel-klassen
+            ImageUrl = !string.IsNullOrWhiteSpace(p.ImageUrl) ? p.ImageUrl : "/images/placeholder-choco.png",
+            CountryName = countryInfo?.Name ?? p.Country ?? "Okänt",
+            FlagUrl = countryInfo?.FlagUrl ?? ""
+        });
+    }
 
         return View(viewModel);
     }
