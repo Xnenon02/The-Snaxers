@@ -29,6 +29,7 @@ if (builder.Environment.IsProduction())
 var appInsightsConnectionString = builder.Configuration["ApplicationInsights:ConnectionString"];
 if (!string.IsNullOrEmpty(appInsightsConnectionString) && appInsightsConnectionString != "placeholder")
 {
+    // TODO: Lägg till riktig ConnectionString i Azure Key Vault när Tom satt upp miljön
     builder.Services.AddApplicationInsightsTelemetry(options =>
     {
         options.ConnectionString = appInsightsConnectionString;
@@ -41,6 +42,11 @@ builder.Services.AddControllersWithViews();
 // SQLite - används endast för Identity
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlite("Data Source=snaxers.db"));
+
+// ===================================================
+// SWAGGER / OPENAPI — .NET 10 inbyggd OpenAPI
+// ===================================================
+builder.Services.AddOpenApi();
 
 // Cosmos DB client
 builder.Services.AddSingleton(sp =>
@@ -65,12 +71,16 @@ builder.Services.AddScoped<TheSnaxers.Services.IFavoriteService, TheSnaxers.Serv
 
 // Produkter - Cosmos DB
 builder.Services.AddScoped<IProductRepository, CosmosProductRepository>();
+
+// Produkter - gammal lokal SQLite-version sparad men kommenterad
+// builder.Services.AddScoped<IProductRepository, ProductRepository>();
+
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IBlobService, BlobService>();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<ICountryService, CountryService>();
 
-// Identity med rollstöd
+// Identity - SQLite tills VM är uppsatt
 builder.Services.AddDefaultIdentity<IdentityUser>(options =>
     options.SignIn.RequireConfirmedAccount = false)
     .AddEntityFrameworkStores<ApplicationDbContext>();
@@ -96,6 +106,12 @@ app.UseStaticFiles();
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
+
+// OpenAPI/Swagger — endast i Development
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi();
+}
 
 app.MapStaticAssets();
 
