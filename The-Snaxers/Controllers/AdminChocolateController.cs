@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using TheSnaxers.Services;
 using TheSnaxers.Models;
+using Microsoft.AspNetCore.Identity;
 
 namespace TheSnaxers.Controllers;
 
@@ -10,17 +11,25 @@ public class AdminChocolateController : Controller
 {
     private readonly IProductService _productService;
     private readonly IBlobService _blobService;
+    private readonly UserManager<IdentityUser> _userManager;
 
-    public AdminChocolateController(IProductService productService, IBlobService blobService)
+    public AdminChocolateController(IProductService productService, IBlobService blobService, UserManager<IdentityUser> userManager)
     {
         _productService = productService;
         _blobService = blobService;
+        _userManager = userManager;
     }
 
     public async Task<IActionResult> Index()
     {
         var products = await _productService.GetAllProductsAsync();
         return View(products);
+    }
+
+    public IActionResult Users()
+    {
+        var users = _userManager.Users.ToList();
+        return View(users);
     }
 
     public IActionResult Create()
