@@ -69,6 +69,13 @@ builder.Services.AddSingleton(sp =>
         throw new InvalidOperationException("CosmosDb:AccountEndpoint saknas i konfigurationen.");
     }
 
+    // ⚠️ ENDAST lokalt via .env — aldrig i staging/prod
+    // Produktion använder Managed Identity (Passwordless)
+    var accountKey = configuration["CosmosDb:AccountKey"];
+    if (!string.IsNullOrWhiteSpace(accountKey))
+        return new CosmosClient(endpoint, accountKey);
+
+    // Produktion — Managed Identity (Passwordless)
     var credential = new DefaultAzureCredential(new DefaultAzureCredentialOptions
     {
         TenantId = configuration["CosmosDb:TenantId"]
