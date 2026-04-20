@@ -12,15 +12,20 @@ public class AdminChocolateController : Controller
     private readonly IProductService _productService;
     private readonly IBlobService _blobService;
     private readonly UserManager<IdentityUser> _userManager;
+    private readonly ILogger<AdminChocolateController> _logger;
 
-    public AdminChocolateController(IProductService productService, IBlobService blobService, UserManager<IdentityUser> userManager)
+    public AdminChocolateController(
+        IProductService productService, 
+        IBlobService blobService, 
+        UserManager<IdentityUser> userManager,
+        ILogger<AdminChocolateController> logger)
     {
         _productService = productService;
         _blobService = blobService;
         _userManager = userManager;
+        _logger = logger;
     }
-    private readonly ILogger<AdminChocolateController> _logger;
-
+    
     // AC3 — Tillåtna filformat kontrolleras både via filändelse och magic bytes
     private static readonly string[] AllowedExtensions = { ".jpg", ".jpeg", ".png", ".webp" };
 
@@ -36,12 +41,6 @@ public class AdminChocolateController : Controller
     // AC3 — Max filstorlek 2 MB enligt acceptanskriteriet
     private const long MaxFileSizeBytes = 2 * 1024 * 1024;
 
-    public AdminChocolateController(IProductService productService, IBlobService blobService, ILogger<AdminChocolateController> logger)
-    {
-        _productService = productService;
-        _blobService = blobService;
-        _logger = logger;
-    }
 
     public async Task<IActionResult> Index()
     {
