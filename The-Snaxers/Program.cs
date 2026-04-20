@@ -46,6 +46,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlite("Data Source=snaxers.db"));
 
 // Cosmos DB client
+// Använder AccountKey om den finns (lokal Docker/dev), annars Managed Identity (produktion)
 builder.Services.AddSingleton(sp =>
 {
     var configuration = sp.GetRequiredService<IConfiguration>();
@@ -54,6 +55,13 @@ builder.Services.AddSingleton(sp =>
     if (string.IsNullOrWhiteSpace(endpoint))
         throw new InvalidOperationException("CosmosDb:AccountEndpoint saknas i konfigurationen.");
 
+    var accountKey = configuration["CosmosDb:AccountKey"];
+    if (!string.IsNullOrWhiteSpace(accountKey))
+    {
+        return new CosmosClient(endpoint, accountKey);
+    }
+
+    // Produktion — Managed Identity (Passwordless)
     var credential = new DefaultAzureCredential(new DefaultAzureCredentialOptions
     {
         TenantId = configuration["CosmosDb:TenantId"]

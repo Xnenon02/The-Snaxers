@@ -2,14 +2,11 @@
 # Kör från Snaxers-Solution/ med:
 # docker compose -f The-Snaxers/docker/docker-compose.yml up -d --build
 #
-# Tjänster:
-#   web      — ASP.NET Core MVC-appen
-#   azurite  — Lokal Azure Blob Storage-emulator (ersätter riktig Azure Storage lokalt)
+# OBS: Skapa en .env-fil i samma mapp med känsliga värden — se .env.example
 
 services:
   web:
     build:
-      # Context pekar på solution-roten där Dockerfile finns
       context: ../..
       dockerfile: The-Snaxers/Dockerfile
     container_name: the-snaxers
@@ -18,27 +15,10 @@ services:
       - "127.0.0.1:8080:8080"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      # Azurite connection string — pekar på azurite-tjänsten i samma nätverk
-      - ConnectionStrings__AzureBlobStorage=DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OhiSiKdq7VFJlmEtlCDXJ1OhiSiKdq7VFJl==;BlobEndpoint=http://azurite:10000/devstoreaccount1;
       - AzureStorage__ProductContainerName=products
-      # CosmosDB och Key Vault konfigureras via User Secrets lokalt
-      # I produktion används Azure Container Apps miljövariabler
-    depends_on:
-      - azurite
-
-  azurite:
-    # Lokal Azure Storage-emulator — simulerar Blob Storage utan riktig Azure-miljö
-    # Dokumentation: https://learn.microsoft.com/azure/storage/common/storage-use-azurite
-    image: mcr.microsoft.com/azure-storage/azurite
-    container_name: azurite
-    restart: unless-stopped
-    ports:
-      - "127.0.0.1:10000:10000"  # Blob Storage
-      - "127.0.0.1:10001:10001"  # Queue Storage
-      - "127.0.0.1:10002:10002"  # Table Storage
-    volumes:
-      # Persistent lagring så att uppladdade bilder överlever container-restart
-      - azurite-data:/data
-
-volumes:
-  azurite-data:
+      - ConnectionStrings__AzureBlobStorage=${BLOB_CONNECTION_STRING}
+      - CosmosDb__AccountEndpoint=${COSMOS_ENDPOINT}
+      - CosmosDb__TenantId=${COSMOS_TENANT_ID}
+      - CosmosDb__DatabaseName=${COSMOS_DATABASE}
+      - CosmosDb__ContainerName=${COSMOS_CONTAINER}
+      - CosmosDb__AccountKey=${COSMOS_KEY}
