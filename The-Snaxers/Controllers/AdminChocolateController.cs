@@ -63,13 +63,14 @@ public class AdminChocolateController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(Product product, IFormFile? imageFile)
     {
+        _logger.LogInformation("Admin attempt to create product: {ProductName}", product.Name);
+
         if (imageFile != null && imageFile.Length > 0)
         {
             // AC3 — Validera filtyp och storlek innan uppladdning
             var validationError = ValidateImageFile(imageFile);
             if (validationError != null)
             {
-                // Skicka felmeddelandet via ViewData så det visas i vyn
                 ViewData["imageFileError"] = validationError;
                 return View(product);
             }
@@ -79,17 +80,18 @@ public class AdminChocolateController : Controller
             product.ImageUrl = await _blobService.UploadImageAsync(stream, imageFile.FileName);
             _logger.LogInformation("Image uploaded for new product {ProductName}: {ImageUrl}", product.Name, product.ImageUrl);
         }
-
+        
         // ImageUrl sätts av uppladdningen — hoppa över modellvalidering för det fältet
         ModelState.Remove("ImageUrl");
 
         if (ModelState.IsValid)
         {
             await _productService.AddProductAsync(product);
-            _logger.LogInformation("Product created: {ProductName}", product.Name);
+            _logger.LogInformation("Successfully added {ProductName} to the database.", product.Name);
             return RedirectToAction(nameof(Index));
         }
 
+        _logger.LogWarning("Validation failed for creating product: {ProductName}", product.Name);
         return View(product);
     }
 
@@ -104,8 +106,13 @@ public class AdminChocolateController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(int id, Product product, IFormFile? imageFile)
     {
+        _logger.LogInformation("Admin attempt to edit product ID: {ProductId}", id);
+
         if (id != product.Id)
+        {
+            _logger.LogError("ID mismatch during edit: URL ID {UrlId} != Model ID {ModelId}", id, product.Id);
             return BadRequest("ID mismatch - Manipulation detekterad.");
+        }
 
         if (imageFile != null && imageFile.Length > 0)
         {
@@ -132,14 +139,16 @@ public class AdminChocolateController : Controller
         }
 
         ModelState.Remove("imageFile");
+        ModelState.Remove("ImageUrl");
 
         if (ModelState.IsValid)
         {
             await _productService.UpdateProductAsync(product);
-            _logger.LogInformation("Product updated: {ProductId}", id);
+            _logger.LogInformation("Successfully updated product ID: {ProductId}", id);
             return RedirectToAction(nameof(Index));
         }
 
+        _logger.LogWarning("Validation failed for editing product ID: {ProductId}", id);
         return View(product);
     }
 
