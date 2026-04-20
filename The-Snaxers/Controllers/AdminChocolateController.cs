@@ -5,7 +5,7 @@ using TheSnaxers.Models;
 
 namespace TheSnaxers.Controllers;
 
-[Authorize] 
+[Authorize(Roles = "Admin")]
 public class AdminChocolateController : Controller
 {
     private readonly IProductService _productService;
