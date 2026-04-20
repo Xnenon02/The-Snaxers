@@ -1,29 +1,16 @@
 namespace TheSnaxers.ViewModels;
 
-
-
 public class ChocolateGalleryViewModel
-
 {
-
     public int Id { get; set; }
-
     public string Name { get; set; } = string.Empty;
-
     public string Brand { get; set; } = string.Empty;
-
     public int CocoaPercentage { get; set; }
-
     public string Description { get; set; } = string.Empty;
-
     public decimal Price { get; set; }
-
-    public string ImageUrl { get; set; } = string.Empty;
-
+    public string ImageUrl { get; set; } = "/images/placeholder-choco.png";
     public string CountryName { get; set; } = "Okänt";
-    
     public string FlagUrl { get; set; } = string.Empty;
-
 
 
     // Generates a dynamic image path based on the product name if no ImageUrl is provided.
