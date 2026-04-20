@@ -61,3 +61,16 @@ body {
     background-color: #fff;
     box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
+
+.btn-snaxers-gold {
+    background-color: #ffd700; /* Guld! */
+    color: #4b2c20;
+    border: none;
+    font-weight: bold;
+}
+
+.btn-snaxers-gold:hover {
+    background-color: #ffcc00;
+    transform: scale(1.05);
+    color: #000;
+}

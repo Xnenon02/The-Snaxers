@@ -123,7 +123,7 @@ using (var scope = app.Services.CreateScope())
     }
 
     // 2. Kolla om din email finns, och gör den till Admin
-    var adminEmail = "martina.halldin@gmail.com"; 
+    var adminEmail = "admin@snaxers.se"; 
     var adminUser = await userManager.FindByEmailAsync(adminEmail);
 
     if (adminUser != null && !(await userManager.IsInRoleAsync(adminUser, "Admin")))

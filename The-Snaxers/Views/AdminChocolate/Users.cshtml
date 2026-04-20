@@ -42,12 +42,44 @@
                             <tr>
                                 <td class="ps-4 fw-bold text-chocolate">@user.UserName</td>
                                 <td>@user.Email</td>
-                                <td class="text-end pe-4">
-                                    @* Här kan vi senare lägga till knappen "Gör till Admin" *@
-                                    <button class="btn btn-sm btn-outline-secondary rounded-pill px-3">
-                                        Hantera behörighet
-                                    </button>
-                                </td>
+                                <td>
+    @{
+        var roles = ViewBag.UserRoles[user.Id] as IList<string>;
+        if (roles != null && roles.Contains("Admin"))
+        {
+            <span class="badge rounded-pill bg-snaxers-gold shadow-sm text-dark">
+                <i class="bi bi-star-fill"></i> System Admin
+            </span>
+        }
+        else
+        {
+            <span class="badge rounded-pill bg-light text-muted border">
+                Standard Snaxer
+            </span>
+        }
+    }
+</td>
+                               <td class="text-end pe-4">
+    @if (roles != null && roles.Contains("Admin"))
+    {
+        <form asp-action="RemoveAdmin" method="post" class="d-inline">
+            <input type="hidden" name="userId" value="@user.Id" />
+            <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3"
+                    onclick="return confirm('Är du säker på att du vill degradera @user.UserName?')">
+                Ta bort Admin
+            </button>
+        </form>
+    }
+    else
+    {
+        <form asp-action="MakeAdmin" method="post" class="d-inline">
+            <input type="hidden" name="userId" value="@user.Id" />
+            <button type="submit" class="btn btn-sm btn-snaxers-gold rounded-pill px-3 shadow-sm">
+                Gör till Admin
+            </button>
+        </form>
+    }
+</td>
                             </tr>
                         }
                     </tbody>

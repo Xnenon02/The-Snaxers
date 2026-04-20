@@ -48,11 +48,20 @@ public class AdminChocolateController : Controller
         return View(products);
     }
 
-    public IActionResult Users()
+    public async Task<IActionResult> Users()
+{
+    var users = _userManager.Users.ToList();
+    var userRoles = new Dictionary<string, IList<string>>();
+
+    foreach (var user in users)
     {
-        var users = _userManager.Users.ToList();
-        return View(users);
+        var roles = await _userManager.GetRolesAsync(user);
+        userRoles[user.Id] = roles;
     }
+
+    ViewBag.UserRoles = userRoles;
+    return View(users);
+}
 
     public IActionResult Create()
     {
@@ -198,4 +207,48 @@ public class AdminChocolateController : Controller
 
         return null;
     }
+
+    [HttpPost]
+[ValidateAntiForgeryToken]
+public async Task<IActionResult> MakeAdmin(string userId)
+{
+    var user = await _userManager.FindByIdAsync(userId);
+    
+    if (user != null)
+    {
+        // AC: Kontrollera om rollen finns, annars skapa den (bra att ha!)
+        // await _roleManager.CreateAsync(new IdentityRole("Admin")); 
+        
+        var result = await _userManager.AddToRoleAsync(user, "Admin");
+        
+        if (result.Succeeded)
+        {
+            _logger.LogInformation("Användare {Email} har blivit befordrad till Admin.", user.Email);
+        }
+    }
+
+    return RedirectToAction(nameof(Users));
+}
+
+[HttpPost]
+[ValidateAntiForgeryToken]
+public async Task<IActionResult> RemoveAdmin(string userId)
+{
+    var user = await _userManager.FindByIdAsync(userId);
+    
+    // Säkerhetsspärr: Man ska inte kunna ta bort sig själv! 
+    if (user.Email == User.Identity.Name) 
+    {
+        TempData["Error"] = "Du kan inte ta bort dina egna admin-rättigheter!";
+        return RedirectToAction(nameof(Users));
+    }
+
+    if (user != null)
+    {
+        await _userManager.RemoveFromRoleAsync(user, "Admin");
+        _logger.LogWarning("Admin-rättigheter borttagna för {Email}.", user.Email);
+    }
+
+    return RedirectToAction(nameof(Users));
+}
 }
