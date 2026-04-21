@@ -53,7 +53,8 @@ public class CosmosProductRepository : IProductRepository
         var sql = "SELECT * FROM c WHERE 1 = 1";
 
         if (!string.IsNullOrWhiteSpace(searchTerm))
-            sql += " AND CONTAINS(c.Name, @searchTerm, true)";
+            // FIX: Söker nu i både Name och Category, inneslutet i parenteser!
+            sql += " AND (CONTAINS(c.Name, @searchTerm, true) OR CONTAINS(c.Category, @searchTerm, true))";
 
         if (minCocoa.HasValue)
             sql += " AND c.CocoaPercentage >= @minCocoa";
@@ -126,32 +127,33 @@ public class CosmosProductRepository : IProductRepository
     }
 
     public async Task UpdateAsync(Product product)
-{
-    // 1. VIKTIGAST: Hämta det befintliga dokumentet från Cosmos för att få tag på "id" (strängen)
-    var existingDocument = await GetDocumentByProductIdAsync(product.Id);
+    {
+        // 1. VIKTIGAST: Hämta det befintliga dokumentet från Cosmos för att få tag på "id" (strängen)
+        var existingDocument = await GetDocumentByProductIdAsync(product.Id);
 
-    if (existingDocument is null)
-    {
-        _logger.LogWarning("Update failed: Product with ID {ProductId} not found.", product.Id);
-        return;
+        if (existingDocument is null)
+        {
+            _logger.LogWarning("Update failed: Product with ID {ProductId} not found.", product.Id);
+            return;
+        }
+
+        try 
+        {
+            // 2. Skicka med det gamla sträng-ID:t in i mappningen
+            var updatedDocument = MapToDocument(product, existingDocument.id);
+            
+            // 3. Kör Upsert - nu vet Cosmos att det är en uppdatering av ett befintligt dokument!
+            await _container.UpsertItemAsync(updatedDocument, new PartitionKey(updatedDocument.Category));
+            
+            _logger.LogInformation("Successfully updated product {ProductId}.", product.Id);
+        }
+        catch (CosmosException ex)
+        {
+            _logger.LogError(ex, "Error occurred while updating product {ProductId}.", product.Id);
+            throw;
+        }
     }
 
-    try 
-    {
-        // 2. Skicka med det gamla sträng-ID:t in i mappningen
-        var updatedDocument = MapToDocument(product, existingDocument.id);
-        
-        // 3. Kör Upsert - nu vet Cosmos att det är en uppdatering av ett befintligt dokument!
-        await _container.UpsertItemAsync(updatedDocument, new PartitionKey(updatedDocument.Category));
-        
-        _logger.LogInformation("Successfully updated product {ProductId}.", product.Id);
-    }
-    catch (CosmosException ex)
-    {
-        _logger.LogError(ex, "Error occurred while updating product {ProductId}.", product.Id);
-        throw;
-    }
-}
     public async Task DeleteAsync(int id)
     {
         _logger.LogInformation("Attempting to delete product with ID: {ProductId}", id);
