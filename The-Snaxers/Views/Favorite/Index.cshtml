@@ -8,9 +8,17 @@
 
     @if (!Model.Any())
     {
-        <div class="text-center py-5 shadow-sm rounded bg-light">
-            <p class="lead text-muted">Du har inga favoriter ännu. Börja utforska choklad! 🍫</p>
-            <a asp-controller="Chocolate" asp-action="Index" class="btn btn-snaxers-gold mt-3">Visa sortimentet</a>
+        <div class="text-center py-5 shadow-sm rounded bg-light border">
+            <img src="/images/empty-cart-choco.png" 
+                 alt="Tom chokladask" 
+                 class="img-fluid mb-4" 
+                 style="max-height: 250px; opacity: 0.8;">
+            
+            <p class="lead text-muted mb-4">Här var det tomt! Din choklad-samling väntar på att fyllas. 🍫</p>
+            
+            <a asp-controller="Chocolate" asp-action="Index" class="btn btn-snaxers-gold btn-lg shadow-sm">
+                <i class="bi bi-search"></i> Hitta din favorit
+            </a>
         </div>
     }
     else
