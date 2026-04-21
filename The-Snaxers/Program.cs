@@ -113,21 +113,25 @@ app.MapRazorPages();
 
 using (var scope = app.Services.CreateScope())
 {
-    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
     var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
+    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
 
-    // 1. Skapa rollen Admin om den inte finns
+    // 1. Skapa rollen om den inte finns
     if (!await roleManager.RoleExistsAsync("Admin"))
     {
         await roleManager.CreateAsync(new IdentityRole("Admin"));
     }
 
-    // 2. Kolla om din email finns, och gör den till Admin
-    var adminEmail = "admin@snaxers.se"; 
-    var adminUser = await userManager.FindByEmailAsync(adminEmail);
+    // 2. Hämta uppgifter från User Secrets
+    var adminEmail = builder.Configuration["AdminSettings:Email"];
+    var adminPassword = builder.Configuration["AdminSettings:Password"];
 
-    if (adminUser != null && !(await userManager.IsInRoleAsync(adminUser, "Admin")))
+    // 3. Skapa admin-användaren om den inte finns
+    var adminUser = await userManager.FindByEmailAsync(adminEmail);
+    if (adminUser == null)
     {
+        adminUser = new IdentityUser { UserName = adminEmail, Email = adminEmail, EmailConfirmed = true };
+        await userManager.CreateAsync(adminUser, adminPassword);
         await userManager.AddToRoleAsync(adminUser, "Admin");
     }
 }
