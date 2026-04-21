@@ -1,0 +1,96 @@
+@using Microsoft.AspNetCore.Identity
+@model IEnumerable<IdentityUser>
+
+@{
+    ViewData["Title"] = "Admin - Hantera Användare";
+}
+
+<div class="container mt-5">
+    <div class="mb-4">
+        <h1 class="display-5 text-chocolate fw-bold">Adminpanel</h1>
+        <p class="text-muted">Här administrerar du användarna 👥</p>
+    </div>
+
+    <ul class="nav nav-tabs mb-4 border-bottom-0">
+        <li class="nav-item">
+            <a class="nav-link text-muted" asp-action="Index">
+                <i class="bi bi-egg-fried"></i> Lagerhantering
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link active shadow-sm border-bottom-0 fw-bold" asp-action="Users" 
+               style="background-color: #fff; color: #4b2c20; border-radius: 10px 10px 0 0;">
+                <i class="bi bi-people"></i> Användarhantering
+            </a>
+        </li>
+    </ul>
+
+    <div class="card shadow border-0" style="border-radius: 0 15px 15px 15px;">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead style="background-color: #ffc0cb; color: #4b2c20;">
+                        <tr>
+                            <th class="ps-4">Användarnamn</th>
+                            <th>E-post</th>
+                            <th class="text-end pe-4">Åtgärder</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var user in Model)
+                        {
+                            <tr>
+                                <td class="ps-4 fw-bold text-chocolate">@user.UserName</td>
+                                <td>@user.Email</td>
+                                <td>
+    @{
+        var roles = ViewBag.UserRoles[user.Id] as IList<string>;
+        if (roles != null && roles.Contains("Admin"))
+        {
+            <span class="badge rounded-pill bg-snaxers-gold shadow-sm text-dark">
+                <i class="bi bi-star-fill"></i> System Admin
+            </span>
+        }
+        else
+        {
+            <span class="badge rounded-pill bg-light text-muted border">
+                Standard Snaxer
+            </span>
+        }
+    }
+</td>
+                               <td class="text-end pe-4">
+    @if (roles != null && roles.Contains("Admin"))
+    {
+        <form asp-action="RemoveAdmin" method="post" class="d-inline">
+            <input type="hidden" name="userId" value="@user.Id" />
+            <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3"
+                    onclick="return confirm('Är du säker på att du vill degradera @user.UserName?')">
+                Ta bort Admin
+            </button>
+        </form>
+    }
+    else
+    {
+        <form asp-action="MakeAdmin" method="post" class="d-inline">
+            <input type="hidden" name="userId" value="@user.Id" />
+            <button type="submit" class="btn btn-sm btn-snaxers-gold rounded-pill px-3 shadow-sm">
+                Gör till Admin
+            </button>
+        </form>
+    }
+</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .text-chocolate { color: #4b2c20; }
+    .nav-tabs .nav-link { border: none; padding: 10px 20px; }
+    .table thead th { border: none; }
+</style>

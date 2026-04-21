@@ -29,3 +29,48 @@ body {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
   text-align: start;
 }
+
+/* Lägg till i din site.css */
+
+.text-chocolate {
+    color: #4b2c20; /* Den där snygga bruna du valde */
+}
+
+.bg-snaxers-pink {
+    background-color: #ffc0cb; /* Eller din specifika rosa nyans */
+}
+
+.btn-snaxers-gold {
+    background-color: #ffd700;
+    color: #4b2c20;
+    border: none;
+    transition: transform 0.2s;
+}
+
+.btn-snaxers-gold:hover {
+    transform: scale(1.05);
+    background-color: #ffc107;
+}
+
+.table {
+    border-collapse: separate;
+    border-spacing: 0 10px; /* Ger lite luft mellan raderna */
+}
+
+.table tbody tr {
+    background-color: #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.btn-snaxers-gold {
+    background-color: #ffd700; /* Guld! */
+    color: #4b2c20;
+    border: none;
+    font-weight: bold;
+}
+
+.btn-snaxers-gold:hover {
+    background-color: #ffcc00;
+    transform: scale(1.05);
+    color: #000;
+}

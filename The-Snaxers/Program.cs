@@ -109,6 +109,7 @@ builder.Services.AddScoped<ICountryService, CountryService>();
 // Identity - SQLite tills VM är uppsatt
 builder.Services.AddDefaultIdentity<IdentityUser>(options =>
     options.SignIn.RequireConfirmedAccount = false)
+    .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>();
 
 var app = builder.Build();
@@ -149,5 +150,26 @@ app.MapControllerRoute(
     .WithStaticAssets();
 
 app.MapRazorPages();
+
+using (var scope = app.Services.CreateScope())
+{
+    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
+
+    // 1. Skapa rollen Admin om den inte finns
+    if (!await roleManager.RoleExistsAsync("Admin"))
+    {
+        await roleManager.CreateAsync(new IdentityRole("Admin"));
+    }
+
+    // 2. Kolla om din email finns, och gör den till Admin
+    var adminEmail = "admin@snaxers.se"; 
+    var adminUser = await userManager.FindByEmailAsync(adminEmail);
+
+    if (adminUser != null && !(await userManager.IsInRoleAsync(adminUser, "Admin")))
+    {
+        await userManager.AddToRoleAsync(adminUser, "Admin");
+    }
+}
 
 app.Run();
