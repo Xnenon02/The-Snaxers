@@ -74,3 +74,47 @@ body {
     transform: scale(1.05);
     color: #000;
 }
+
+/* Snaxers Branding */
+:root {
+    --snaxers-gold: #D4AF37;
+    --snaxers-dark: #3d2b1f; /* Chokladbrun! */
+}
+
+.bg-snaxers-gold, .btn-snaxers-gold {
+    background-color: var(--snaxers-gold) !important;
+    color: white !important;
+    border: none;
+}
+
+.btn-snaxers-gold:hover {
+    background-color: #B8860B !important;
+    transform: scale(1.02);
+}
+
+.text-snaxers-dark {
+    color: var(--snaxers-dark);
+}
+
+/* Kort-styling */
+.snaxers-card {
+    border-radius: 15px;
+    transition: all 0.3s ease;
+}
+
+.snaxers-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 12px 24px rgba(0,0,0,0.15) !important;
+}
+
+/* Den lilla X-knappen ska kännas lyxig */
+.btn-close {
+    width: 0.5em;
+    height: 0.5em;
+    opacity: 0.8;
+}
+
+.btn-close:hover {
+    opacity: 1;
+    background-color: #ff000020;
+}
