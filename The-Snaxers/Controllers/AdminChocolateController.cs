@@ -2,17 +2,30 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using TheSnaxers.Services;
 using TheSnaxers.Models;
+using Microsoft.AspNetCore.Identity;
 
 namespace TheSnaxers.Controllers;
 
-// Rollskydd hanteras av Martina (US6) — endast Admin-rollen har åtkomst
-[Authorize]
+[Authorize(Roles = "Admin")]
 public class AdminChocolateController : Controller
 {
     private readonly IProductService _productService;
     private readonly IBlobService _blobService;
+    private readonly UserManager<IdentityUser> _userManager;
     private readonly ILogger<AdminChocolateController> _logger;
 
+    public AdminChocolateController(
+        IProductService productService, 
+        IBlobService blobService, 
+        UserManager<IdentityUser> userManager,
+        ILogger<AdminChocolateController> logger)
+    {
+        _productService = productService;
+        _blobService = blobService;
+        _userManager = userManager;
+        _logger = logger;
+    }
+    
     // AC3 — Tillåtna filformat kontrolleras både via filändelse och magic bytes
     private static readonly string[] AllowedExtensions = { ".jpg", ".jpeg", ".png", ".webp" };
 
@@ -28,18 +41,27 @@ public class AdminChocolateController : Controller
     // AC3 — Max filstorlek 2 MB enligt acceptanskriteriet
     private const long MaxFileSizeBytes = 2 * 1024 * 1024;
 
-    public AdminChocolateController(IProductService productService, IBlobService blobService, ILogger<AdminChocolateController> logger)
-    {
-        _productService = productService;
-        _blobService = blobService;
-        _logger = logger;
-    }
 
     public async Task<IActionResult> Index()
     {
         var products = await _productService.GetAllProductsAsync();
         return View(products);
     }
+
+    public async Task<IActionResult> Users()
+{
+    var users = _userManager.Users.ToList();
+    var userRoles = new Dictionary<string, IList<string>>();
+
+    foreach (var user in users)
+    {
+        var roles = await _userManager.GetRolesAsync(user);
+        userRoles[user.Id] = roles;
+    }
+
+    ViewBag.UserRoles = userRoles;
+    return View(users);
+}
 
     public IActionResult Create()
     {
@@ -185,4 +207,48 @@ public class AdminChocolateController : Controller
 
         return null;
     }
+
+    [HttpPost]
+[ValidateAntiForgeryToken]
+public async Task<IActionResult> MakeAdmin(string userId)
+{
+    var user = await _userManager.FindByIdAsync(userId);
+    
+    if (user != null)
+    {
+        // AC: Kontrollera om rollen finns, annars skapa den (bra att ha!)
+        // await _roleManager.CreateAsync(new IdentityRole("Admin")); 
+        
+        var result = await _userManager.AddToRoleAsync(user, "Admin");
+        
+        if (result.Succeeded)
+        {
+            _logger.LogInformation("Användare {Email} har blivit befordrad till Admin.", user.Email);
+        }
+    }
+
+    return RedirectToAction(nameof(Users));
+}
+
+[HttpPost]
+[ValidateAntiForgeryToken]
+public async Task<IActionResult> RemoveAdmin(string userId)
+{
+    var user = await _userManager.FindByIdAsync(userId);
+    
+    // Säkerhetsspärr: Man ska inte kunna ta bort sig själv! 
+    if (user.Email == User.Identity.Name) 
+    {
+        TempData["Error"] = "Du kan inte ta bort dina egna admin-rättigheter!";
+        return RedirectToAction(nameof(Users));
+    }
+
+    if (user != null)
+    {
+        await _userManager.RemoveFromRoleAsync(user, "Admin");
+        _logger.LogWarning("Admin-rättigheter borttagna för {Email}.", user.Email);
+    }
+
+    return RedirectToAction(nameof(Users));
+}
 }
