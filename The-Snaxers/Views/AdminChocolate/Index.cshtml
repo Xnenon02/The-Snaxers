@@ -46,7 +46,7 @@
                     <tbody>
                         @foreach (var item in Model)
                         {
-                            var fakeStock = (item.Id % 3 == 0) ? 0 : (item.Name.Length * 2);
+                            var fakeStock = (item.Id.GetHashCode() % 3 == 0) ? 0 : (item.Name.Length * 2);
 
                             <tr>
                                 <td class="ps-4">

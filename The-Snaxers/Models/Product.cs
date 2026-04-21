@@ -4,7 +4,7 @@ namespace TheSnaxers.Models;
 
 public class Product
 {
-    public int Id { get; set; }
+    public string Id { get; set; } = Guid.NewGuid().ToString();
 
     [Required(ErrorMessage = "Namn är obligatoriskt.")]
     [Display(Name = "Namn")]
@@ -32,6 +32,7 @@ public class Product
     [Required(ErrorMessage = "Du måste ange en kategori.")]
     [Display(Name = "Kategori")]
     public string Category { get; set; } = string.Empty;
+
     private string? _imageUrl;
     public string? ImageUrl 
     { 

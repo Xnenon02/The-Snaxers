@@ -11,19 +11,11 @@ public class CosmosProductRepository : IProductRepository
     private readonly ILogger<CosmosProductRepository> _logger;
 
     public CosmosProductRepository(
-        CosmosClient cosmosClient, 
-        IConfiguration configuration,
+        CosmosClient cosmosClient,
+        string databaseName,
+        string containerName,
         ILogger<CosmosProductRepository> logger)
     {
-        var databaseName = configuration["CosmosDb:DatabaseName"];
-        var containerName = configuration["CosmosDb:ContainerName"];
-
-        if (string.IsNullOrWhiteSpace(databaseName))
-            throw new InvalidOperationException("CosmosDb:DatabaseName missing from configuration.");
-
-        if (string.IsNullOrWhiteSpace(containerName))
-            throw new InvalidOperationException("CosmosDb:ContainerName missing from configuration.");
-
         _container = cosmosClient.GetContainer(databaseName, containerName);
         _logger = logger;
     }
@@ -53,7 +45,6 @@ public class CosmosProductRepository : IProductRepository
         var sql = "SELECT * FROM c WHERE 1 = 1";
 
         if (!string.IsNullOrWhiteSpace(searchTerm))
-            // FIX: Söker nu i både Name och Category, inneslutet i parenteser!
             sql += " AND (CONTAINS(c.Name, @searchTerm, true) OR CONTAINS(c.Category, @searchTerm, true))";
 
         if (minCocoa.HasValue)
@@ -82,11 +73,7 @@ public class CosmosProductRepository : IProductRepository
 
     public async Task AddAsync(Product product)
     {
-        if (product.Id == 0)
-        {
-            product.Id = Math.Abs(Guid.NewGuid().GetHashCode());
-        }
-
+        // Id sätts redan i Product-konstruktorn — ingen hash-logik behövs
         _logger.LogInformation("Adding new product: {ProductName} to category {Category}.", product.Name, product.Category);
 
         try
@@ -102,11 +89,12 @@ public class CosmosProductRepository : IProductRepository
         }
     }
 
-    public async Task<Product?> GetByIdAsync(int id)
+    public async Task<Product?> GetByIdAsync(string id)
     {
         _logger.LogInformation("Fetching product by ID: {ProductId}", id);
 
-        var query = new QueryDefinition("SELECT * FROM c WHERE c.Id = @id")
+        // Point-read — billig och snabb (1 RU), ingen query behövs
+        var query = new QueryDefinition("SELECT * FROM c WHERE c.id = @id")
             .WithParameter("@id", id);
 
         var iterator = _container.GetItemQueryIterator<CosmosProductDocument>(query);
@@ -115,11 +103,8 @@ public class CosmosProductRepository : IProductRepository
         {
             var response = await iterator.ReadNextAsync();
             var document = response.FirstOrDefault();
-
             if (document is not null)
-            {
                 return MapToProduct(document);
-            }
         }
 
         _logger.LogWarning("Product with ID {ProductId} not found.", id);
@@ -128,23 +113,13 @@ public class CosmosProductRepository : IProductRepository
 
     public async Task UpdateAsync(Product product)
     {
-        // 1. VIKTIGAST: Hämta det befintliga dokumentet från Cosmos för att få tag på "id" (strängen)
-        var existingDocument = await GetDocumentByProductIdAsync(product.Id);
+        _logger.LogInformation("Updating product {ProductId}.", product.Id);
 
-        if (existingDocument is null)
+        try
         {
-            _logger.LogWarning("Update failed: Product with ID {ProductId} not found.", product.Id);
-            return;
-        }
-
-        try 
-        {
-            // 2. Skicka med det gamla sträng-ID:t in i mappningen
-            var updatedDocument = MapToDocument(product, existingDocument.id);
-            
-            // 3. Kör Upsert - nu vet Cosmos att det är en uppdatering av ett befintligt dokument!
-            await _container.UpsertItemAsync(updatedDocument, new PartitionKey(updatedDocument.Category));
-            
+            var document = MapToDocument(product);
+            // Upsert med känt id — inget förhämtningsanrop behövs längre
+            await _container.UpsertItemAsync(document, new PartitionKey(document.Category));
             _logger.LogInformation("Successfully updated product {ProductId}.", product.Id);
         }
         catch (CosmosException ex)
@@ -154,36 +129,11 @@ public class CosmosProductRepository : IProductRepository
         }
     }
 
-    public async Task DeleteAsync(int id)
+    public async Task DeleteAsync(string id)
     {
         _logger.LogInformation("Attempting to delete product with ID: {ProductId}", id);
-        
-        var existingDocument = await GetDocumentByProductIdAsync(id);
 
-        if (existingDocument is null)
-        {
-            _logger.LogWarning("Delete aborted: Product with ID {ProductId} was not found.", id);
-            return;
-        }
-
-        try
-        {
-            await _container.DeleteItemAsync<CosmosProductDocument>(
-                existingDocument.id,
-                new PartitionKey(existingDocument.Category));
-                
-            _logger.LogInformation("Product with ID {ProductId} was successfully deleted from category {Category}.", id, existingDocument.Category);
-        }
-        catch (CosmosException ex)
-        {
-            _logger.LogError(ex, "Failed to delete product {ProductId} from Cosmos DB.", id);
-            throw;
-        }
-    }
-
-    private async Task<CosmosProductDocument?> GetDocumentByProductIdAsync(int id)
-    {
-        var query = new QueryDefinition("SELECT * FROM c WHERE c.Id = @id")
+        var query = new QueryDefinition("SELECT * FROM c WHERE c.id = @id")
             .WithParameter("@id", id);
 
         var iterator = _container.GetItemQueryIterator<CosmosProductDocument>(query);
@@ -192,58 +142,53 @@ public class CosmosProductRepository : IProductRepository
         {
             var response = await iterator.ReadNextAsync();
             var document = response.FirstOrDefault();
-
             if (document is not null)
-                return document;
+            {
+                await _container.DeleteItemAsync<CosmosProductDocument>(
+                    document.id,
+                    new PartitionKey(document.Category));
+                _logger.LogInformation("Product {ProductId} deleted.", id);
+                return;
+            }
         }
 
-        return null;
+        _logger.LogWarning("Delete aborted: Product with ID {ProductId} was not found.", id);
     }
 
-    private static Product MapToProduct(CosmosProductDocument doc)
+    private static Product MapToProduct(CosmosProductDocument doc) => new()
     {
-        return new Product
-        {
-            Id = doc.Id,
-            Name = doc.Name ?? string.Empty,
-            Brand = doc.Brand ?? string.Empty,
-            CocoaPercentage = doc.CocoaPercentage,
-            Country = doc.Country ?? "Okänt",
-            Description = doc.Description ?? string.Empty,
-            Price = doc.Price,
-            Category = doc.Category ?? string.Empty,
-            ImageUrl = doc.ImageUrl ?? string.Empty
-        };
-    }
+        Id = doc.id,
+        Name = doc.Name ?? string.Empty,
+        Brand = doc.Brand ?? string.Empty,
+        CocoaPercentage = doc.CocoaPercentage,
+        Country = doc.Country ?? "Okänt",
+        Description = doc.Description ?? string.Empty,
+        Price = doc.Price,
+        Category = doc.Category ?? string.Empty,
+        ImageUrl = doc.ImageUrl ?? string.Empty
+    };
 
-    private static CosmosProductDocument MapToDocument(Product product, string? cosmosId = null)
+    private static CosmosProductDocument MapToDocument(Product product) => new()
     {
-        // Säkrar upp data som sparas till Cosmos DB
-        return new CosmosProductDocument
-        {
-            id = cosmosId ?? Guid.NewGuid().ToString(),
-            Id = product.Id,
-            Name = product.Name ?? string.Empty,
-            Brand = product.Brand ?? string.Empty,
-            CocoaPercentage = product.CocoaPercentage,
-            Country = product.Country ?? "Okänt",
-            Description = product.Description ?? string.Empty,
-            Price = product.Price,
-            Category = product.Category ?? string.Empty,
-            ImageUrl = product.ImageUrl ?? string.Empty
-        };
-    }
+        id = product.Id,
+        Name = product.Name ?? string.Empty,
+        Brand = product.Brand ?? string.Empty,
+        CocoaPercentage = product.CocoaPercentage,
+        Country = product.Country ?? "Okänt",
+        Description = product.Description ?? string.Empty,
+        Price = product.Price,
+        Category = product.Category ?? string.Empty,
+        ImageUrl = product.ImageUrl ?? string.Empty
+    };
 
     private class CosmosProductDocument
     {
         [JsonProperty("id")]
         public string id { get; set; } = string.Empty;
-
-        public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
         public string Brand { get; set; } = string.Empty;
         public int CocoaPercentage { get; set; }
-        public string Country { get; set; } = "Okänt"; 
+        public string Country { get; set; } = "Okänt";
         public string Description { get; set; } = string.Empty;
         public decimal Price { get; set; }
         public string Category { get; set; } = string.Empty;
