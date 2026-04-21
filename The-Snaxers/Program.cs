@@ -6,6 +6,7 @@ using TheSnaxers.Services;
 using TheSnaxers.Repositories;
 using Microsoft.Azure.Cosmos;
 using TheSnaxers.Models;
+using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -49,19 +50,6 @@ builder.Services.AddLogging();
 // SQLITE — AC1: Development använder lokal SQLite och User Secrets
 // Staging/Prod: Identity-databas hanteras separat (se tech debt)
 // ===================================================
-if (builder.Environment.IsDevelopment())
-{
-    builder.Services.AddDbContext<ApplicationDbContext>(options =>
-        options.UseSqlite("Data Source=snaxers.db"));
-}
-else
-{
-    // TODO: Konfigurera Identity-databas för Staging/Prod i separat ticket
-    builder.Services.AddDbContext<ApplicationDbContext>(options =>
-        options.UseSqlite("Data Source=snaxers.db"));
-}
-
-// SQLite - används endast för Identity
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlite("Data Source=snaxers.db"));
 
@@ -70,8 +58,6 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 // ===================================================
 builder.Services.AddOpenApi();
 
-// Cosmos DB client
-// Använder AccountKey om den finns (lokal Docker/dev), annars Managed Identity (produktion)
 // ===================================================
 // COSMOS DB — AC1/AC2/AC3: Olika databaser per miljö
 // Dev: TheSnaxersDb, Staging: TheSnaxersDb-staging, Prod: TheSnaxersDb
@@ -144,7 +130,6 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
-app.MapStaticAssets();
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -152,6 +137,7 @@ app.UseAuthorization();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    app.MapScalarApiReference();
 }
 
 app.MapStaticAssets();
