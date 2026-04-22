@@ -1,4 +1,4 @@
-# TODO: Lägg till Azure Key Vault och App Insights miljövariabler i environment-sektionen
+# TODO: Lägg till App Insights miljövariabler i environment-sektionen
 services:
   web:
     build:
@@ -8,6 +8,14 @@ services:
       - "8080:8080"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
+      - CosmosDb__AccountEndpoint=${COSMOS_ENDPOINT}
+      - CosmosDb__DatabaseName=${COSMOS_DATABASE}
+      - CosmosDb__ContainerName=${COSMOS_CONTAINER}
+      - CosmosDb__TenantId=${COSMOS_TENANT_ID}
+      - CosmosDb__AccountKey=${COSMOS_KEY}
+      - CosmosDb__FavoritesContainerName=Favorites
+      - ConnectionStrings__AzureBlobStorage=${BLOB_CONNECTION_STRING}
+      - AzureStorage__ProductContainerName=products
     # Volume disabled: mounting /app overwrites the published app binaries.
     # SQLite (Identity) is recreated automatically by EnsureCreated() on startup.
     # Re-enable and adjust path if local persistence is needed in the future.
