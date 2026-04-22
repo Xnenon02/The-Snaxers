@@ -58,10 +58,6 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 // ===================================================
 builder.Services.AddOpenApi();
 
-// SQLite - används endast för Identity
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlite("Data Source=snaxers.db"));
-
 // Cosmos DB client
 builder.Services.AddSingleton(sp =>
 {
@@ -151,9 +147,6 @@ using (var scope = app.Services.CreateScope())
         await roleManager.CreateAsync(new IdentityRole("Admin"));
     }
 
-    // 2. Kolla om din email finns, och gör den till Admin
-    var adminEmail = "admin@snaxers.se";
-    var adminUser = await userManager.FindByEmailAsync(adminEmail);
     // 2. Hämta uppgifter från Configuration
     var adminEmail = builder.Configuration["AdminSettings:Email"];
     var adminPassword = builder.Configuration["AdminSettings:Password"];
