@@ -1,30 +1,30 @@
 using Microsoft.AspNetCore.Mvc;
 using TheSnaxers.DTOs;
 using TheSnaxers.Services;
+using TheSnaxers.Filters;
 
 namespace TheSnaxers.Controllers;
 
 // ===================================================
 // REST API för produkter — körs parallellt med MVC
-// Swagger-dokumentation: /swagger
-// Skyddas av API-nyckel via X-Api-Key header
+// OpenAPI-dokumentation: /openapi/v1.json
+// Scalar UI: /scalar/v1
+// Skyddas av API-nyckel via X-Api-Key header (ApiKeyFilter)
 // ===================================================
 [ApiController]
 [Route("api/products")]
+[ServiceFilter(typeof(ApiKeyFilter))]
 public class ProductsApiController : ControllerBase
 {
     private readonly IProductService _productService;
     private readonly ILogger<ProductsApiController> _logger;
-    private readonly IConfiguration _configuration;
 
     public ProductsApiController(
         IProductService productService,
-        ILogger<ProductsApiController> logger,
-        IConfiguration configuration)
+        ILogger<ProductsApiController> logger)
     {
         _productService = productService;
         _logger = logger;
-        _configuration = configuration;
     }
 
     // GET /api/products
@@ -32,14 +32,8 @@ public class ProductsApiController : ControllerBase
     [HttpGet]
     [ProducesResponseType(typeof(IEnumerable<ProductDto>), 200)]
     [ProducesResponseType(401)]
-    public async Task<IActionResult> GetAll([FromHeader(Name = "X-Api-Key")] string? apiKey)
+    public async Task<IActionResult> GetAll()
     {
-        if (!IsValidApiKey(apiKey))
-        {
-            _logger.LogWarning("Unauthorized API access attempt to GET /api/products");
-            return Unauthorized(new { message = "Invalid or missing API key" });
-        }
-
         _logger.LogInformation("API: Fetching all products");
         var products = await _productService.GetAllProductsAsync();
 
@@ -65,16 +59,8 @@ public class ProductsApiController : ControllerBase
     [ProducesResponseType(typeof(ProductDto), 200)]
     [ProducesResponseType(401)]
     [ProducesResponseType(404)]
-    public async Task<IActionResult> GetById(
-        [FromHeader(Name = "X-Api-Key")] string? apiKey,
-        int id)
+    public async Task<IActionResult> GetById(int id)
     {
-        if (!IsValidApiKey(apiKey))
-        {
-            _logger.LogWarning("Unauthorized API access attempt to GET /api/products/{Id}", id);
-            return Unauthorized(new { message = "Invalid or missing API key" });
-        }
-
         _logger.LogInformation("API: Fetching product {ProductId}", id);
         var product = await _productService.GetProductByIdAsync(id);
 
@@ -106,16 +92,9 @@ public class ProductsApiController : ControllerBase
     [ProducesResponseType(typeof(IEnumerable<ProductDto>), 200)]
     [ProducesResponseType(401)]
     public async Task<IActionResult> Search(
-        [FromHeader(Name = "X-Api-Key")] string? apiKey,
         [FromQuery] string? searchTerm,
         [FromQuery] int? minCocoa)
     {
-        if (!IsValidApiKey(apiKey))
-        {
-            _logger.LogWarning("Unauthorized API access attempt to GET /api/products/search");
-            return Unauthorized(new { message = "Invalid or missing API key" });
-        }
-
         _logger.LogInformation("API: Searching products with term '{SearchTerm}' and minCocoa {MinCocoa}", searchTerm, minCocoa);
         var products = await _productService.SearchProductsAsync(searchTerm ?? "", minCocoa);
 
@@ -133,11 +112,5 @@ public class ProductsApiController : ControllerBase
         });
 
         return Ok(dtos);
-    }
-
-    private bool IsValidApiKey(string? apiKey)
-    {
-        var validKey = _configuration["ApiKey"];
-        return !string.IsNullOrWhiteSpace(apiKey) && apiKey == validKey;
     }
 }

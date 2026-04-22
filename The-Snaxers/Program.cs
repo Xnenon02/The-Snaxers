@@ -7,6 +7,7 @@ using TheSnaxers.Repositories;
 using Microsoft.Azure.Cosmos;
 using TheSnaxers.Models;
 using Scalar.AspNetCore;
+using TheSnaxers.Filters;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -45,6 +46,9 @@ if (!string.IsNullOrEmpty(appInsightsConnectionString) && appInsightsConnectionS
 builder.Services.AddControllersWithViews();
 builder.Services.AddHealthChecks();
 builder.Services.AddLogging();
+
+// Registrera ApiKeyFilter för DI — används av ProductsApiController
+builder.Services.AddScoped<ApiKeyFilter>();
 
 // ===================================================
 // SQLITE — AC1: Development använder lokal SQLite och User Secrets
@@ -163,7 +167,7 @@ using (var scope = app.Services.CreateScope())
     }
 
     // 2. Kolla om din email finns, och gör den till Admin
-    var adminEmail = "admin@snaxers.se"; 
+    var adminEmail = "admin@snaxers.se";
     var adminUser = await userManager.FindByEmailAsync(adminEmail);
 
     if (adminUser != null && !(await userManager.IsInRoleAsync(adminUser, "Admin")))
