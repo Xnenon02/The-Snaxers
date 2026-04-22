@@ -22,23 +22,32 @@ public class ProductService : IProductService
         return await _repo.SearchAsync(searchTerm, minCocoa);
     }
     
-    public async Task<Product?> GetProductByIdAsync(int id)
-{
-    return await _repo.GetByIdAsync(id);
-}
+    public async Task<Product?> GetProductByIdAsync(string id)
+    {
+        // Försök konvertera strängen till int för att prata med nuvarande Repository
+        if (int.TryParse(id, out int intId))
+        {
+            return await _repo.GetByIdAsync(intId);
+        }
+        return null;
+    }
 
-public async Task UpdateProductAsync(Product product)
-{
-    await _repo.UpdateAsync(product);
-}
+    public async Task UpdateProductAsync(Product product)
+    {
+        await _repo.UpdateAsync(product);
+    }
 
     public async Task AddProductAsync(Product product)
     {
         await _repo.AddAsync(product);
     }
 
-    public async Task DeleteProductAsync(int id)
-{
-    await _repo.DeleteAsync(id);
-}
+    public async Task DeleteProductAsync(string id)
+    {
+        // Försök konvertera strängen till int för att prata med nuvarande Repository
+        if (int.TryParse(id, out int intId))
+        {
+            await _repo.DeleteAsync(intId);
+        }
+    }
 }
