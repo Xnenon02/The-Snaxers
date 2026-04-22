@@ -47,8 +47,7 @@ builder.Services.AddLogging();
 builder.Services.AddSingleton<ApiKeyFilter>();
 
 // ===================================================
-// SQLITE — AC1: Development använder lokal SQLite och User Secrets
-// Staging/Prod: Identity-databas hanteras separat (se tech debt)
+// SQLITE — Identity-databas
 // ===================================================
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlite("Data Source=snaxers.db"));
@@ -75,16 +74,34 @@ builder.Services.AddSingleton(sp =>
     return new CosmosClient(endpoint, credential);
 });
 
-// Favoriter - Cosmos DB
-builder.Services.AddScoped<TheSnaxers.Repositories.IFavoriteRepository, TheSnaxers.Repositories.CosmosFavoriteRepository>();
-builder.Services.AddScoped<TheSnaxers.Services.IFavoriteService, TheSnaxers.Services.FavoriteService>();
+// ===================================================
+// REPOSITORIES — DI Cleanup (punkt 5)
+// Containernamn skickas in direkt, IConfiguration behövs inte i repositories
+// ===================================================
+var dbName = builder.Configuration["CosmosDb:DatabaseName"]
+    ?? throw new InvalidOperationException("CosmosDb:DatabaseName saknas.");
+var productsContainer = builder.Configuration["CosmosDb:ContainerName"]
+    ?? throw new InvalidOperationException("CosmosDb:ContainerName saknas.");
+var favoritesContainer = builder.Configuration["CosmosDb:FavoritesContainerName"] ?? "Favorites";
 
-// Produkter - Cosmos DB
-builder.Services.AddScoped<IProductRepository, CosmosProductRepository>();
+builder.Services.AddScoped<IProductRepository>(sp =>
+    new CosmosProductRepository(
+        sp.GetRequiredService<CosmosClient>(),
+        dbName,
+        productsContainer,
+        sp.GetRequiredService<ILogger<CosmosProductRepository>>()
+    ));
 
-// Produkter - gammal lokal SQLite-version sparad men kommenterad
-// builder.Services.AddScoped<IProductRepository, ProductRepository>();
+builder.Services.AddScoped<IFavoriteRepository>(sp =>
+    new CosmosFavoriteRepository(
+        sp.GetRequiredService<CosmosClient>(),
+        dbName,
+        favoritesContainer,
+        productsContainer,
+        sp.GetRequiredService<ILogger<CosmosFavoriteRepository>>()
+    ));
 
+builder.Services.AddScoped<IFavoriteService, FavoriteService>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IBlobService, BlobService>();
 builder.Services.AddHttpClient();
@@ -141,13 +158,11 @@ using (var scope = app.Services.CreateScope())
     var userManager = services.GetRequiredService<UserManager<IdentityUser>>();
     var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
 
-    // 1. Skapa rollen Admin om den inte finns
     if (!await roleManager.RoleExistsAsync("Admin"))
     {
         await roleManager.CreateAsync(new IdentityRole("Admin"));
     }
 
-    // 2. Hämta uppgifter från Configuration
     var adminEmail = builder.Configuration["AdminSettings:Email"];
     var adminPassword = builder.Configuration["AdminSettings:Password"];
 

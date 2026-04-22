@@ -56,7 +56,7 @@ public class ChocolateController : Controller
         var userId = _userManager.GetUserId(User);
         ViewBag.FavoriteIds = userId != null 
             ? (await _favoriteService.GetUserFavoritesAsync(userId)).Select(f => f.ProductId).ToList() 
-            : new List<int>();
+            : new List<string>();
 
         ViewBag.SearchTerm = searchTerm;
         ViewBag.MinCocoa = minCocoa;

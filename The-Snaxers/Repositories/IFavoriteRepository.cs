@@ -5,7 +5,7 @@ namespace TheSnaxers.Repositories;
 public interface IFavoriteRepository
 {
     Task<List<Favorite>> GetFavoritesByUserIdAsync(string userId);
-    Task<bool> ExistsAsync(string userId, int productId);
+    Task<bool> ExistsAsync(string userId, string productId);
     Task AddAsync(Favorite favorite);
-    Task RemoveAsync(string userId, int productId);
+    Task RemoveAsync(string userId, string productId);
 }

@@ -17,7 +17,7 @@ public class FavoriteService : IFavoriteService
         return await _favoriteRepository.GetFavoritesByUserIdAsync(userId);
     }
 
-    public async Task AddToFavoritesAsync(string userId, int productId)
+    public async Task AddToFavoritesAsync(string userId, string productId)
     {
         var exists = await _favoriteRepository.ExistsAsync(userId, productId);
         if (!exists)
@@ -31,7 +31,7 @@ public class FavoriteService : IFavoriteService
         }
     }
 
-    public async Task RemoveFromFavoritesAsync(string userId, int productId)
+    public async Task RemoveFromFavoritesAsync(string userId, string productId)
     {
         await _favoriteRepository.RemoveAsync(userId, productId);
     }
