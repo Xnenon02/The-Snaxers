@@ -8,5 +8,12 @@ services:
       - "8080:8080"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-    # Removed volume mount: SQLite replaced by CosmosDB, no local persistence needed
+    # Volume disabled: mounting /app overwrites the published app binaries.
+    # SQLite (Identity) is recreated automatically by EnsureCreated() on startup.
+    # Re-enable and adjust path if local persistence is needed in the future.
+    # volumes:
+    #   - snaxers_data:/app
     restart: unless-stopped
+
+# volumes:
+#   snaxers_data:
