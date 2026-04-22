@@ -98,7 +98,8 @@ public class AdminChocolateController : Controller
 
     public async Task<IActionResult> Edit(string id)
     {
-        var product = await _productService.GetProductByIdAsync(id);
+        // FIX: Konvertera int id till string
+        var product = await _productService.GetProductByIdAsync(id.ToString());
         if (product == null) return NotFound();
         return View(product);
     }
@@ -124,6 +125,7 @@ public class AdminChocolateController : Controller
                 return View(product);
             }
 
+            // AC5 — Radera gamla bilden från Blob Storage innan ny laddas upp
             if (!string.IsNullOrWhiteSpace(product.ImageUrl))
             {
                 await _blobService.DeleteImageAsync(product.ImageUrl);
@@ -140,6 +142,7 @@ public class AdminChocolateController : Controller
 
         if (ModelState.IsValid)
         {
+            // FIX: Vi utgår från att interfacet nu tar Product (vilket det gör)
             await _productService.UpdateProductAsync(product);
             _logger.LogInformation("Successfully updated product ID: {ProductId}", id);
             return RedirectToAction(nameof(Index));
@@ -155,13 +158,21 @@ public class AdminChocolateController : Controller
     {
         var product = await _productService.GetProductByIdAsync(id);
 
-        if (product != null && !string.IsNullOrWhiteSpace(product.ImageUrl))
+        if (product == null)
+        {
+            _logger.LogWarning("Delete: Product {ProductId} not found.", id);
+            return RedirectToAction(nameof(Index));
+        }
+
+        // AC4 — Radera bilden från Blob Storage när produkten raderas
+        if (!string.IsNullOrWhiteSpace(product.ImageUrl))
         {
             await _blobService.DeleteImageAsync(product.ImageUrl);
             _logger.LogInformation("Image deleted from Blob Storage for product {ProductId}: {ImageUrl}", id, product.ImageUrl);
         }
 
-        await _productService.DeleteProductAsync(id);
+        // Skickar med Category som partition key — eliminerar dubbelanropet i repository (tech debt #2)
+        await _productService.DeleteProductAsync(id, product.Category);
         _logger.LogInformation("Product deleted: {ProductId}", id);
         return RedirectToAction(nameof(Index));
     }
@@ -191,7 +202,8 @@ public class AdminChocolateController : Controller
     {
         var user = await _userManager.FindByIdAsync(userId);
 
-        if (user == null) return NotFound();
+        if (user == null)
+            return NotFound();
 
         if (user.Email == User.Identity?.Name)
         {
@@ -205,6 +217,7 @@ public class AdminChocolateController : Controller
         return RedirectToAction(nameof(Users));
     }
 
+    // AC3 — Validering av filtyp och storlek
     private static string? ValidateImageFile(IFormFile file)
     {
         if (file.Length > MaxFileSizeBytes)

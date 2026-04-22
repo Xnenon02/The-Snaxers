@@ -129,30 +129,25 @@ public class CosmosProductRepository : IProductRepository
         }
     }
 
-    public async Task DeleteAsync(string id)
+    public async Task DeleteAsync(string id, string category)
     {
         _logger.LogInformation("Attempting to delete product with ID: {ProductId}", id);
 
-        var query = new QueryDefinition("SELECT * FROM c WHERE c.id = @id")
-            .WithParameter("@id", id);
-
-        var iterator = _container.GetItemQueryIterator<CosmosProductDocument>(query);
-
-        while (iterator.HasMoreResults)
+        try
         {
-            var response = await iterator.ReadNextAsync();
-            var document = response.FirstOrDefault();
-            if (document is not null)
-            {
-                await _container.DeleteItemAsync<CosmosProductDocument>(
-                    document.id,
-                    new PartitionKey(document.Category));
-                _logger.LogInformation("Product {ProductId} deleted.", id);
-                return;
-            }
+            // Direkt point-delete med känt id och partition key — inget förhämtningsanrop behövs (fix tech debt #2)
+            await _container.DeleteItemAsync<CosmosProductDocument>(id, new PartitionKey(category));
+            _logger.LogInformation("Product {ProductId} deleted.", id);
         }
-
-        _logger.LogWarning("Delete aborted: Product with ID {ProductId} was not found.", id);
+        catch (CosmosException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            _logger.LogWarning("Delete aborted: Product with ID {ProductId} was not found.", id);
+        }
+        catch (CosmosException ex)
+        {
+            _logger.LogError(ex, "Error deleting product {ProductId}.", id);
+            throw;
+        }
     }
 
     private static Product MapToProduct(CosmosProductDocument doc) => new()

@@ -9,5 +9,5 @@ public interface IProductRepository
     Task<Product?> GetByIdAsync(string id);
     Task AddAsync(Product product);
     Task UpdateAsync(Product product);
-    Task DeleteAsync(string id);
+    Task DeleteAsync(string id, string category);
 }
