@@ -9,7 +9,7 @@
     @if (!Model.Any())
     {
         <div class="text-center py-5 shadow-sm rounded bg-light border">
-            <img src="/images/empty-cart-choco.png" 
+            <img src="/images/empty-cart-choco.jpg" 
                  alt="Tom chokladask" 
                  class="img-fluid mb-4" 
                  style="max-height: 250px; opacity: 0.8;">
@@ -37,7 +37,11 @@
                             <form asp-controller="Favorite" asp-action="Remove" method="post" class="position-absolute top-0 end-0 m-2">
                                 <input type="hidden" name="productId" value="@item.ProductId" />
                                 <input type="hidden" name="returnUrl" value="Favorite" />
-                                <button type="submit" class="btn-close bg-white shadow-sm p-2 rounded-circle" aria-label="Close"></button>
+                                <button type="submit" 
+        class="btn-close bg-white shadow-sm p-2 rounded-circle" 
+        title="Ta bort från favoriter" 
+        aria-label="Ta bort @item.Product?.Name från favoriter">
+</button>
                             </form>
                         </div>
 
@@ -48,10 +52,10 @@
                                 <p class="h5 text-snaxers-dark mb-3">@item.Product?.Price.ToString("C")</p>
                                 
                                 <div class="d-grid gap-2">
-                                    @* Framtida US: Lägg i varukorg *@
+                                    @* Framtida US: Lägg i varukorg 
                                     <button class="btn btn-snaxers-gold">
                                         <i class="bi bi-cart-plus"></i> Lägg i varukorg
-                                    </button>
+                                    </button>*@
                                 </div>
                             </div>
                         </div>

@@ -6,6 +6,8 @@ using TheSnaxers.Services;
 using TheSnaxers.Repositories;
 using Microsoft.Azure.Cosmos;
 using TheSnaxers.Models;
+using Scalar.AspNetCore;
+using TheSnaxers.Filters;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -29,6 +31,7 @@ if (builder.Environment.IsProduction())
 var appInsightsConnectionString = builder.Configuration["ApplicationInsights:ConnectionString"];
 if (!string.IsNullOrEmpty(appInsightsConnectionString) && appInsightsConnectionString != "placeholder")
 {
+    // TODO: Lägg till riktig ConnectionString i Azure Key Vault när Tom satt upp miljön
     builder.Services.AddApplicationInsightsTelemetry(options =>
     {
         options.ConnectionString = appInsightsConnectionString;
@@ -40,10 +43,20 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddHealthChecks();
 builder.Services.AddLogging();
 
+// Registrera ApiKeyFilter som Singleton — bättre prestanda då det är stateless
+builder.Services.AddSingleton<ApiKeyFilter>();
 
-// SQLite - används endast för Identity
+// ===================================================
+// SQLITE — AC1: Development använder lokal SQLite och User Secrets
+// Staging/Prod: Identity-databas hanteras separat (se tech debt)
+// ===================================================
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlite("Data Source=snaxers.db"));
+
+// ===================================================
+// SWAGGER / OPENAPI — .NET 10 inbyggd OpenAPI
+// ===================================================
+builder.Services.AddOpenApi();
 
 // Cosmos DB client
 builder.Services.AddSingleton(sp =>
@@ -68,12 +81,16 @@ builder.Services.AddScoped<TheSnaxers.Services.IFavoriteService, TheSnaxers.Serv
 
 // Produkter - Cosmos DB
 builder.Services.AddScoped<IProductRepository, CosmosProductRepository>();
+
+// Produkter - gammal lokal SQLite-version sparad men kommenterad
+// builder.Services.AddScoped<IProductRepository, ProductRepository>();
+
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IBlobService, BlobService>();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<ICountryService, CountryService>();
 
-// Identity med rollstöd
+// Identity - SQLite tills VM är uppsatt
 builder.Services.AddDefaultIdentity<IdentityUser>(options =>
     options.SignIn.RequireConfirmedAccount = false)
     .AddRoles<IdentityRole>()
@@ -98,10 +115,17 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
-app.MapStaticAssets();
 app.UseAuthentication();
 app.UseAuthorization();
 
+// OpenAPI/Swagger — endast i Development
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi();
+    app.MapScalarApiReference();
+}
+
+app.MapStaticAssets();
 app.MapHealthChecks("/health");
 
 app.MapControllerRoute(
@@ -113,26 +137,46 @@ app.MapRazorPages();
 
 using (var scope = app.Services.CreateScope())
 {
-    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
-    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+    var services = scope.ServiceProvider;
+    var userManager = services.GetRequiredService<UserManager<IdentityUser>>();
+    var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
 
-    // 1. Skapa rollen om den inte finns
+    // 1. Skapa rollen Admin om den inte finns
     if (!await roleManager.RoleExistsAsync("Admin"))
     {
         await roleManager.CreateAsync(new IdentityRole("Admin"));
     }
 
-    // 2. Hämta uppgifter från User Secrets
+    // 2. Hämta uppgifter från Configuration
     var adminEmail = builder.Configuration["AdminSettings:Email"];
     var adminPassword = builder.Configuration["AdminSettings:Password"];
 
-    // 3. Skapa admin-användaren om den inte finns
-    var adminUser = await userManager.FindByEmailAsync(adminEmail);
-    if (adminUser == null)
+    // 3. Null-check: Kör bara om vi faktiskt har uppgifterna
+    if (!string.IsNullOrEmpty(adminEmail) && !string.IsNullOrEmpty(adminPassword)) 
     {
-        adminUser = new IdentityUser { UserName = adminEmail, Email = adminEmail, EmailConfirmed = true };
-        await userManager.CreateAsync(adminUser, adminPassword);
-        await userManager.AddToRoleAsync(adminUser, "Admin");
+        var adminUser = await userManager.FindByEmailAsync(adminEmail);
+        
+        if (adminUser == null)
+        {
+            adminUser = new IdentityUser 
+            { 
+                UserName = adminEmail, 
+                Email = adminEmail, 
+                EmailConfirmed = true 
+            };
+
+            var result = await userManager.CreateAsync(adminUser, adminPassword);
+            
+            if (result.Succeeded)
+            {
+                await userManager.AddToRoleAsync(adminUser, "Admin");
+                Console.WriteLine($"System: Admin-användare {adminEmail} skapad.");
+            }
+        }
+    }
+    else 
+    {
+        Console.WriteLine("System: Admin-uppgifter saknas i konfigurationen (User Secrets). Hoppar över seeding.");
     }
 }
 
