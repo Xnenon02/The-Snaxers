@@ -49,19 +49,19 @@ public class AdminChocolateController : Controller
     }
 
     public async Task<IActionResult> Users()
-{
-    var users = _userManager.Users.ToList();
-    var userRoles = new Dictionary<string, IList<string>>();
-
-    foreach (var user in users)
     {
-        var roles = await _userManager.GetRolesAsync(user);
-        userRoles[user.Id] = roles;
-    }
+        var users = _userManager.Users.ToList();
+        var userRoles = new Dictionary<string, IList<string>>();
 
-    ViewBag.UserRoles = userRoles;
-    return View(users);
-}
+        foreach (var user in users)
+        {
+            var roles = await _userManager.GetRolesAsync(user);
+            userRoles[user.Id] = roles;
+        }
+
+        ViewBag.UserRoles = userRoles;
+        return View(users);
+    }
 
     public IActionResult Create()
     {
@@ -106,7 +106,8 @@ public class AdminChocolateController : Controller
 
     public async Task<IActionResult> Edit(int id)
     {
-        var product = await _productService.GetProductByIdAsync(id);
+        // FIX: Konvertera int id till string
+        var product = await _productService.GetProductByIdAsync(id.ToString());
         if (product == null) return NotFound();
         return View(product);
     }
@@ -134,7 +135,6 @@ public class AdminChocolateController : Controller
             }
 
             // AC5 — Radera gamla bilden från Blob Storage innan ny laddas upp
-            // Förhindrar att gamla bilder samlas i molnet och driver upp lagringskostnader
             if (!string.IsNullOrWhiteSpace(product.ImageUrl))
             {
                 await _blobService.DeleteImageAsync(product.ImageUrl);
@@ -152,6 +152,7 @@ public class AdminChocolateController : Controller
 
         if (ModelState.IsValid)
         {
+            // FIX: Vi utgår från att interfacet nu tar Product (vilket det gör)
             await _productService.UpdateProductAsync(product);
             _logger.LogInformation("Successfully updated product ID: {ProductId}", id);
             return RedirectToAction(nameof(Index));
@@ -165,23 +166,23 @@ public class AdminChocolateController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Delete(int id)
     {
-        var product = await _productService.GetProductByIdAsync(id);
+        // FIX: Konvertera int id till string
+        var product = await _productService.GetProductByIdAsync(id.ToString());
 
         // AC4 — Radera bilden från Blob Storage när produkten raderas
-        // Livscykelhantering: undviker orphaned blobs som driver upp lagringskostnader
         if (product != null && !string.IsNullOrWhiteSpace(product.ImageUrl))
         {
             await _blobService.DeleteImageAsync(product.ImageUrl);
             _logger.LogInformation("Image deleted from Blob Storage for product {ProductId}: {ImageUrl}", id, product.ImageUrl);
         }
 
-        await _productService.DeleteProductAsync(id);
+        // FIX: Konvertera int id till string
+        await _productService.DeleteProductAsync(id.ToString());
         _logger.LogInformation("Product deleted: {ProductId}", id);
         return RedirectToAction(nameof(Index));
     }
 
     // AC3 — Validering av filtyp och storlek
-    // Dubbel validering: filändelse + magic bytes för att förhindra förfalskade filer
     private static string? ValidateImageFile(IFormFile file)
     {
         if (file.Length > MaxFileSizeBytes)
@@ -191,7 +192,6 @@ public class AdminChocolateController : Controller
         if (!AllowedExtensions.Contains(extension))
             return "Otillåtet filformat. Endast .jpg, .png och .webp tillåts.";
 
-        // Magic bytes-validering — läser filens faktiska innehåll, inte bara namnet
         using var stream = file.OpenReadStream();
         var header = new byte[4];
         var bytesRead = stream.Read(header, 0, header.Length);
@@ -209,47 +209,47 @@ public class AdminChocolateController : Controller
     }
 
     [HttpPost]
-[ValidateAntiForgeryToken]
-public async Task<IActionResult> MakeAdmin(string userId)
-{
-    var user = await _userManager.FindByIdAsync(userId);
-    
-    if (user != null)
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> MakeAdmin(string userId)
     {
-        // AC: Kontrollera om rollen finns, annars skapa den (bra att ha!)
-        // await _roleManager.CreateAsync(new IdentityRole("Admin")); 
+        var user = await _userManager.FindByIdAsync(userId);
         
-        var result = await _userManager.AddToRoleAsync(user, "Admin");
-        
-        if (result.Succeeded)
+        if (user != null)
         {
-            _logger.LogInformation("Användare {Email} har blivit befordrad till Admin.", user.Email);
+            var result = await _userManager.AddToRoleAsync(user, "Admin");
+            
+            if (result.Succeeded)
+            {
+                _logger.LogInformation("Användare {Email} har blivit befordrad till Admin.", user.Email);
+            }
         }
-    }
 
-    return RedirectToAction(nameof(Users));
-}
-
-[HttpPost]
-public async Task<IActionResult> RemoveAdmin(string userId)
-{
-    var user = await _userManager.FindByIdAsync(userId);
-
-    // 1. Kolla ALLTID null först!
-    if (user == null) 
-    {
-        return NotFound();
-    }
-
-    // 2. Sen kollar vi om det är du själv
-    if (user.Email == User.Identity.Name) 
-    {
-        TempData["Error"] = "Du kan inte ta bort dig själv!";
         return RedirectToAction(nameof(Users));
     }
 
-    // 3. Sen kör vi...
-    await _userManager.RemoveFromRoleAsync(user, "Admin");
-    return RedirectToAction(nameof(Users));
-}
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> RemoveAdmin(string userId)
+    {
+        var user = await _userManager.FindByIdAsync(userId);
+        
+        // 1. Kolla ALLTID null först! (Fix för varning CS8602)
+        if (user == null) 
+        {
+            return NotFound();
+        }
+
+        // 2. Sen kollar vi om det är du själv (Säkerhetsspärr)
+        if (user.Email == User.Identity?.Name) 
+        {
+            TempData["Error"] = "Du kan inte ta bort dig själv!";
+            return RedirectToAction(nameof(Users));
+        }
+
+        // 3. Sen kör vi borttagning av roll
+        await _userManager.RemoveFromRoleAsync(user, "Admin");
+        _logger.LogWarning("Admin-rättigheter borttagna för {Email}.", user.Email);
+        
+        return RedirectToAction(nameof(Users));
+    }
 }
