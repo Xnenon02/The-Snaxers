@@ -1,14 +1,20 @@
 using System.Net.Http.Json;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace TheSnaxers.Services;
 
 public class CountryService : ICountryService
 {
     private readonly HttpClient _http;
+    private readonly IMemoryCache _cache;
 
-    public CountryService(HttpClient http)
+    // Cache duration: country data rarely changes, 24 hours is safe
+    private static readonly TimeSpan CacheDuration = TimeSpan.FromHours(24);
+
+    public CountryService(HttpClient http, IMemoryCache cache)
     {
         _http = http;
+        _cache = cache;
     }
 
     public async Task<CountryInfo> GetCountryInfoAsync(string countryName)
@@ -16,22 +22,39 @@ public class CountryService : ICountryService
         if (string.IsNullOrWhiteSpace(countryName))
            return new CountryInfo { Name = "Okänt land", FlagUrl = "" };
 
+        // Return cached result if available, avoiding redundant API calls per page load
+        var cacheKey = $"country_{countryName.ToLower()}";
+        if (_cache.TryGetValue(cacheKey, out CountryInfo? cached) && cached != null)
+            return cached;
+
         try 
         {
+            // Short timeout: fail fast instead of blocking the page for 21 seconds
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+
             var response = await _http.GetFromJsonAsync<List<RestCountryResponse>>(
-                $"https://restcountries.com/v3.1/name/{countryName}?fullText=true&fields=name,flags");
+                $"https://restcountries.com/v3.1/name/{countryName}?fullText=true&fields=name,flags",
+                cts.Token);
 
             var country = response?.FirstOrDefault();
 
-            return new CountryInfo
+            var result = new CountryInfo
             {
                 Name = country?.Name?.Common ?? countryName,
                 FlagUrl = country?.Flags?.Png ?? ""
             };
+
+            // Store result in cache for future requests
+            _cache.Set(cacheKey, result, CacheDuration);
+
+            return result;
         }
         catch 
         {
-            return new CountryInfo { Name = countryName, FlagUrl = "" };
+            // On failure, cache fallback briefly to avoid hammering a down API
+            var fallback = new CountryInfo { Name = countryName, FlagUrl = "" };
+            _cache.Set(cacheKey, fallback, TimeSpan.FromMinutes(5));
+            return fallback;
         }
     }
 }
