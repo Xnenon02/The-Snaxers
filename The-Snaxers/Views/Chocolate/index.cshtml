@@ -44,7 +44,7 @@
         <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
             @foreach (var chocolate in Model)
             {
-                var isFavorite = ((List<int>)ViewBag.FavoriteIds)?.Contains(chocolate.Id) ?? false;
+                var isFavorite = ((List<string>)ViewBag.FavoriteIds)?.Contains(chocolate.Id) ?? false;
                 <div class="col">
                     <div class="flip-card" onclick="this.classList.toggle('flipped')">
                         <div class="flip-card-inner">

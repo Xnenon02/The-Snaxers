@@ -45,6 +45,15 @@ public class CosmosFavoriteRepository : IFavoriteRepository
             if (!cosmosFavorites.Any())
                 return new List<Favorite>();
 
+            // Logga ProductIds för att underlätta felsökning av stale data
+            var productIds = cosmosFavorites.Select(f => f.ProductId).ToList();
+            _logger.LogInformation("Found {Count} favorites. Looking up ProductIds: {ProductIds}",
+                cosmosFavorites.Count, string.Join(", ", productIds));
+
+            var emptyIds = productIds.Where(string.IsNullOrWhiteSpace).ToList();
+            if (emptyIds.Any())
+                _logger.LogWarning("{EmptyCount} favorite(s) har tomt ProductId — troligen gammal data i Cosmos.", emptyIds.Count);
+
             // Hämta produkter i ett svep med IN-operatorn
             var idList = string.Join(",", cosmosFavorites.Select(f => $"'{f.ProductId}'"));
             var productQuery = new QueryDefinition(
@@ -73,7 +82,14 @@ public class CosmosFavoriteRepository : IFavoriteRepository
                 }
             }
 
-            _logger.LogInformation("Retrieved {Count} favorites for user {UserId}.", cosmosFavorites.Count, userId);
+            _logger.LogInformation("Product lookup complete. Found {FoundCount}/{TotalCount} products in map.",
+                productMap.Count, productIds.Count);
+
+            // Logga vilka ProductIds som inte matchade någon produkt
+            var missingIds = productIds.Where(id => !string.IsNullOrWhiteSpace(id) && !productMap.ContainsKey(id)).ToList();
+            if (missingIds.Any())
+                _logger.LogWarning("Följande ProductIds hittades inte i Products-containern (stale data?): {MissingIds}",
+                    string.Join(", ", missingIds));
 
             return cosmosFavorites.Select(f => new Favorite
             {
