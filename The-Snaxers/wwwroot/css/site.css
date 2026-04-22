@@ -1,0 +1,120 @@
+html {
+  font-size: 14px;
+}
+
+@media (min-width: 768px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
+  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+}
+
+html {
+  position: relative;
+  min-height: 100%;
+}
+
+body {
+  margin-bottom: 60px;
+}
+
+.form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
+  color: var(--bs-secondary-color);
+  text-align: end;
+}
+
+.form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
+  text-align: start;
+}
+
+/* Lägg till i din site.css */
+
+.text-chocolate {
+    color: #4b2c20; /* Den där snygga bruna du valde */
+}
+
+.bg-snaxers-pink {
+    background-color: #ffc0cb; /* Eller din specifika rosa nyans */
+}
+
+.btn-snaxers-gold {
+    background-color: #ffd700;
+    color: #4b2c20;
+    border: none;
+    transition: transform 0.2s;
+}
+
+.btn-snaxers-gold:hover {
+    transform: scale(1.05);
+    background-color: #ffc107;
+}
+
+.table {
+    border-collapse: separate;
+    border-spacing: 0 10px; /* Ger lite luft mellan raderna */
+}
+
+.table tbody tr {
+    background-color: #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.btn-snaxers-gold {
+    background-color: #ffd700; /* Guld! */
+    color: #4b2c20;
+    border: none;
+    font-weight: bold;
+}
+
+.btn-snaxers-gold:hover {
+    background-color: #ffcc00;
+    transform: scale(1.05);
+    color: #000;
+}
+
+/* Snaxers Branding */
+:root {
+    --snaxers-gold: #D4AF37;
+    --snaxers-dark: #3d2b1f; /* Chokladbrun! */
+}
+
+.bg-snaxers-gold, .btn-snaxers-gold {
+    background-color: var(--snaxers-gold) !important;
+    color: white !important;
+    border: none;
+}
+
+.btn-snaxers-gold:hover {
+    background-color: #B8860B !important;
+    transform: scale(1.02);
+}
+
+.text-snaxers-dark {
+    color: var(--snaxers-dark);
+}
+
+/* Kort-styling */
+.snaxers-card {
+    border-radius: 15px;
+    transition: all 0.3s ease;
+}
+
+.snaxers-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 12px 24px rgba(0,0,0,0.15) !important;
+}
+
+/* Den lilla X-knappen ska kännas lyxig */
+.btn-close {
+    width: 0.5em;
+    height: 0.5em;
+    opacity: 0.8;
+}
+
+.btn-close:hover {
+    opacity: 1;
+    background-color: #ff000020;
+}

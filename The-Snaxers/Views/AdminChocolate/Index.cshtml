@@ -1,0 +1,108 @@
+@model IEnumerable<TheSnaxers.Models.Product>
+
+@{
+    ViewData["Title"] = "Admin - Hantera Choklad";
+}
+
+<div class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="display-5 text-chocolate fw-bold">Adminpanel</h1>
+            <p class="text-muted">Här administrerar du chokladen 👑</p>
+        </div>
+        <a asp-action="Create" class="btn btn-success shadow-sm">
+            <i class="bi bi-plus-circle"></i> Lägg till ny choklad
+        </a>
+    </div>
+
+    <ul class="nav nav-tabs mb-4 border-bottom-0">
+        <li class="nav-item">
+            <a class="nav-link active shadow-sm border-bottom-0 fw-bold" asp-action="Index" 
+               style="background-color: #fff; color: #4b2c20; border-radius: 10px 10px 0 0;">
+                <i class="bi bi-egg-fried"></i> Lagerhantering
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link text-muted" asp-action="Users">
+                <i class="bi bi-people"></i> Användarhantering
+            </a>
+        </li>
+    </ul>
+
+    <div class="card shadow border-0" style="border-radius: 0 15px 15px 15px;">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead style="background-color: #4b2c20; color: white;">
+                        <tr>
+                            <th class="ps-4">Bild</th>
+                            <th>Namn</th>
+                            <th>Märke</th>
+                            <th>Kakaohalt</th>
+                            <th>Status</th>
+                            <th class="text-end pe-4">Åtgärder</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            var fakeStock = (item.Id.GetHashCode() % 3 == 0) ? 0 : (item.Name.Length * 2);
+
+                            <tr>
+                                <td class="ps-4">
+                                    <img src="@item.ImageUrl" 
+                                         alt="@item.Name" 
+                                         style="width: 50px; height: 50px; object-fit: cover;" 
+                                         class="rounded shadow-sm border">
+                                </td>
+                                <td class="fw-bold text-chocolate">@item.Name</td>
+                                <td>@item.Brand</td>
+                                <td>
+                                    <span class="badge rounded-pill" style="background-color: #ffc0cb; color: #4b2c20;">
+                                        @item.CocoaPercentage%
+                                    </span>
+                                </td>
+                                
+                                <td>
+                                    @if (fakeStock > 15)
+                                    {
+                                        <span class="badge rounded-pill bg-success-subtle text-success border border-success-subtle">
+                                            <i class="bi bi-check-circle"></i> @fakeStock i lager
+                                        </span>
+                                    }
+                                    else if (fakeStock > 0)
+                                    {
+                                        <span class="badge rounded-pill bg-warning-subtle text-warning-emphasis border border-warning-subtle">
+                                            <i class="bi bi-exclamation-triangle"></i> Få kvar (@fakeStock)
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge rounded-pill bg-danger-subtle text-danger border border-danger-subtle">
+                                            <i class="bi bi-x-circle"></i> Slut
+                                        </span>
+                                    }
+                                </td>
+
+                                <td class="text-end pe-4">
+                                    <div class="d-flex justify-content-end gap-2">
+                                        <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+                                            <i class="bi bi-pencil"></i> Ändra
+                                        </a>
+
+                                        <form asp-action="Delete" asp-route-id="@item.Id" method="post" 
+                                              onsubmit="return confirm('Är du helt säker på att du vill ta bort @item.Name?')">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3">
+                                                <i class="bi bi-trash3"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
