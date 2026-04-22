@@ -24,8 +24,8 @@ public class ProductService : IProductService
     public async Task AddProductAsync(Product product) =>
         await _repo.AddAsync(product);
 
-    public async Task UpdateProductAsync(Product product) =>
-        await _repo.UpdateAsync(product);
+    public async Task UpdateProductAsync(Product product, string originalCategory) =>
+        await _repo.UpdateAsync(product, originalCategory);
 
     public async Task DeleteProductAsync(string id, string category) =>
         await _repo.DeleteAsync(id, category);

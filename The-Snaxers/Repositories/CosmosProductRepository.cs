@@ -111,15 +111,33 @@ public class CosmosProductRepository : IProductRepository
         return null;
     }
 
-    public async Task UpdateAsync(Product product)
+    public async Task UpdateAsync(Product product, string originalCategory)
     {
-        _logger.LogInformation("Updating product {ProductId}.", product.Id);
+        _logger.LogInformation("Updating product {ProductId}. OriginalCategory: {OldCat} → NewCategory: {NewCat}",
+            product.Id, originalCategory, product.Category);
 
         try
         {
             var document = MapToDocument(product);
-            // Upsert med känt id — inget förhämtningsanrop behövs längre
-            await _container.UpsertItemAsync(document, new PartitionKey(document.Category));
+
+            if (originalCategory == product.Category)
+            {
+                // Samma partition — direkt upsert utan förhämtning
+                await _container.UpsertItemAsync(document, new PartitionKey(document.Category));
+            }
+            else
+            {
+                // Category byttes — partition key är immutable i Cosmos,
+                // måste radera från gammal partition och skapa i ny
+                _logger.LogInformation("Category ändrad — raderar från '{OldCat}' och skapar i '{NewCat}'",
+                    originalCategory, product.Category);
+
+                await _container.DeleteItemAsync<CosmosProductDocument>(
+                    product.Id, new PartitionKey(originalCategory));
+
+                await _container.CreateItemAsync(document, new PartitionKey(document.Category));
+            }
+
             _logger.LogInformation("Successfully updated product {ProductId}.", product.Id);
         }
         catch (CosmosException ex)

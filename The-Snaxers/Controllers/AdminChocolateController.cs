@@ -106,15 +106,13 @@ public class AdminChocolateController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(string id, Product product, IFormFile? imageFile)
+    public async Task<IActionResult> Edit(string id, Product product, IFormFile? imageFile, string originalCategory = "")
     {
         _logger.LogInformation("Admin attempt to edit product ID: {ProductId}", id);
 
-        if (id != product.Id)
-        {
-            _logger.LogError("ID mismatch during edit: URL ID {UrlId} != Model ID {ModelId}", id, product.Id);
-            return BadRequest("ID mismatch - Manipulation detekterad.");
-        }
+        // Sätt alltid Id från route-parametern — förhindrar att ett nytt GUID
+        // genereras av Product-konstruktorn om model binding misslyckas
+        product.Id = id;
 
         if (imageFile != null && imageFile.Length > 0)
         {
@@ -139,17 +137,23 @@ public class AdminChocolateController : Controller
 
         ModelState.Remove("imageFile");
         ModelState.Remove("ImageUrl");
+        ModelState.Remove("Id");
 
-        if (ModelState.IsValid)
+        _logger.LogInformation("Edit POST — Id: {Id}, Category: {Category}, ModelStateValid: {Valid}",
+            product.Id, product.Category, ModelState.IsValid);
+
+        if (!ModelState.IsValid)
         {
-            // FIX: Vi utgår från att interfacet nu tar Product (vilket det gör)
-            await _productService.UpdateProductAsync(product);
-            _logger.LogInformation("Successfully updated product ID: {ProductId}", id);
-            return RedirectToAction(nameof(Index));
+            foreach (var error in ModelState.Where(x => x.Value?.Errors.Count > 0))
+                _logger.LogWarning("ModelState fel: {Key} = {Error}", error.Key,
+                    error.Value?.Errors.FirstOrDefault()?.ErrorMessage);
+
+            return View(product);
         }
 
-        _logger.LogWarning("Validation failed for editing product ID: {ProductId}", id);
-        return View(product);
+        await _productService.UpdateProductAsync(product, originalCategory);
+        _logger.LogInformation("Successfully updated product ID: {ProductId}", id);
+        return RedirectToAction(nameof(Index));
     }
 
     [HttpPost]
