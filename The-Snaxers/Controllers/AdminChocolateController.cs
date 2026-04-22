@@ -231,24 +231,25 @@ public async Task<IActionResult> MakeAdmin(string userId)
 }
 
 [HttpPost]
-[ValidateAntiForgeryToken]
 public async Task<IActionResult> RemoveAdmin(string userId)
 {
     var user = await _userManager.FindByIdAsync(userId);
-    
-    // Säkerhetsspärr: Man ska inte kunna ta bort sig själv! 
+
+    // 1. Kolla ALLTID null först!
+    if (user == null) 
+    {
+        return NotFound();
+    }
+
+    // 2. Sen kollar vi om det är du själv
     if (user.Email == User.Identity.Name) 
     {
-        TempData["Error"] = "Du kan inte ta bort dina egna admin-rättigheter!";
+        TempData["Error"] = "Du kan inte ta bort dig själv!";
         return RedirectToAction(nameof(Users));
     }
 
-    if (user != null)
-    {
-        await _userManager.RemoveFromRoleAsync(user, "Admin");
-        _logger.LogWarning("Admin-rättigheter borttagna för {Email}.", user.Email);
-    }
-
+    // 3. Sen kör vi...
+    await _userManager.RemoveFromRoleAsync(user, "Admin");
     return RedirectToAction(nameof(Users));
 }
 }

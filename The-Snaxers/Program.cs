@@ -10,25 +10,21 @@ using TheSnaxers.Models;
 var builder = WebApplication.CreateBuilder(args);
 
 // ===================================================
-// KEY VAULT — AC2/AC3: Staging och Production hämtar hemligheter från Key Vault
-// AC4: Kastar fel om KeyVault:Url saknas i staging/prod
+// KEY VAULT — Azure Key Vault i produktion, User Secrets lokalt
 // ===================================================
-if (builder.Environment.IsProduction() || builder.Environment.IsStaging())
+if (builder.Environment.IsProduction())
 {
     var keyVaultUrl = builder.Configuration["KeyVault:Url"];
-
-    if (string.IsNullOrEmpty(keyVaultUrl))
-        throw new InvalidOperationException(
-            $"[AC4] KeyVault:Url saknas för miljö '{builder.Environment.EnvironmentName}'. " +
-            "Sätt miljövariabeln KeyVault__Url i Azure Container Apps.");
-
-    builder.Configuration.AddAzureKeyVault(
-        new Uri(keyVaultUrl),
-        new DefaultAzureCredential());
+    if (!string.IsNullOrEmpty(keyVaultUrl))
+    {
+        builder.Configuration.AddAzureKeyVault(
+            new Uri(keyVaultUrl),
+            new DefaultAzureCredential());
+    }
 }
 
 // ===================================================
-// APPLICATION INSIGHTS — AC2/AC3: Staging och Production
+// APPLICATION INSIGHTS
 // ===================================================
 var appInsightsConnectionString = builder.Configuration["ApplicationInsights:ConnectionString"];
 if (!string.IsNullOrEmpty(appInsightsConnectionString) && appInsightsConnectionString != "placeholder")
@@ -44,47 +40,20 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddHealthChecks();
 builder.Services.AddLogging();
 
-// ===================================================
-// SQLITE — AC1: Development använder lokal SQLite och User Secrets
-// Staging/Prod: Identity-databas hanteras separat (se tech debt)
-// ===================================================
-if (builder.Environment.IsDevelopment())
-{
-    builder.Services.AddDbContext<ApplicationDbContext>(options =>
-        options.UseSqlite("Data Source=snaxers.db"));
-}
-else
-{
-    // TODO: Konfigurera Identity-databas för Staging/Prod i separat ticket
-    builder.Services.AddDbContext<ApplicationDbContext>(options =>
-        options.UseSqlite("Data Source=snaxers.db"));
-}
 
-// ===================================================
-// COSMOS DB — AC1/AC2/AC3: Olika databaser per miljö
-// Dev: TheSnaxersDb, Staging: TheSnaxersDb-staging, Prod: TheSnaxersDb
-// AC4: Kastar fel om AccountEndpoint saknas i staging/prod
-// ===================================================
+// SQLite - används endast för Identity
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseSqlite("Data Source=snaxers.db"));
+
+// Cosmos DB client
 builder.Services.AddSingleton(sp =>
 {
     var configuration = sp.GetRequiredService<IConfiguration>();
     var endpoint = configuration["CosmosDb:AccountEndpoint"];
 
     if (string.IsNullOrWhiteSpace(endpoint))
-    {
-        if (!builder.Environment.IsDevelopment())
-            throw new InvalidOperationException(
-                $"[AC4] CosmosDb:AccountEndpoint saknas för miljö '{builder.Environment.EnvironmentName}'.");
-
         throw new InvalidOperationException("CosmosDb:AccountEndpoint saknas i konfigurationen.");
-    }
 
-    // ⚠️ AccountKey ENDAST i Development — aldrig i staging/prod
-    var accountKey = configuration["CosmosDb:AccountKey"];
-    if (builder.Environment.IsDevelopment() && !string.IsNullOrWhiteSpace(accountKey))
-        return new CosmosClient(endpoint, accountKey);
-
-    // Staging/Prod — Managed Identity (Passwordless)
     var credential = new DefaultAzureCredential(new DefaultAzureCredentialOptions
     {
         TenantId = configuration["CosmosDb:TenantId"]
@@ -144,8 +113,9 @@ app.MapRazorPages();
 
 using (var scope = app.Services.CreateScope())
 {
-    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
+    var services = scope.ServiceProvider;
+    var userManager = services.GetRequiredService<UserManager<IdentityUser>>();
+    var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
 
     // 1. Skapa rollen Admin om den inte finns
     if (!await roleManager.RoleExistsAsync("Admin"))
@@ -153,13 +123,36 @@ using (var scope = app.Services.CreateScope())
         await roleManager.CreateAsync(new IdentityRole("Admin"));
     }
 
-    // 2. Kolla om din email finns, och gör den till Admin
-    var adminEmail = "admin@snaxers.se"; 
-    var adminUser = await userManager.FindByEmailAsync(adminEmail);
+    // 2. Hämta uppgifter från Configuration
+    var adminEmail = builder.Configuration["AdminSettings:Email"];
+    var adminPassword = builder.Configuration["AdminSettings:Password"];
 
-    if (adminUser != null && !(await userManager.IsInRoleAsync(adminUser, "Admin")))
+    // 3. Null-check: Kör bara om vi faktiskt har uppgifterna
+    if (!string.IsNullOrEmpty(adminEmail) && !string.IsNullOrEmpty(adminPassword)) 
     {
-        await userManager.AddToRoleAsync(adminUser, "Admin");
+        var adminUser = await userManager.FindByEmailAsync(adminEmail);
+        
+        if (adminUser == null)
+        {
+            adminUser = new IdentityUser 
+            { 
+                UserName = adminEmail, 
+                Email = adminEmail, 
+                EmailConfirmed = true 
+            };
+
+            var result = await userManager.CreateAsync(adminUser, adminPassword);
+            
+            if (result.Succeeded)
+            {
+                await userManager.AddToRoleAsync(adminUser, "Admin");
+                Console.WriteLine($"System: Admin-användare {adminEmail} skapad.");
+            }
+        }
+    }
+    else 
+    {
+        Console.WriteLine("System: Admin-uppgifter saknas i konfigurationen (User Secrets). Hoppar över seeding.");
     }
 }
 
