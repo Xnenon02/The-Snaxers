@@ -107,3 +107,33 @@
     transition: transform 0.3s ease;
     filter: drop-shadow(0 8px 16px rgba(0,0,0,0.12));
 }
+
+.country-wrapper {
+    position: relative;
+    display: inline-block;
+    cursor: help;
+}
+
+.country-popover {
+    visibility: hidden;
+    width: 160px;
+    background-color: var(--snaxers-dark, #333);
+    color: #fff;
+    text-align: center;
+    border-radius: 6px;
+    padding: 8px;
+    position: absolute;
+    z-index: 1;
+    bottom: 125%; /* Placera ovanför flaggan */
+    left: 50%;
+    margin-left: -80px;
+    opacity: 0;
+    transition: opacity 0.3s;
+    font-size: 0.8rem;
+    box-shadow: 0px 4px 10px rgba(0,0,0,0.2);
+}
+
+.country-wrapper:hover .country-popover {
+    visibility: visible;
+    opacity: 1;
+}

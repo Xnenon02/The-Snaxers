@@ -10,6 +10,7 @@ public class ChocolateGalleryViewModel
     public decimal Price { get; set; }
     public string ImageUrl { get; set; } = "/images/placeholder-choco.png";
     public string CountryName { get; set; } = "Okänt";
+    public string? CountryCode { get; set; }
     public string FlagUrl { get; set; } = string.Empty;
 
 

@@ -66,16 +66,22 @@
                                         </div>
                                     }
 
-                                    <div class="position-absolute bottom-0 end-0 m-2 shadow-sm bg-white p-1 rounded">
-                                        @if (!string.IsNullOrEmpty(chocolate.FlagUrl))
-                                        {
-                                            <img src="@chocolate.FlagUrl" alt="@chocolate.CountryName" title="@chocolate.CountryName" class="flag-badge" style="max-width: 30px;">
-                                        }
-                                        else
-                                        {
-                                            <span title="@chocolate.CountryName" style="font-size:20px;">🌍</span>
-                                        }
-                                    </div>
+                                    <div class="position-absolute bottom-0 end-0 m-2 shadow-sm bg-white p-1 rounded country-wrapper" 
+     data-country-code="@chocolate.CountryCode" 
+     onclick="event.stopPropagation()">
+    
+    @if (!string.IsNullOrEmpty(chocolate.FlagUrl))
+    {
+        <img src="@chocolate.FlagUrl" alt="@chocolate.CountryName" class="flag-badge" style="max-width: 30px;">
+    }
+    else
+    {
+        <span style="font-size:20px;">🌍</span>
+    }
+
+    @* Här är den magiska popover-rutan *@
+    <div class="country-popover">Laddar...</div>
+</div>
                                 </div>
 
                                 <div class="card-body d-flex flex-column p-3">
@@ -125,3 +131,35 @@
         </div>
     }
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // Hitta alla element som har en landskod
+    const countryElements = document.querySelectorAll('[data-country-code]');
+
+    countryElements.forEach(el => {
+        el.addEventListener('mouseenter', async function() {
+            const code = this.getAttribute('data-country-code');
+            const popover = this.querySelector('.country-popover');
+            
+            // Om vi inte redan har hämtat info, gör det nu
+            if (popover && popover.innerHTML === 'Laddar...') {
+                try {
+                    // Inuti din fetch-logik i scriptet:
+const response = await fetch(`/api/country/${code}`);
+const data = await response.json();
+
+popover.innerHTML = `
+    <div style="padding: 5px;">
+        <small class="text-snaxers-gold">Visste du att...</small><br>
+        ${data.fact}
+    </div>
+`;
+                } catch (error) {
+                    popover.innerHTML = 'Kunde inte hämta info.';
+                }
+            }
+        });
+    });
+});
+</script>

@@ -89,6 +89,7 @@ public class ChocolateController : Controller
             // TECH DEBT FIX: Om ImageUrl är tom i DB används standardvärdet från ViewModel-klassen
             ImageUrl = !string.IsNullOrWhiteSpace(p.ImageUrl) ? p.ImageUrl : "/images/placeholder-choco.png",
             CountryName = countryInfo?.Name ?? p.Country ?? "Okänt",
+            CountryCode = p.CountryCode,
             FlagUrl = countryInfo?.FlagUrl ?? ""
         });
     }

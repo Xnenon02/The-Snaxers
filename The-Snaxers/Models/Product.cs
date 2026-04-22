@@ -19,6 +19,9 @@ public class Product
     [Display(Name = "Kakaoprocent")]
     public int CocoaPercentage { get; set; }
     public string Country { get; set; } = string.Empty;
+
+    [Display(Name = "Landskod (ISO)")]
+    public string CountryCode { get; set; } = string.Empty;
     
     [Required(ErrorMessage = "Du måste ange en beskrivning.")]
     [Display(Name = "Beskrivning")]
