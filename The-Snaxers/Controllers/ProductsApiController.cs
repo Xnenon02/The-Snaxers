@@ -39,7 +39,7 @@ public class ProductsApiController : ControllerBase
 
         var dtos = products.Select(p => new ProductDto
         {
-            Id = p.Id,
+            Id = p.Id.ToString(), // Konverteras till string för att matcha ProductDto och framtida Tech-debt
             Name = p.Name,
             Brand = p.Brand,
             CocoaPercentage = p.CocoaPercentage,
@@ -59,7 +59,7 @@ public class ProductsApiController : ControllerBase
     [ProducesResponseType(typeof(ProductDto), 200)]
     [ProducesResponseType(401)]
     [ProducesResponseType(404)]
-    public async Task<IActionResult> GetById(int id)
+    public async Task<IActionResult> GetById(string id) // Ändrad till string enligt CR
     {
         _logger.LogInformation("API: Fetching product {ProductId}", id);
         var product = await _productService.GetProductByIdAsync(id);
@@ -72,7 +72,7 @@ public class ProductsApiController : ControllerBase
 
         var dto = new ProductDto
         {
-            Id = product.Id,
+            Id = product.Id.ToString(), // Konverteras till string
             Name = product.Name,
             Brand = product.Brand,
             CocoaPercentage = product.CocoaPercentage,
@@ -100,7 +100,7 @@ public class ProductsApiController : ControllerBase
 
         var dtos = products.Select(p => new ProductDto
         {
-            Id = p.Id,
+            Id = p.Id.ToString(), // Konverteras till string
             Name = p.Name,
             Brand = p.Brand,
             CocoaPercentage = p.CocoaPercentage,

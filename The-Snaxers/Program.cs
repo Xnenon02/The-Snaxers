@@ -47,8 +47,8 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddHealthChecks();
 builder.Services.AddLogging();
 
-// Registrera ApiKeyFilter för DI — används av ProductsApiController
-builder.Services.AddScoped<ApiKeyFilter>();
+// Registrera ApiKeyFilter som Singleton — bättre prestanda då det är stateless
+builder.Services.AddSingleton<ApiKeyFilter>();
 
 // ===================================================
 // SQLITE — AC1: Development använder lokal SQLite och User Secrets

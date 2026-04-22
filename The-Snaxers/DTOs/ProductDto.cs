@@ -2,7 +2,7 @@ namespace TheSnaxers.DTOs;
 
 public class ProductDto
 {
-    public int Id { get; set; }
+    public string Id { get; set; } = string.Empty; // Ändrad från int till string
     public string Name { get; set; } = string.Empty;
     public string Brand { get; set; } = string.Empty;
     public int CocoaPercentage { get; set; }
