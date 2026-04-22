@@ -2,7 +2,7 @@ namespace TheSnaxers.ViewModels;
 
 public class ChocolateGalleryViewModel
 {
-    public int Id { get; set; }
+    public string Id { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public string Brand { get; set; } = string.Empty;
     public int CocoaPercentage { get; set; }

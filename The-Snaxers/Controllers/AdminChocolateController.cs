@@ -25,22 +25,17 @@ public class AdminChocolateController : Controller
         _userManager = userManager;
         _logger = logger;
     }
-    
-    // AC3 — Tillåtna filformat kontrolleras både via filändelse och magic bytes
+
     private static readonly string[] AllowedExtensions = { ".jpg", ".jpeg", ".png", ".webp" };
 
-    // Magic bytes — de första bytes i filen avslöjar det verkliga filformatet,
-    // oavsett vad filändelsen säger. Skyddar mot t.ex. "malware.jpg" som egentligen är en .exe
     private static readonly byte[][] ImageMagicBytes =
     [
-        [0xFF, 0xD8, 0xFF],          // JPEG
-        [0x89, 0x50, 0x4E, 0x47],    // PNG
-        [0x52, 0x49, 0x46, 0x46],    // WEBP
+        [0xFF, 0xD8, 0xFF],
+        [0x89, 0x50, 0x4E, 0x47],
+        [0x52, 0x49, 0x46, 0x46],
     ];
 
-    // AC3 — Max filstorlek 2 MB enligt acceptanskriteriet
     private const long MaxFileSizeBytes = 2 * 1024 * 1024;
-
 
     public async Task<IActionResult> Index()
     {
@@ -76,7 +71,6 @@ public class AdminChocolateController : Controller
 
         if (imageFile != null && imageFile.Length > 0)
         {
-            // AC3 — Validera filtyp och storlek innan uppladdning
             var validationError = ValidateImageFile(imageFile);
             if (validationError != null)
             {
@@ -84,13 +78,11 @@ public class AdminChocolateController : Controller
                 return View(product);
             }
 
-            // AC1 — Ladda upp bilden till Blob Storage och spara URL:en på produkten
             using var stream = imageFile.OpenReadStream();
             product.ImageUrl = await _blobService.UploadImageAsync(stream, imageFile.FileName);
             _logger.LogInformation("Image uploaded for new product {ProductName}: {ImageUrl}", product.Name, product.ImageUrl);
         }
-        
-        // ImageUrl sätts av uppladdningen — hoppa över modellvalidering för det fältet
+
         ModelState.Remove("ImageUrl");
 
         if (ModelState.IsValid)
@@ -104,7 +96,7 @@ public class AdminChocolateController : Controller
         return View(product);
     }
 
-    public async Task<IActionResult> Edit(int id)
+    public async Task<IActionResult> Edit(string id)
     {
         // FIX: Konvertera int id till string
         var product = await _productService.GetProductByIdAsync(id.ToString());
@@ -114,19 +106,16 @@ public class AdminChocolateController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(int id, Product product, IFormFile? imageFile)
+    public async Task<IActionResult> Edit(string id, Product product, IFormFile? imageFile, string originalCategory = "")
     {
         _logger.LogInformation("Admin attempt to edit product ID: {ProductId}", id);
 
-        if (id != product.Id)
-        {
-            _logger.LogError("ID mismatch during edit: URL ID {UrlId} != Model ID {ModelId}", id, product.Id);
-            return BadRequest("ID mismatch - Manipulation detekterad.");
-        }
+        // Sätt alltid Id från route-parametern — förhindrar att ett nytt GUID
+        // genereras av Product-konstruktorn om model binding misslyckas
+        product.Id = id;
 
         if (imageFile != null && imageFile.Length > 0)
         {
-            // AC3 — Validera filtyp och storlek innan uppladdning
             var validationError = ValidateImageFile(imageFile);
             if (validationError != null)
             {
@@ -141,7 +130,6 @@ public class AdminChocolateController : Controller
                 _logger.LogInformation("Old image deleted for product {ProductId}: {ImageUrl}", id, product.ImageUrl);
             }
 
-            // AC1 — Ladda upp ny bild och uppdatera URL:en på produkten
             using var stream = imageFile.OpenReadStream();
             product.ImageUrl = await _blobService.UploadImageAsync(stream, imageFile.FileName);
             _logger.LogInformation("New image uploaded for product {ProductId}: {ImageUrl}", id, product.ImageUrl);
@@ -149,37 +137,88 @@ public class AdminChocolateController : Controller
 
         ModelState.Remove("imageFile");
         ModelState.Remove("ImageUrl");
+        ModelState.Remove("Id");
 
-        if (ModelState.IsValid)
+        _logger.LogInformation("Edit POST — Id: {Id}, Category: {Category}, ModelStateValid: {Valid}",
+            product.Id, product.Category, ModelState.IsValid);
+
+        if (!ModelState.IsValid)
         {
-            // FIX: Vi utgår från att interfacet nu tar Product (vilket det gör)
-            await _productService.UpdateProductAsync(product);
-            _logger.LogInformation("Successfully updated product ID: {ProductId}", id);
-            return RedirectToAction(nameof(Index));
+            foreach (var error in ModelState.Where(x => x.Value?.Errors.Count > 0))
+                _logger.LogWarning("ModelState fel: {Key} = {Error}", error.Key,
+                    error.Value?.Errors.FirstOrDefault()?.ErrorMessage);
+
+            return View(product);
         }
 
-        _logger.LogWarning("Validation failed for editing product ID: {ProductId}", id);
-        return View(product);
+        await _productService.UpdateProductAsync(product, originalCategory);
+        _logger.LogInformation("Successfully updated product ID: {ProductId}", id);
+        return RedirectToAction(nameof(Index));
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Delete(int id)
+    public async Task<IActionResult> Delete(string id)
     {
-        // FIX: Konvertera int id till string
-        var product = await _productService.GetProductByIdAsync(id.ToString());
+        var product = await _productService.GetProductByIdAsync(id);
+
+        if (product == null)
+        {
+            _logger.LogWarning("Delete: Product {ProductId} not found.", id);
+            return RedirectToAction(nameof(Index));
+        }
 
         // AC4 — Radera bilden från Blob Storage när produkten raderas
-        if (product != null && !string.IsNullOrWhiteSpace(product.ImageUrl))
+        if (!string.IsNullOrWhiteSpace(product.ImageUrl))
         {
             await _blobService.DeleteImageAsync(product.ImageUrl);
             _logger.LogInformation("Image deleted from Blob Storage for product {ProductId}: {ImageUrl}", id, product.ImageUrl);
         }
 
-        // FIX: Konvertera int id till string
-        await _productService.DeleteProductAsync(id.ToString());
+        // Skickar med Category som partition key — eliminerar dubbelanropet i repository (tech debt #2)
+        await _productService.DeleteProductAsync(id, product.Category);
         _logger.LogInformation("Product deleted: {ProductId}", id);
         return RedirectToAction(nameof(Index));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> MakeAdmin(string userId)
+    {
+        var user = await _userManager.FindByIdAsync(userId);
+
+        if (user != null)
+        {
+            var result = await _userManager.AddToRoleAsync(user, "Admin");
+
+            if (result.Succeeded)
+            {
+                _logger.LogInformation("Användare {Email} har blivit befordrad till Admin.", user.Email);
+            }
+        }
+
+        return RedirectToAction(nameof(Users));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> RemoveAdmin(string userId)
+    {
+        var user = await _userManager.FindByIdAsync(userId);
+
+        if (user == null)
+            return NotFound();
+
+        if (user.Email == User.Identity?.Name)
+        {
+            TempData["Error"] = "Du kan inte ta bort dina egna admin-rättigheter!";
+            return RedirectToAction(nameof(Users));
+        }
+
+        await _userManager.RemoveFromRoleAsync(user, "Admin");
+        _logger.LogWarning("Admin-rättigheter borttagna för {Email}.", user.Email);
+
+        return RedirectToAction(nameof(Users));
     }
 
     // AC3 — Validering av filtyp och storlek
@@ -206,50 +245,5 @@ public class AdminChocolateController : Controller
             return "Filen verkar inte vara en giltig bild.";
 
         return null;
-    }
-
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> MakeAdmin(string userId)
-    {
-        var user = await _userManager.FindByIdAsync(userId);
-        
-        if (user != null)
-        {
-            var result = await _userManager.AddToRoleAsync(user, "Admin");
-            
-            if (result.Succeeded)
-            {
-                _logger.LogInformation("Användare {Email} har blivit befordrad till Admin.", user.Email);
-            }
-        }
-
-        return RedirectToAction(nameof(Users));
-    }
-
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> RemoveAdmin(string userId)
-    {
-        var user = await _userManager.FindByIdAsync(userId);
-        
-        // 1. Kolla ALLTID null först! (Fix för varning CS8602)
-        if (user == null) 
-        {
-            return NotFound();
-        }
-
-        // 2. Sen kollar vi om det är du själv (Säkerhetsspärr)
-        if (user.Email == User.Identity?.Name) 
-        {
-            TempData["Error"] = "Du kan inte ta bort dig själv!";
-            return RedirectToAction(nameof(Users));
-        }
-
-        // 3. Sen kör vi borttagning av roll
-        await _userManager.RemoveFromRoleAsync(user, "Admin");
-        _logger.LogWarning("Admin-rättigheter borttagna för {Email}.", user.Email);
-        
-        return RedirectToAction(nameof(Users));
     }
 }

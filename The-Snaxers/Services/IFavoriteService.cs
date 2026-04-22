@@ -5,6 +5,6 @@ namespace TheSnaxers.Services;
 public interface IFavoriteService
 {
     Task<List<Favorite>> GetUserFavoritesAsync(string userId);
-    Task AddToFavoritesAsync(string userId, int productId);
-    Task RemoveFromFavoritesAsync(string userId, int productId);
+    Task AddToFavoritesAsync(string userId, string productId);
+    Task RemoveFromFavoritesAsync(string userId, string productId);
 }

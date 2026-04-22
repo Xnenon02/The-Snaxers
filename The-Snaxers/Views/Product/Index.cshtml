@@ -31,8 +31,7 @@ else
     <div class="row">
         @foreach (var product in Model)
         {
-            var isFavorite = ((List<int>)ViewBag.FavoriteIds).Contains(product.Id);
-            <div class="col-md-4 mb-4">
+var isFavorite = ((List<string>)ViewBag.FavoriteIds).Contains(product.Id);            <div class="col-md-4 mb-4">
                 <div class="card">
                     <div class="card-body">
                         <h5 class="card-title">@product.Name</h5>

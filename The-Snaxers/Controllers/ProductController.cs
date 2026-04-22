@@ -2,9 +2,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Identity;
 using TheSnaxers.Models;
 using TheSnaxers.Services;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace TheSnaxers.Controllers;
 
@@ -33,7 +30,7 @@ public class ProductController : Controller
             ? (await _favoriteService.GetUserFavoritesAsync(userId))
                 .Select(f => f.ProductId)
                 .ToList()
-            : new List<int>();
+            : new List<string>();
 
         ViewBag.FavoriteIds = favoriteIds;
 

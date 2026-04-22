@@ -12,7 +12,9 @@
                     <h2 class="h4 mb-0">Redigera @Model.Name</h2>
                 </div>
                 <div class="card-body">
-                    <form asp-action="Create" method="post" enctype="multipart/form-data">
+                    <form asp-action="Edit" method="post" enctype="multipart/form-data">
+                        <input type="hidden" asp-for="Id" />
+                        <input type="hidden" name="originalCategory" value="@Model.Category" />
 
     <div class="row">
         <div class="col-md-6">

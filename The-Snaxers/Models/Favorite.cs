@@ -5,17 +5,16 @@ namespace TheSnaxers.Models;
 public class Favorite
 {
     [JsonProperty("id")]
-    public int Id { get; set; }
+    public string Id { get; set; } = Guid.NewGuid().ToString();
     
     [JsonProperty("userId")]
     public string UserId { get; set; } = string.Empty;
     
     [JsonProperty("productId")]
-    public int ProductId { get; set; }
+    public string ProductId { get; set; } = string.Empty;
     
     [JsonProperty("savedAt")]
     public DateTime SavedAt { get; set; } = DateTime.UtcNow;
 
-    // Navigation property - används ej i Cosmos
     public Product? Product { get; set; }
 }

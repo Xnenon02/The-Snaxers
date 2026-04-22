@@ -5,7 +5,6 @@ using TheSnaxers.Services;
 
 namespace TheSnaxers.Controllers;
 
-// TODO: Verifiera att [Authorize] fungerar korrekt med Google OAuth (US3)
 [Authorize]
 public class FavoriteController : Controller
 {
@@ -40,7 +39,7 @@ public class FavoriteController : Controller
     }
 
     [HttpPost]
-    public async Task<IActionResult> Add(int productId, string returnUrl = "Chocolate")
+    public async Task<IActionResult> Add(string productId, string returnUrl = "Chocolate")
     {
         var userId = _userManager.GetUserId(User);
         if (string.IsNullOrEmpty(userId))
@@ -58,7 +57,7 @@ public class FavoriteController : Controller
     }
 
     [HttpPost]
-    public async Task<IActionResult> Remove(int productId, string returnUrl = "Chocolate")
+    public async Task<IActionResult> Remove(string productId, string returnUrl = "Chocolate")
     {
         var userId = _userManager.GetUserId(User);
         if (string.IsNullOrEmpty(userId))
