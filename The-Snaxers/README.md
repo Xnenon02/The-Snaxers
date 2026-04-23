@@ -37,7 +37,7 @@ The Snaxers is a product management system for a luxury chocolate brand. Admins 
 
 ### Prerequisites
 
-- [.NET 9 SDK](https://dotnet.microsoft.com/download)
+- [.NET 10 SDK](https://dotnet.microsoft.com/download)
 - [Git](https://git-scm.com/)
 
 ### Installation
@@ -45,19 +45,31 @@ The Snaxers is a product management system for a luxury chocolate brand. Admins 
 ```bash
 # Clone the repo
 git clone https://github.com/Xnenon02/The-Snaxers.git
-cd The-Snaxers
+cd The-Snaxers/The-Snaxers
 
 # Restore dependencies
 dotnet restore
 
-# Apply database migrations
-dotnet ef database update
-
-# Run the app
-dotnet run
+# Run the app (HTTPS krävs för Google OAuth)
+dotnet run --launch-profile https
 ```
 
-Open your browser at `http://localhost:5000`
+Open your browser at `https://localhost:7261`
+
+---
+
+## 🔐 Google OAuth — Lokal setup
+
+Google OAuth-credentials lagras i User Secrets och följer **inte** med i git.
+
+```bash
+dotnet user-secrets set "Authentication:Google:ClientId" "DITT_CLIENT_ID"
+dotnet user-secrets set "Authentication:Google:ClientSecret" "DITT_CLIENT_SECRET"
+```
+
+> Kontakta en teammedlem för att få ClientID och ClientSecret.
+
+**OBS:** Starta alltid appen med `dotnet run --launch-profile https` — Google OAuth kräver HTTPS lokalt.
 
 ---
 
