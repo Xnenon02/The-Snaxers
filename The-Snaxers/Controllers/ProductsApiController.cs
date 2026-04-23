@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using TheSnaxers.DTOs;
 using TheSnaxers.Services;
 using TheSnaxers.Filters;
+using TheSnaxers.Models;
 
 namespace TheSnaxers.Controllers;
 
@@ -36,21 +37,7 @@ public class ProductsApiController : ControllerBase
     {
         _logger.LogInformation("API: Fetching all products");
         var products = await _productService.GetAllProductsAsync();
-
-        var dtos = products.Select(p => new ProductDto
-        {
-            Id = p.Id.ToString(), // Konverteras till string för att matcha ProductDto och framtida Tech-debt
-            Name = p.Name,
-            Brand = p.Brand,
-            CocoaPercentage = p.CocoaPercentage,
-            Country = p.Country,
-            Description = p.Description,
-            Price = p.Price,
-            Category = p.Category,
-            ImageUrl = p.ImageUrl
-        });
-
-        return Ok(dtos);
+        return Ok(products.Select(MapToDto));
     }
 
     // GET /api/products/{id}
@@ -70,20 +57,7 @@ public class ProductsApiController : ControllerBase
             return NotFound(new { message = $"Product with id {id} not found" });
         }
 
-        var dto = new ProductDto
-        {
-            Id = product.Id.ToString(), // Konverteras till string
-            Name = product.Name,
-            Brand = product.Brand,
-            CocoaPercentage = product.CocoaPercentage,
-            Country = product.Country,
-            Description = product.Description,
-            Price = product.Price,
-            Category = product.Category,
-            ImageUrl = product.ImageUrl
-        };
-
-        return Ok(dto);
+        return Ok(MapToDto(product));
     }
 
     // GET /api/products/search
@@ -97,20 +71,20 @@ public class ProductsApiController : ControllerBase
     {
         _logger.LogInformation("API: Searching products with term '{SearchTerm}' and minCocoa {MinCocoa}", searchTerm, minCocoa);
         var products = await _productService.SearchProductsAsync(searchTerm ?? "", minCocoa);
-
-        var dtos = products.Select(p => new ProductDto
-        {
-            Id = p.Id.ToString(), // Konverteras till string
-            Name = p.Name,
-            Brand = p.Brand,
-            CocoaPercentage = p.CocoaPercentage,
-            Country = p.Country,
-            Description = p.Description,
-            Price = p.Price,
-            Category = p.Category,
-            ImageUrl = p.ImageUrl
-        });
-
-        return Ok(dtos);
+        return Ok(products.Select(MapToDto));
     }
+
+    // Maps a Product domain model to a ProductDto — avoids repeating mapping logic across endpoints
+    private static ProductDto MapToDto(Product p) => new()
+    {
+        Id = p.Id.ToString(), // Konverteras till string för att matcha ProductDto och framtida Tech-debt
+        Name = p.Name,
+        Brand = p.Brand,
+        CocoaPercentage = p.CocoaPercentage,
+        Country = p.Country,
+        Description = p.Description,
+        Price = p.Price,
+        Category = p.Category,
+        ImageUrl = p.ImageUrl
+    };
 }
