@@ -110,6 +110,7 @@ builder.Services.AddScoped<IFavoriteService, FavoriteService>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IBlobService, BlobService>();
 builder.Services.AddHttpClient();
+builder.Services.AddMemoryCache(); // Enables in-memory caching for CountryService
 builder.Services.AddScoped<ICountryService, CountryService>();
 
 // Identity - SQLite tills VM är uppsatt
