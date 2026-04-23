@@ -89,6 +89,9 @@
                                             <form asp-controller="Favorite" asp-action="@(isFavorite ? "Remove" : "Add")" method="post" class="d-inline">
                                                 <input type="hidden" name="productId" value="@chocolate.Id" />
                                                 <input type="hidden" name="returnUrl" value="Chocolate" />
+                                                @* Preserve search filters when toggling favorites *@
+                                                <input type="hidden" name="searchTerm" value="@ViewBag.SearchTerm" />
+                                                <input type="hidden" name="minCocoa" value="@ViewBag.MinCocoa" />
                                                 <button type="submit" class="btn btn-link p-0 text-decoration-none">
                                                     <i class="bi @(isFavorite ? "bi-heart-fill" : "bi-heart") text-danger fs-4"></i>
                                                 </button>
