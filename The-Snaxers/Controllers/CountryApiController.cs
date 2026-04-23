@@ -13,7 +13,7 @@ public IActionResult GetCountryInfo(string code)
     
     // Vi paketerar om till ett snyggt JSON-objekt som JS förstår
     return Ok(new { 
-        name = code.ToUpper(), // Eftersom vi bara har koden här
+        name = result.CommonName, 
         fact = result.Fact, 
         flag = result.FlagCode 
     });

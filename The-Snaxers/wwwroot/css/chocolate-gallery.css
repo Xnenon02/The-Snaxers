@@ -13,7 +13,7 @@
 /* ===== FLIP-KORT ===== */
 .flip-card {
     perspective: 1000px;
-    height: 420px;
+    height: 450px;
 }
 
 .flip-card-inner {
@@ -55,7 +55,7 @@
 }
 
 .choco-card-img {
-    height: 250px;
+    height: 220px;
     width: 100%;
     object-fit: cover;
 }
