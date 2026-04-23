@@ -5,7 +5,7 @@
 Bygga, containerisera och deploya en lyxchokladapp på Azure med CI/CD, IaC, logging och monitorering — i enlighet med kursplanen för _Molnapplikationer fördjupning (40 yhp)_.
 
 ---
-## Status 22 april: 
+## Status 23 april: 
 **(Person 1):**
 
 - ⏳ ACR-deploy i CI/CD-pipeline — väntar på Tom
@@ -21,7 +21,6 @@ Bygga, containerisera och deploya en lyxchokladapp på Azure med CI/CD, IaC, log
 
 **(Person 3):**
 
-- ⏳ Google OAuth (US3) — påbörjad
 - ⏳ ACR + Azure Container Apps setup
 - ⏳ Expandera Bicep med parametriserade miljöer
 ---
@@ -46,7 +45,7 @@ Bygga, containerisera och deploya en lyxchokladapp på Azure med CI/CD, IaC, log
 | -------- | ---------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
 | Person 1 | US1 Favoritlista ✅, US4 Sökning✅                                                   | Docker ✅, Key Vault, Application Insights, Managed Identity, CI/CD, GitHub Actions |
 | Person 2 | US2 (Galleri)✅, US6 (Admin) ✅, US5 (Blob Storage)✅, US8 (Vaurkorg), US10 (Flaggor) | Rollhantering ✅                                                                    |
-| Person 3 | US3 (Google OAuth), US7 (Miljöhantering) ✅                                         | IaC (Bicep), CosmosDB ✅, Azure-setup                                               |
+| Person 3 | US3 (Google OAuth) ✅, US7 (Miljöhantering) ✅                                       | IaC (Bicep), CosmosDB ✅, Azure-setup                                               |
 > **Viktigt:** Alla hjälps åt med allt men har huvudansvar för sitt område. Alla ska kunna förklara _hela_ lösningen vid examination.
 
 ---
@@ -57,7 +56,7 @@ Bygga, containerisera och deploya en lyxchokladapp på Azure med CI/CD, IaC, log
 | -------- | ---------------------------------------------- | ---------- | --------- | ---------- |
 | **US1**  | Favoritlista (migreras till CosmosDB i v3)     | Person 1   | 1         | ✅ Klar     |
 | **US2**  | Produktgalleri (grid, flaggor, REST Countries) | Person 2   | 1         | ✅ Klar     |
-| **US3**  | Google OAuth + Key Vault                       | Person 3   | 2         | ⏳          |
+| **US3**  | Google OAuth + Key Vault                       | Person 3   | 2         | ✅ Klar     |
 | **US4**  | Sökning och filtrering                         | Person 1   | 1         | ✅ Klar     |
 | **US5**  | Azure Blob Storage (produktbilder)             | Person 2   | 2         | ✅ Klar     |
 | **US6**  | Admin-panel (CRUD, rollskyddad)                | Person 2   | 2         | ✅Klar      |
@@ -102,7 +101,7 @@ Bygga, containerisera och deploya en lyxchokladapp på Azure med CI/CD, IaC, log
 - **Person 3:** Sätt CosmosDB manuellt i portalen. **Skriv första IaC (Bicep)** för att sätta upp resursgrupp och CosmosDB (undvik manuella klick i Azure-portalen).
     
 
-### Vecka 3 — Auth + Docker + Databas
+### Vecka 3 — Auth + Docker + Databas ✅
 
 - Person 1: Docker — Dockerfile + kör appen i container lokalt + taggningsstrategi för images
     
@@ -209,17 +208,6 @@ Bygga, containerisera och deploya en lyxchokladapp på Azure med CI/CD, IaC, log
 - **Monitorering:** Azure Application Insights
     
 - **Rest API** - Motivering i vår app: API:et möjliggör att externa system eller mobilappar kan hämta produktdata programmatiskt utan att rendera HTML. T.ex. om någon vill bygga en mobilapp för The Snaxers, eller om en extern partner vill integrera vårt sortiment i sin tjänst.
-
----
-
-## ⚠️ Viktiga beslut tagna / att ta
-
-1. **Säkerhet (v3):** Managed Identity används för anslutningar för att slippa hantera connection strings.
-?
-    
-2. **Drift (v2):** Besluta Container Apps vs App Service — dokumentera motiveringen direkt.
-?
-    
 
 ---
 
@@ -371,18 +359,18 @@ Som användare vill jag kunna klicka på en flagga och få mer info om landet ch
 
 - **Kod:** Favoritlista, Dynamisk bildhantering, Unit tester och Sökning/Filtrering.
     
-- **Moln/Tech:** Docker, Key Vault, Managed Identity, Application Insights.
+- **Moln/Tech:** Docker, Key Vault, Managed Identity, Application Insights,GitHub Actions (CI/CD)
     
-- **Varför det är tungt:** Att få Docker-containern att snurra korrekt i molnet + Att sätta upp "Passwordless" infrastruktur mot Azure Key Vault och CosmosDB via Managed Identity är klurigt och kräver djup förståelse för Azures behörighetssystem (RBAC). Du ansvarar för att täppa till alla säkerhetshål och bygga spårbarhet (App Insights) så att teamet kan hitta fel i produktion. 
+- **Varför det är tungt:** Att få Docker-containern att snurra korrekt i molnet + Att sätta upp "Passwordless" infrastruktur mot Azure Key Vault och CosmosDB via Managed Identity är klurigt och kräver djup förståelse för Azures behörighetssystem (RBAC). Du ansvarar för att täppa till alla säkerhetshål och bygga spårbarhet (App Insights) så att teamet kan hitta fel i produktion. CI/CD-pipelines är ökända för att ta tid ("varför bygger den lokalt men inte i GitHub Actions?!"). 
     
 
 **Person 2: DevOps & Filer**
 
 - **Kod:** Produktgalleri, Varukorg, Admin-panel (CRUD), integrera Blob Storage.
     
-- **Moln/Tech:** GitHub Actions (CI/CD), Rollhantering.
+- **Moln/Tech:** Rollhantering.
     
-- **Varför det är tungt:** CI/CD-pipelines är ökända för att ta tid ("varför bygger den lokalt men inte i GitHub Actions?!"). Hantera filströmmar (bilduppladdning till Blob Storage) och rollhantering, är ett stort och viktigt lass.
+- **Varför det är tungt:** Hantera filströmmar (bilduppladdning till Blob Storage) och rollhantering, är ett stort och viktigt lass.
     
 
 **Person 3: Infrastruktur & Databas (Den tunga motorn)**
@@ -408,8 +396,11 @@ Ni har lyckats skapa tre helt unika specialistroller:
 
 
 
+**Healthcheck:**
+[http://localhost:5065/health](http://localhost:5065/health)
+
+
+
 ![[Hemsidan Snaxers.png]]
-
-
 
 
