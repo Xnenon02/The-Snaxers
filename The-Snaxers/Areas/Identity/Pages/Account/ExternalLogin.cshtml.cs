@@ -123,6 +123,8 @@ public class ExternalLoginModel : PageModel
 
     // ===================================================
     // AC2: Skapa profil vid första inloggning
+    // OBS: Profilen sparas i SQLite via ASP.NET Core Identity — detta är ett
+    // medvetet arkitekturbeslut. CosmosDB används för Favorites (med Identity-användarens ID).
     // ===================================================
     private async Task<IActionResult> CreateUserAndSignInAsync(
         ExternalLoginInfo info, string email, string returnUrl)
