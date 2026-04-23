@@ -50,7 +50,7 @@ docker compose -f The-Snaxers/docker/docker-compose.yml --env-file The-Snaxers/d
 docker compose -f The-Snaxers/docker/docker-compose.yml down
 ```
 
-## Köra lokalt utan Docker
+## Köra med Docker utan Compose
 ```bash
 docker run -p 8080:8080 thesnaxers
 ```
