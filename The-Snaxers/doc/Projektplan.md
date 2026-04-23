@@ -4,6 +4,28 @@
 
 Bygga, containerisera och deploya en lyxchokladapp på Azure med CI/CD, IaC, logging och monitorering — i enlighet med kursplanen för _Molnapplikationer fördjupning (40 yhp)_.
 
+---
+## Status 22 april: 
+**(Person 1):**
+
+- ⏳ ACR-deploy i CI/CD-pipeline — väntar på Tom
+- ⏳ Application Insights mot riktig Azure + felsöknings-case dokumenterat — väntar på Tom
+- ⏳ Managed Identity kopplad till Container App — väntar på Tom
+
+**(Person 2):**
+
+- ⏳ US8 Varukorg — ej påbörjat
+- ⏳ US10 Flaggor — påbörjat
+- ⏳ JWT eller API-nyckel-middleware - H gjort middleware
+
+
+**(Person 3):**
+
+- ⏳ Google OAuth (US3) — påbörjad
+- ⏳ ACR + Azure Container Apps setup
+- ⏳ Expandera Bicep med parametriserade miljöer
+---
+
 ## 🎓 Koppling till lärandemål
 
 | **Lärandemål**                           | **Hur vi uppfyller det**                                                                    |
@@ -20,11 +42,11 @@ Bygga, containerisera och deploya en lyxchokladapp på Azure med CI/CD, IaC, log
 
 ## 👥 **Rollfördelning
 
-| Person   | User Stories                                                                   | Tekniskt ansvar                                                                  |
-| -------- | ------------------------------------------------------------------------------ | -------------------------------------------------------------------------------- |
-| Person 1 | US1 Favoritlista ✅, US4 Sökning✅                                               | Docker, Key Vault, Application Insights, Managed Identity, CI/CD, GitHub Actions |
-| Person 2 | US2 (Galleri), US6 (Admin), US5 (Blob Storage), US8 (Vaurkorg), US10 (Flaggor) | Rollhantering                                                                    |
-| Person 3 | US3 (Google OAuth), US7 (Miljöhantering)                                       | IaC (Bicep), CosmosDB, Azure-setup                                               |
+| Person   | User Stories                                                                       | Tekniskt ansvar                                                                    |
+| -------- | ---------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| Person 1 | US1 Favoritlista ✅, US4 Sökning✅                                                   | Docker ✅, Key Vault, Application Insights, Managed Identity, CI/CD, GitHub Actions |
+| Person 2 | US2 (Galleri)✅, US6 (Admin) ✅, US5 (Blob Storage)✅, US8 (Vaurkorg), US10 (Flaggor) | Rollhantering ✅                                                                    |
+| Person 3 | US3 (Google OAuth), US7 (Miljöhantering) ✅                                         | IaC (Bicep), CosmosDB ✅, Azure-setup                                               |
 > **Viktigt:** Alla hjälps åt med allt men har huvudansvar för sitt område. Alla ska kunna förklara _hela_ lösningen vid examination.
 
 ---
@@ -37,11 +59,11 @@ Bygga, containerisera och deploya en lyxchokladapp på Azure med CI/CD, IaC, log
 | **US2**  | Produktgalleri (grid, flaggor, REST Countries) | Person 2   | 1         | ✅ Klar     |
 | **US3**  | Google OAuth + Key Vault                       | Person 3   | 2         | ⏳          |
 | **US4**  | Sökning och filtrering                         | Person 1   | 1         | ✅ Klar     |
-| **US5**  | Azure Blob Storage (produktbilder)             | Person 2   | 2         | ⏳          |
-| **US6**  | Admin-panel (CRUD, rollskyddad)                | Person 2   | 2         | ⏳          |
-| **US7**  | Miljöhantering dev/staging/prod                | Person 3   | 3         | ⏳          |
+| **US5**  | Azure Blob Storage (produktbilder)             | Person 2   | 2         | ✅ Klar     |
+| **US6**  | Admin-panel (CRUD, rollskyddad)                | Person 2   | 2         | ✅Klar      |
+| **US7**  | Miljöhantering dev/staging/prod                | Person 3   | 3         | ✅ Klar     |
 | **US8**  | Varukorg                                       | Person 2   | 4         | ⏳          |
-| **US9**  | Dynamiska bilder Blob storage                  | Person 1   | 2         | ⏳          |
+| **US9**  | Dynamiska bilder Blob storage                  | Person 1   | 2         | ✅ Klar     |
 | **US10** | Info om länder                                 | Person 2   | 3         | ⏳          |
 
 ---
@@ -156,11 +178,11 @@ Bygga, containerisera och deploya en lyxchokladapp på Azure med CI/CD, IaC, log
 | ------------------------------------------------------------------------------ | ---------- | --------- | ------------------ |
 | Uppdatera Product-modellen & sätt upp 3-tier (Service + Repository interfaces) | Alla       | 1-2       | —                  |
 | Skapa grundläggande IaC (Bicep)                                                | Person 3   | 2         | IaC                |
-| Enhetstester (produktlogik)                                                    | Person 2   | 2         | —                  |
+| Enhetstester (Countryservice)                                                  | Person 1   | 2         | —                  |
 | Docker + Dockerfile                                                            | Person 1   | 3         | Containerisering   |
 | Taggningsstrategi för images                                                   | Person 1   | 3         | Livscykelhantering |
 | Migrera till CosmosDB (EF Core Cosmos Provider)                                | Person 3   | 3         | Molntjänster       |
-| GitHub Actions CI/CD (inkl. testkörning)                                       | Person 2   | 4         | CI/CD              |
+| GitHub Actions CI/CD (inkl. testkörning)                                       | Person 1   | 4         | CI/CD              |
 | ACR + retention-policy                                                         | Person 3   | 4         | Livscykelhantering |
 | Expandera IaC (parametriserade miljöer)                                        | Person 3   | 5         | IaC                |
 | Rollhantering Admin/User                                                       | Person 2   | 5         | Säkerhet           |
@@ -168,6 +190,7 @@ Bygga, containerisera och deploya en lyxchokladapp på Azure med CI/CD, IaC, log
 | App Insights + dokumenterat felsöknings-case                                   | Person 1   | 6         | Logging/Felsökning |
 | Skalbarhetsdokument + autoscaling-config                                       | Alla       | 7         | Skalbarhet         |
 | Livscykel-review (image-städning, zero-downtime)                               | Alla       | 7         | Livscykelhantering |
+| Rest API                                                                       | 1          | 4         |                    |
 
 ---
 
@@ -185,6 +208,7 @@ Bygga, containerisera och deploya en lyxchokladapp på Azure med CI/CD, IaC, log
     
 - **Monitorering:** Azure Application Insights
     
+- **Rest API** - Motivering i vår app: API:et möjliggör att externa system eller mobilappar kan hämta produktdata programmatiskt utan att rendera HTML. T.ex. om någon vill bygga en mobilapp för The Snaxers, eller om en extern partner vill integrera vårt sortiment i sin tjänst.
 
 ---
 
@@ -383,5 +407,9 @@ Ni har lyckats skapa tre helt unika specialistroller:
 3. **Cloud Infrastructure & Data Engineer** (Person 3)
 
 
+
 ![[Hemsidan Snaxers.png]]
+
+
+
 

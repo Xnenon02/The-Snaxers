@@ -66,6 +66,11 @@ builder.Services.AddSingleton(sp =>
     if (string.IsNullOrWhiteSpace(endpoint))
         throw new InvalidOperationException("CosmosDb:AccountEndpoint saknas i konfigurationen.");
 
+    // Dual-mode: use account key if available (local Docker), otherwise use Managed Identity (Azure production)
+    var accountKey = configuration["CosmosDb:AccountKey"];
+    if (!string.IsNullOrWhiteSpace(accountKey))
+        return new CosmosClient(endpoint, accountKey);
+
     var credential = new DefaultAzureCredential(new DefaultAzureCredentialOptions
     {
         TenantId = configuration["CosmosDb:TenantId"]
@@ -112,6 +117,27 @@ builder.Services.AddDefaultIdentity<IdentityUser>(options =>
     options.SignIn.RequireConfirmedAccount = false)
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>();
+
+// ===================================================
+// GOOGLE OAUTH — User Secrets lokalt, Key Vault i produktion
+// ===================================================
+var googleClientId = builder.Configuration["Authentication:Google:ClientId"];
+var googleClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
+
+if (!string.IsNullOrEmpty(googleClientId) && !string.IsNullOrEmpty(googleClientSecret))
+{
+    builder.Services.AddAuthentication()
+        .AddGoogle(options =>
+        {
+            options.ClientId = googleClientId;
+            options.ClientSecret = googleClientSecret;
+
+            // Hämta profilbild och namn från Google
+            options.Scope.Add("profile");
+            options.SaveTokens = true;
+        });
+}
+
 
 var app = builder.Build();
 
