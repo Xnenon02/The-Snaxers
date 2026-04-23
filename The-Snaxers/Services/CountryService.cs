@@ -1,5 +1,6 @@
 using System.Net.Http.Json;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
 
 namespace TheSnaxers.Services;
 
@@ -7,14 +8,16 @@ public class CountryService : ICountryService
 {
     private readonly HttpClient _http;
     private readonly IMemoryCache _cache;
+    private readonly ILogger<CountryService> _logger;
 
     // Cache duration: country data rarely changes, 24 hours is safe
     private static readonly TimeSpan CacheDuration = TimeSpan.FromHours(24);
 
-    public CountryService(HttpClient http, IMemoryCache cache)
+    public CountryService(HttpClient http, IMemoryCache cache, ILogger<CountryService> logger)
     {
         _http = http;
         _cache = cache;
+        _logger = logger;
     }
 
     public async Task<CountryInfo> GetCountryInfoAsync(string countryName)
@@ -49,9 +52,26 @@ public class CountryService : ICountryService
 
             return result;
         }
-        catch 
+        catch (OperationCanceledException)
         {
             // On failure, cache fallback briefly to avoid hammering a down API
+            _logger.LogWarning("CountryService: Timeout fetching country info for {Country}", countryName);
+            var fallback = new CountryInfo { Name = countryName, FlagUrl = "" };
+            _cache.Set(cacheKey, fallback, TimeSpan.FromMinutes(5));
+            return fallback;
+        }
+        catch (HttpRequestException ex)
+        {
+            // On failure, cache fallback briefly to avoid hammering a down API
+            _logger.LogWarning(ex, "CountryService: Network error fetching country info for {Country}", countryName);
+            var fallback = new CountryInfo { Name = countryName, FlagUrl = "" };
+            _cache.Set(cacheKey, fallback, TimeSpan.FromMinutes(5));
+            return fallback;
+        }
+        catch (Exception ex)
+        {
+            // On failure, cache fallback briefly to avoid hammering a down API
+            _logger.LogError(ex, "CountryService: Unexpected error fetching country info for {Country}", countryName);
             var fallback = new CountryInfo { Name = countryName, FlagUrl = "" };
             _cache.Set(cacheKey, fallback, TimeSpan.FromMinutes(5));
             return fallback;

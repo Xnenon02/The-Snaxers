@@ -3,6 +3,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using TheSnaxers.Services;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
 namespace TheSnaxers.Tests;
@@ -19,7 +20,8 @@ public class CountryServiceTests
         // Arrange
         var httpClient = new HttpClient();
         var cache = CreateCache();
-        var service = new CountryService(httpClient, cache);
+        var logger = NullLogger<CountryService>.Instance;
+        var service = new CountryService(httpClient, cache, logger);
         var emptyCountryName = "";
 
         // Act
