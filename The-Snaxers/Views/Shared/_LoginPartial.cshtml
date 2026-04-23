@@ -1,12 +1,30 @@
 @using Microsoft.AspNetCore.Identity
+@using System.Security.Claims
 @inject SignInManager<Microsoft.AspNetCore.Identity.IdentityUser> SignInManager
 @inject UserManager<Microsoft.AspNetCore.Identity.IdentityUser> UserManager
 
 @if (SignInManager.IsSignedIn(User))
 {
-    <li class="nav-item">
-        @* Changed text to white to match the dark chocolate navbar theme *@
-        <span class="nav-link text-white">👤 @UserManager.GetUserName(User)</span>
+    @* AC5: Visa profilbild från Google om den finns, annars visas ett standardikon *@
+    var pictureUrl = User.FindFirstValue("picture");
+    var displayName = User.FindFirstValue(ClaimTypes.Name)
+                      ?? UserManager.GetUserName(User)
+                      ?? "Användare";
+
+    <li class="nav-item d-flex align-items-center gap-2 ms-2">
+        @if (!string.IsNullOrEmpty(pictureUrl))
+        {
+            <img src="@pictureUrl"
+                 alt="@displayName"
+                 class="rounded-circle border border-white"
+                 style="width:32px; height:32px; object-fit:cover;"
+                 referrerpolicy="no-referrer" />
+        }
+        else
+        {
+            <span class="text-white fs-5">👤</span>
+        }
+        <span class="nav-link text-white p-0">@displayName</span>
     </li>
     <li class="nav-item">
         <form asp-area="Identity" asp-page="/Account/Logout" method="post">
@@ -17,7 +35,6 @@
 else
 {
     <li class="nav-item">
-        @* Ensuring login and register links are visible against the dark background *@
         <a class="nav-link text-white" asp-area="Identity" asp-page="/Account/Register">Registrera</a>
     </li>
     <li class="nav-item">
