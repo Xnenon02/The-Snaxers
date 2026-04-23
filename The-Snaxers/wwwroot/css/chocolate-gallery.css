@@ -117,19 +117,50 @@
 .country-popover {
     display: none;
     position: absolute;
-    bottom: 120%; /* Placerar rutan ovanför flaggan istället för inuti */
-    right: 0;
-    width: 200px;
+    /* Centrera den ovanför flaggan */
+    bottom: 40px; /* Justera denna så den hamnar precis ovanför flaggan */
+    left: 50%;
+    transform: translateX(-50%); /* Detta centrerar rutan perfekt */
+    
+    width: 220px; 
+    /* Höjd-fixen: */
+    height: auto; 
+    max-height: none; /* Ta bort begränsningen */
+    
     background: white;
-    border: 1px solid #ddd;
+    border: 1px solid #d4af37;
     padding: 10px;
     border-radius: 8px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-    z-index: 9999; /* Säkrar att den ligger överst */
-    pointer-events: none; /* Gör att den inte stör klick */
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    z-index: 999999; /* Skyhögt för att vinna över allt annat */
+    
+    /* Viktigt: */
+    pointer-events: none;
+    white-space: normal; /* Tillåter texten att radbryta istället för att bli en lång linje */
 }
 
 /* Visa rutan vid hovring på wrappern */
 .country-wrapper:hover .country-popover {
     display: block;
+}
+
+/* Vi tvingar framsidan av kortet att visa det som sticker ut */
+.flip-card-front, .flip-card, .card {
+    overflow: visible !important;
+}
+
+/* Om du har en behållare för bilden, se till att den inte klipper heller */
+.position-relative {
+    overflow: visible !important;
+}
+
+/* När man hovrar på ett kolumn-kort, höj upp dess z-index så popovern syns över grannarna */
+.col:hover {
+    position: relative;
+    z-index: 10; 
+}
+
+/* Se till att själva wrappern också har hög z-index vid hovring */
+.country-wrapper:hover {
+    z-index: 100;
 }

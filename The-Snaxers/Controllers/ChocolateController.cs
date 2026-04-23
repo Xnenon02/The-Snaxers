@@ -79,7 +79,27 @@ public class ChocolateController : Controller
                     "ecuador" => "ec",
                     "sverige" => "se",
                     "sweden" => "se",
-                    _ => "vn" // Vår favorit-fallback!
+                    "schweiz" => "ch",
+                    "switzerland" => "ch",
+                    "japan" => "jp",
+                    "italien" => "it",
+                    "italy" => "it",
+                    "madagaskar" => "mg",
+                    "madagascar" => "mg",
+                    "ghana" => "gh",
+                    "venezuela" => "ve",
+                    "peru" => "pe",
+                    "tanzania" => "tz",
+                    "filippinerna" => "ph",
+                    "philippines" => "ph",
+                    "brasilien" => "br",
+                    "brazil" => "br",
+                    "finland" => "fi",
+                    "dominican republic" => "do",
+                    "dominikanska republiken" => "do",
+                    "spanien" => "es",
+                    "spain" => "es",
+                    _ => "un" 
                 };
             }
             // --- MARTINA FIXAR TOMS DB-SLARV SLUT ---

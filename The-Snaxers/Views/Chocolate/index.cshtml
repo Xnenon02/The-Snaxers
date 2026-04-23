@@ -143,11 +143,12 @@ document.addEventListener('DOMContentLoaded', function () {
     countryElements.forEach(el => {
         el.addEventListener('mouseenter', async function() {
             const code = this.getAttribute('data-country-code');
-                if (!code || code === "") {
-        popover.innerHTML = "Ingen landskod hittades.";
-        return;
-    }
-            const popover = this.querySelector('.country-popover');
+const popover = this.querySelector('.country-popover'); // Flytta upp denna!
+
+if (!code || code === "") {
+    if (popover) popover.innerHTML = "Ingen landskod hittades.";
+    return;
+}
             
             // Om vi inte redan har hämtat info, gör det nu
             if (popover && popover.innerHTML === 'Laddar...') {
