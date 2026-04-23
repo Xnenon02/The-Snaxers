@@ -9,7 +9,9 @@ Bygga, containerisera och deploya en lyxchokladapp på Azure med CI/CD, IaC, log
 ## Status 23 april: 
 
 **(Person 1):**
-
+- ✅ US1 Favoritlista 
+- ✅ US4 Sökning 
+- ✅ US9 Dynamiska bilder 
 - ✅ Docker + Dockerfile + multi-platform
 - ✅ Docker Compose + .env secret management
 - ✅ CI/CD (GitHub Actions — build + test)
@@ -18,7 +20,8 @@ Bygga, containerisera och deploya en lyxchokladapp på Azure med CI/CD, IaC, log
 - ✅ Strukturerad logging i alla controllers
 - ✅ CountryService caching + timeout + ILogger
 - ✅ Bicep security & monitoring (förberedelse)
-- ⏳ ACR-deploy i CI/CD-pipeline — väntar på Tom
+- ✅ Keyvault & Application Insights (förberedelser)
+- ✅ XUnit Countryservice TDD
 - ⏳ Application Insights mot riktig Azure + felsöknings-case — väntar på Tom
 - ⏳ Managed Identity kopplad till Container App — väntar på Tom
 
@@ -29,7 +32,7 @@ Bygga, containerisera och deploya en lyxchokladapp på Azure med CI/CD, IaC, log
 - ✅ US6 Admin-panel
 - ✅ Rollhantering Admin/User
 - ⏳ US8 Varukorg — ej påbörjat
-- ⏳ US10 Flaggor med modal — påbörjat
+- ⏳ US10 Flaggor med modal — PR 
 - ⏳ Deploy-steg i CI/CD pipeline (ACR) — väntar på Tom
 
 **(Person 3):**
@@ -58,11 +61,11 @@ Bygga, containerisera och deploya en lyxchokladapp på Azure med CI/CD, IaC, log
 
 ## 👥 Rollfördelning
 
-| Person   | User Stories                                                                        | Tekniskt ansvar                                                                                          |
-| -------- | ----------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| Person 1 | US1 Favoritlista ✅, US4 Sökning ✅, US9 Dynamiska bilder ✅                          | Docker ✅, CI/CD build+test ✅, REST API ✅, Key Vault, Application Insights, Managed Identity, ACR-deploy |
-| Person 2 | US2 (Galleri) ✅, US6 (Admin) ✅, US5 (Blob Storage) ✅, US8 (Varukorg), US10 (Flaggor) | Blob Storage ✅, Rollhantering ✅, Deploy-steg i pipeline (ACR) ⏳                                         |
-| Person 3 | US3 (Google OAuth) ✅, US7 (Miljöhantering) ✅                                        | IaC (Bicep) ✅, CosmosDB ✅, Azure-setup ⏳                                                               |
+| Person   | User Stories                                                                           | Tekniskt ansvar                                                                                   |
+| -------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| Person 1 | US1 Favoritlista ✅, US4 Sökning ✅, US9 Dynamiska bilder ✅                              | Docker ✅, CI/CD build+test ✅, REST API ✅, Key Vault ⏳, Application Insights ⏳, Managed Identity ⏳ |
+| Person 2 | US2 (Galleri) ✅, US6 (Admin) ✅, US5 (Blob Storage) ✅, US8 (Varukorg) ⏳, US10 (Flaggor) | Blob Storage ✅, Rollhantering ✅, Deploy-steg i pipeline (ACR) ⏳                                   |
+| Person 3 | US3 (Google OAuth) ✅, US7 (Miljöhantering) ✅                                           | IaC (Bicep) ✅, CosmosDB ✅, Azure-setup ⏳                                                          |
 
 > **Viktigt:** Alla hjälps åt med allt men har huvudansvar för sitt område. Alla ska kunna förklara _hela_ lösningen vid examination.
 
@@ -295,13 +298,13 @@ Som användare vill jag kunna klicka på en flagga och få mer info om landet ch
 
 - **Kod:** US1 Favoritlista, US4 Sökning & filtrering, US9 Dynamiska bilder, Enhetstester, REST API, bugfix sökning+favoriter.
 - **Moln/Tech:** Docker + Docker Compose, GitHub Actions CI/CD (build+test), CountryService caching, Key Vault, Managed Identity, Application Insights, ACR-deploy.
-- **Varför det är tungt:** Ansvarar för hela säkerhetsarkitekturen (Passwordless/Managed Identity), containerisering mot riktig Azure, och CI/CD-pipeline. Kräver djup förståelse för Azures RBAC-system och DevOps-flöden.
+- **Varför det är tungt:** Ansvarar för hela säkerhetsarkitekturen (Passwordless/Managed Identity), containerisering mot riktig Azure, och CI/CD-pipeline. Kräver djup förståelse för Azures RBAC-system och DevOps-flöden.  Magic bytes-validering och livscykelhantering är tekniskt krävande.
 
 **Person 2: Fullstack & DevOps Engineer**
 
 - **Kod:** US2 Produktgalleri, US5 Blob Storage, US6 Admin-panel, US8 Varukorg, US10 Flaggor med modal.
 - **Moln/Tech:** Rollhantering Admin/User, Deploy-steg i CI/CD pipeline (ACR).
-- **Varför det är tungt:** Blob Storage-integrationen med magic bytes-validering och livscykelhantering är tekniskt krävande. Admin-panelen med rollskydd och CRUD mot CosmosDB är ett stort kodmässigt bidrag. US8 och US10 återstår.
+- **Varför det är tungt:** Blob Storage-integrationen är tekniskt krävande. Admin-panelen med rollskydd och CRUD mot CosmosDB är ett stort kodmässigt bidrag. US8 och US10 återstår.
 
 **Person 3: Cloud Infrastructure & Data Engineer**
 
@@ -325,4 +328,3 @@ Tre tydliga specialistroller med god arbetsfördelning:
 
 ![[Hemsidan Snaxers.png]]
 
-[[Lektion 08.04.26 Moln advanced]]
