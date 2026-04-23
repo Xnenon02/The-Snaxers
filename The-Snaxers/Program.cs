@@ -66,6 +66,11 @@ builder.Services.AddSingleton(sp =>
     if (string.IsNullOrWhiteSpace(endpoint))
         throw new InvalidOperationException("CosmosDb:AccountEndpoint saknas i konfigurationen.");
 
+    // Dual-mode: use account key if available (local Docker), otherwise use Managed Identity (Azure production)
+    var accountKey = configuration["CosmosDb:AccountKey"];
+    if (!string.IsNullOrWhiteSpace(accountKey))
+        return new CosmosClient(endpoint, accountKey);
+
     var credential = new DefaultAzureCredential(new DefaultAzureCredentialOptions
     {
         TenantId = configuration["CosmosDb:TenantId"]
