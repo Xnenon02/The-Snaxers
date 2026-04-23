@@ -14,8 +14,8 @@
     <form asp-controller="Chocolate" asp-action="Index" method="get" class="mb-4">
         <div class="row g-2">
             <div class="col-md-6">
-                <input type="text" name="searchTerm" value="@ViewBag.SearchTerm"
-                       class="form-control" placeholder="Sök på namn..." />
+                <input type="text" name="searchTerm" value="@ViewBag.SearchTerm" class="form-control"
+                       placeholder="Sök på namn..." />
             </div>
             <div class="col-md-4">
                 <select name="minCocoa" class="form-select">
@@ -34,7 +34,8 @@
     @if (Model == null || !Model.Any())
     {
         <div class="text-center my-5 p-5 border rounded bg-light">
-            <img src="~/images/nochoc.png" alt="Ingen choklad hittades" class="mb-4" style="max-width: 300px; opacity: 0.8;">
+            <img src="~/images/nochoc.png" alt="Ingen choklad hittades" class="mb-4"
+                 style="max-width: 300px; opacity: 0.8;">
             <p class="lead text-muted">Ingen choklad hittades för tillfället.</p>
             <p>Kom gärna tillbaka senare eller kontakta vår chokladmästare.</p>
         </div>
@@ -46,18 +47,13 @@
             {
                 var isFavorite = ((List<string>)ViewBag.FavoriteIds)?.Contains(chocolate.Id) ?? false;
                 <div class="col">
-                    <div class="flip-card" onclick="this.classList.toggle('flipped')">
+                    <div class="flip-card">
                         <div class="flip-card-inner">
 
                             @* FRAMSIDA *@
                             <div class="flip-card-front card h-100 shadow-sm hover-shadow transition">
                                 <div class="position-relative">
-                                    
-                                    @* TECH DEBT FIX: Vi tog bort DynamicImageUrl och använder nu ImageUrl direkt för att matcha Azure Blob Storage *@
-                                    @* Bild med fallback *@
-                                    <img src="@chocolate.ImageUrl" 
-                                        class="card-img-top choco-card-img" 
-                                        alt="@chocolate.Name">
+                                    <img src="@chocolate.ImageUrl" class="card-img-top choco-card-img" alt="@chocolate.Name">
 
                                     @if (chocolate.CocoaPercentage > 0)
                                     {
@@ -66,15 +62,19 @@
                                         </div>
                                     }
 
-                                    <div class="position-absolute bottom-0 end-0 m-2 shadow-sm bg-white p-1 rounded">
+                                    <div class="position-absolute bottom-0 end-0 m-2 shadow-sm bg-white p-1 rounded country-wrapper"
+                                         data-country-code="@chocolate.CountryCode"
+                                         onclick="event.stopPropagation()">
+                                        
                                         @if (!string.IsNullOrEmpty(chocolate.FlagUrl))
                                         {
-                                            <img src="@chocolate.FlagUrl" alt="@chocolate.CountryName" title="@chocolate.CountryName" class="flag-badge" style="max-width: 30px;">
+                                            <img src="@chocolate.FlagUrl" alt="@chocolate.CountryName" class="flag-badge" style="max-width: 30px;">
                                         }
                                         else
                                         {
-                                            <span title="@chocolate.CountryName" style="font-size:20px;">🌍</span>
+                                            <span style="font-size:20px;">🌍</span>
                                         }
+                                        <div class="country-popover">Laddar...</div>
                                     </div>
                                 </div>
 
@@ -83,13 +83,13 @@
                                     <p class="text-muted mb-3 small">Ursprung: @chocolate.CountryName</p>
                                     
                                     <div class="mt-auto d-flex justify-content-between align-items-center">
-                                        <button class="btn btn-outline-primary btn-sm" onclick="event.stopPropagation(); this.closest('.flip-card').classList.add('flipped')">Läs mer</button>
+                                        <button class="btn btn-outline-primary btn-sm"
+                                                onclick="event.stopPropagation(); this.closest('.flip-card').classList.add('flipped')">Läs mer</button>
                                         
                                         <div class="favorite-zone" onclick="event.stopPropagation()">
                                             <form asp-controller="Favorite" asp-action="@(isFavorite ? "Remove" : "Add")" method="post" class="d-inline">
                                                 <input type="hidden" name="productId" value="@chocolate.Id" />
                                                 <input type="hidden" name="returnUrl" value="Chocolate" />
-                                                @* Preserve search filters when toggling favorites *@
                                                 <input type="hidden" name="searchTerm" value="@ViewBag.SearchTerm" />
                                                 <input type="hidden" name="minCocoa" value="@ViewBag.MinCocoa" />
                                                 <button type="submit" class="btn btn-link p-0 text-decoration-none">
@@ -114,15 +114,14 @@
                                 {
                                     <p class="mb-1">✨ Märke: @chocolate.Brand</p>
                                 }
-                                @* UI-FIX: Added static weight display on flip card back (all products are 100g) *@
                                 <p class="mb-1">⚖️ Vikt: 100g</p>
                                 <p class="fw-bold mt-2">💰 Pris: @chocolate.Price kr</p>
                                 
-                                <button class="flip-back-btn mt-3 btn btn-outline-light btn-sm" onclick="event.stopPropagation(); this.closest('.flip-card').classList.remove('flipped')">
+                                <button class="flip-back-btn mt-3 btn btn-outline-light btn-sm"
+                                        onclick="event.stopPropagation(); this.closest('.flip-card').classList.remove('flipped')">
                                     ← Tillbaka
                                 </button>
                             </div>
-
                         </div>
                     </div>
                 </div>
@@ -130,3 +129,50 @@
         </div>
     }
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const countryElements = document.querySelectorAll('[data-country-code]');
+
+        countryElements.forEach(el => {
+            el.addEventListener('mouseenter', async function () {
+                const code = this.getAttribute('data-country-code');
+                const popover = this.querySelector('.country-popover');
+
+                if (!code || code === "") {
+                    if (popover) popover.innerHTML = "Ingen landskod hittades.";
+                    return;
+                }
+
+                if (popover && popover.innerHTML === 'Laddar...') {
+                    try {
+                        const response = await fetch(`/api/country/${code}`);
+                        if (!response.ok) throw new Error('Serverfel');
+                        const data = await response.json();
+
+                        popover.innerHTML = `
+                            <div style="padding: 5px;">
+                                <strong class="text-snaxers-gold">${data.name}</strong><br>
+                                <small class="text-muted">Visste du att...</small><br>
+                                <div class="mt-1">${data.fact}</div>
+                            </div>
+                        `;
+                    } catch (error) {
+                        console.error("Fetch error:", error);
+                        popover.innerHTML = `
+                            <div style="padding: 5px; color: #b00020;">
+                                <small>⚠️ Oj!</small><br>
+                                <span>Kunde inte hämta fakta just nu.</span>
+                            </div>
+                        `;
+                        setTimeout(() => {
+                            if (popover.innerText.includes("Kunde inte hämta")) {
+                                popover.innerHTML = "Laddar...";
+                            }
+                        }, 3000);
+                    }
+                }
+            });
+        });
+    });
+</script>
