@@ -108,32 +108,28 @@
     filter: drop-shadow(0 8px 16px rgba(0,0,0,0.12));
 }
 
+/* Se till att containern inte klipper bort saker som sticker ut */
 .country-wrapper {
-    position: relative;
-    display: inline-block;
-    cursor: help;
+    position: absolute; /* Det har du redan */
+    z-index: 1000; /* Detta lyfter rutan ovanför bilden */
 }
 
 .country-popover {
-    visibility: hidden;
-    width: 160px;
-    background-color: var(--snaxers-dark, #333);
-    color: #fff;
-    text-align: center;
-    border-radius: 6px;
-    padding: 8px;
+    display: none;
     position: absolute;
-    z-index: 1;
-    bottom: 125%; /* Placera ovanför flaggan */
-    left: 50%;
-    margin-left: -80px;
-    opacity: 0;
-    transition: opacity 0.3s;
-    font-size: 0.8rem;
-    box-shadow: 0px 4px 10px rgba(0,0,0,0.2);
+    bottom: 120%; /* Placerar rutan ovanför flaggan istället för inuti */
+    right: 0;
+    width: 200px;
+    background: white;
+    border: 1px solid #ddd;
+    padding: 10px;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    z-index: 9999; /* Säkrar att den ligger överst */
+    pointer-events: none; /* Gör att den inte stör klick */
 }
 
+/* Visa rutan vid hovring på wrappern */
 .country-wrapper:hover .country-popover {
-    visibility: visible;
-    opacity: 1;
+    display: block;
 }

@@ -60,42 +60,59 @@ public class ChocolateController : Controller
 
         ViewBag.SearchTerm = searchTerm;
         ViewBag.MinCocoa = minCocoa;
-
         // 3. Mappa produkterna till ViewModels och berika med CountryInfo
-    var viewModel = new List<ChocolateGalleryViewModel>();
-    foreach (var p in products)
-    {
-        // TECH DEBT FIX: Vi använder p.Country direkt och skippar switch-satsen för kategorier
-        var searchCountry = !string.IsNullOrWhiteSpace(p.Country) ? p.Country : "Sweden";
-
-        CountryInfo? countryInfo = null;
-        try 
-        { 
-            countryInfo = await _countryService.GetCountryInfoAsync(searchCountry); 
-        }
-        catch (Exception ex)
-        { 
-            _logger.LogWarning(ex, "Failed to fetch country info for {Country}", searchCountry);
-        }
-
-        viewModel.Add(new ChocolateGalleryViewModel
+        var viewModel = new List<ChocolateGalleryViewModel>();
+        foreach (var p in products)
         {
-            Id = p.Id,
-            Name = p.Name ?? "Okänt",
-            Brand = p.Brand ?? "Okänt",
-            CocoaPercentage = p.CocoaPercentage,
-            Description = p.Description ?? "",
-            Price = p.Price,
-            // TECH DEBT FIX: Om ImageUrl är tom i DB används standardvärdet från ViewModel-klassen
-            ImageUrl = !string.IsNullOrWhiteSpace(p.ImageUrl) ? p.ImageUrl : "/images/placeholder-choco.png",
-            CountryName = countryInfo?.Name ?? p.Country ?? "Okänt",
-            CountryCode = p.CountryCode,
-            FlagUrl = countryInfo?.FlagUrl ?? ""
-        });
-    }
+            var searchCountry = !string.IsNullOrWhiteSpace(p.Country) ? p.Country : "Sweden";
+
+            // --- MARTINA FIXAR TOMS DB-SLARV START ---
+            // Om CountryCode saknas i databasen, gissar vi baserat på Country-namnet
+            var fixedCountryCode = p.CountryCode;
+            if (string.IsNullOrEmpty(fixedCountryCode))
+            {
+                fixedCountryCode = searchCountry.ToLower() switch
+                {
+                    "vietnam" => "vn",
+                    "belgien" => "be",
+                    "belgium" => "be",
+                    "ecuador" => "ec",
+                    "sverige" => "se",
+                    "sweden" => "se",
+                    _ => "vn" // Vår favorit-fallback!
+                };
+            }
+            // --- MARTINA FIXAR TOMS DB-SLARV SLUT ---
+
+            CountryInfo? countryInfo = null;
+            try
+            {
+                countryInfo = await _countryService.GetCountryInfoAsync(searchCountry);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to fetch country info for {Country}", searchCountry);
+            }
+
+            viewModel.Add(new ChocolateGalleryViewModel
+            {
+                Id = p.Id,
+                Name = p.Name ?? "Okänt",
+                Brand = p.Brand ?? "Okänt",
+                CocoaPercentage = p.CocoaPercentage,
+                Description = p.Description ?? "",
+                Price = p.Price,
+                ImageUrl = !string.IsNullOrWhiteSpace(p.ImageUrl) ? p.ImageUrl : "/images/placeholder-choco.png",
+                CountryName = countryInfo?.Name ?? p.Country ?? "Okänt",
+                CountryCode = fixedCountryCode, // <-- Använd den fixade koden här!
+                FlagUrl = countryInfo?.FlagUrl ?? ""
+            });
+        }
 
         return View(viewModel);
     }
+
+  
     // GET: Chocolate/Create
 public IActionResult Create()
 {

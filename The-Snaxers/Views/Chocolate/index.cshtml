@@ -67,7 +67,8 @@
                                     }
 
                                     <div class="position-absolute bottom-0 end-0 m-2 shadow-sm bg-white p-1 rounded country-wrapper" 
-     data-country-code="@chocolate.CountryCode" 
+     data-country-code="@chocolate.CountryCode"
+                                         @*data-country-code="@(string.IsNullOrEmpty(chocolate.CountryCode) ? "vn" : chocolate.CountryCode)"*@
      onclick="event.stopPropagation()">
     
     @if (!string.IsNullOrEmpty(chocolate.FlagUrl))
@@ -140,21 +141,25 @@ document.addEventListener('DOMContentLoaded', function () {
     countryElements.forEach(el => {
         el.addEventListener('mouseenter', async function() {
             const code = this.getAttribute('data-country-code');
+                if (!code || code === "") {
+        popover.innerHTML = "Ingen landskod hittades.";
+        return;
+    }
             const popover = this.querySelector('.country-popover');
             
             // Om vi inte redan har hämtat info, gör det nu
             if (popover && popover.innerHTML === 'Laddar...') {
                 try {
                     // Inuti din fetch-logik i scriptet:
-const response = await fetch(`/api/country/${code}`);
-const data = await response.json();
+            const response = await fetch(`/api/country/${code}`);
+            const data = await response.json();
 
-popover.innerHTML = `
-    <div style="padding: 5px;">
-        <small class="text-snaxers-gold">Visste du att...</small><br>
-        ${data.fact}
-    </div>
-`;
+    popover.innerHTML = `
+        <div style="padding: 5px;">
+            <small class="text-snaxers-gold">Visste du att...</small><br>
+            ${data.fact}
+        </div>
+    `;
                 } catch (error) {
                     popover.innerHTML = 'Kunde inte hämta info.';
                 }
