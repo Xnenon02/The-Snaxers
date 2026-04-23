@@ -1,0 +1,35 @@
+@page
+@using TheSnaxers.Areas.Identity.Pages.Account
+@model ExternalLoginModel
+@{
+    ViewData["Title"] = "Registrera med externt konto";
+}
+
+<h1>@ViewData["Title"]</h1>
+<h2 id="external-login-title">Associera ditt @Model.ProviderDisplayName-konto.</h2>
+<hr />
+
+<p id="external-login-description" class="text-info">
+    Du är inloggad med <strong>@Model.ProviderDisplayName</strong>.
+    Ange din e-postadress nedan för att slutföra registreringen.
+</p>
+
+<div class="row">
+    <div class="col-md-4">
+        <form asp-page-handler="Confirmation" asp-route-returnUrl="@Model.ReturnUrl" method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+            <div class="form-floating mb-3">
+                <input asp-for="Input.Email" class="form-control" autocomplete="email" placeholder="namn@example.com" />
+                <label asp-for="Input.Email" class="form-label">E-postadress</label>
+                <span asp-validation-for="Input.Email" class="text-danger"></span>
+            </div>
+            <div>
+                <button type="submit" class="w-100 btn btn-lg btn-primary">Registrera</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
