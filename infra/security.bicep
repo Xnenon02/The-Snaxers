@@ -36,20 +36,7 @@ resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
 }
 
 // ===================================================
-// RBAC — Ge Managed Identity läsrättighet till Key Vault
-// ===================================================
-var keyVaultSecretsUserRoleId = '4633458b-17de-408a-b874-0445c86b69e0'
-
-resource keyVaultRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(keyVault.id, managedIdentity.id, keyVaultSecretsUserRoleId)
-  scope: keyVault
-  properties: {
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', keyVaultSecretsUserRoleId)
-    principalId: managedIdentity.properties.principalId
-    principalType: 'ServicePrincipal'
-  }
-}
-
+// NOTE: RBAC-roller (Key Vault Secrets User för Managed Identity) tilldelas separat av Hanita
 // ===================================================
 // OUTPUTS — Används av Container App och monitoring.bicep
 // ===================================================
