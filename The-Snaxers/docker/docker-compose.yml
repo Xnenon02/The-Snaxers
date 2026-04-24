@@ -16,13 +16,12 @@ services:
       - CosmosDb__FavoritesContainerName=Favorites
       - ConnectionStrings__AzureBlobStorage=${BLOB_CONNECTION_STRING}
       - AzureStorage__ProductContainerName=products
-      - AdminSettings__Email=${ADMIN_EMAIL}
-      - AdminSettings__Password=${ADMIN_PASSWORD}
     # Volume disabled: mounting /app overwrites the published app binaries.
     # SQLite (Identity) is recreated automatically by EnsureCreated() on startup.
     # Re-enable and adjust path if local persistence is needed in the future.
     # volumes:
     #   - snaxers_data:/app
     restart: unless-stopped
+
 # volumes:
 #   snaxers_data:
