@@ -66,3 +66,12 @@ docker run -p 8080:8080 thesnaxers
 - Lägg till Application Insights connection string
 - Ta bort SQLite volume — ersätt med CosmosDB
 - Pusha imagen till Azure Container Registry
+
+### ⚠️ Admin-lösenord
+Admin-lösenordet måste matcha mellan User Secrets och `.env`-filen. Om du får "Felaktig inloggning" i Docker, kontrollera att lösenordet i `.env` stämmer överens med ditt User Secret:
+
+```bash
+dotnet user-secrets set "AdminSettings:Password" "SnaxersAdmin2026!"
+```
+
+Admin-email: `admin@snaxers.se`
