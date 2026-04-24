@@ -34,10 +34,17 @@ resource acr 'Microsoft.ContainerRegistry/registries@2023-07-01' = {
   name: 'acrsnaxers${environmentName}'
   location: location
   sku: {
-    name: 'Basic'
+    name: environmentName == 'prod' ? 'Standard' : 'Basic'
   }
   properties: {
     adminUserEnabled: false
+    policies: {
+      retentionPolicy: {
+        // Rensa otaggade images efter 7 dagar (dev) eller 30 dagar (prod)
+        days: environmentName == 'prod' ? 30 : 7
+        status: 'enabled'
+      }
+    }
   }
 }
 

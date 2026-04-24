@@ -1,55 +1,68 @@
 # Infrastructure as Code — The Snaxers
 
-This folder contains Bicep templates for Azure infrastructure deployment.
+Bicep-mallar för Azure-infrastruktur. Stöder tre miljöer: `dev`, `staging`, `prod`.
 
-## Files
+## Filer
 
-| File | Description |
-|------|-------------|
-| `security.bicep` | Key Vault, User-Assigned Managed Identity, RBAC role assignments |
+| Fil | Beskrivning |
+|-----|-------------|
+| `main.bicep` | ACR (med retention policy), Container Apps Environment, Container App |
+| `security.bicep` | Key Vault, User-Assigned Managed Identity, RBAC |
 | `monitoring.bicep` | Log Analytics Workspace, Application Insights |
+| `parameters/dev.json` | Parametrar för dev-miljö |
+| `parameters/staging.json` | Parametrar för staging-miljö |
+| `parameters/prod.json` | Parametrar för prod-miljö |
 
-## Prerequisites
+---
 
-- Azure CLI installed and logged in (`az login`)
-- An existing Resource Group (created by Tom's main infrastructure)
-- Contributor access to the Resource Group
+## Skillnader per miljö
 
-## Deployment
+| Resurs | dev | staging | prod |
+|--------|-----|---------|------|
+| ACR SKU | Basic | Basic | Standard |
+| ACR retention | 7 dagar | 7 dagar | 30 dagar |
+| Container App replicas | 1–3 | 1–3 | 1–3 |
+| CosmosDB databas | TheSnaxersDb-dev | TheSnaxersDb-staging | TheSnaxersDb |
+| ASPNETCORE_ENVIRONMENT | Development | Staging | Production |
 
-### Security (Key Vault + Managed Identity)
+---
 
-```bash
-az deployment group create \
-  --resource-group rg-snaxers-dev \
-  --template-file infra/security.bicep \
-  --parameters environmentName=dev containerAppName=ca-snaxers-dev
+## Förutsättningar
+
+- Azure CLI installerat och inloggat (`az login`)
+- Befintlig resursgrupp per miljö
+- Contributor-åtkomst till resursgruppen
+
+---
+
+## Deployment — körs i denna ordning
+
+### 1. Security (Managed Identity + Key Vault)
+
+```powershell
+az deployment group create --resource-group rg-snaxers-dev --template-file infra/security.bicep --parameters @infra/parameters/dev.json
 ```
 
-### Monitoring (Log Analytics + Application Insights)
+### 2. Monitoring (Log Analytics + Application Insights)
 
-```bash
-az deployment group create \
-  --resource-group rg-snaxers-dev \
-  --template-file infra/monitoring.bicep \
-  --parameters environmentName=dev
+```powershell
+az deployment group create --resource-group rg-snaxers-dev --template-file infra/monitoring.bicep --parameters @infra/parameters/dev.json
 ```
 
-## Environments
+### 3. Main (ACR + Container Apps)
 
-Replace `environmentName` with `dev`, `staging` or `prod` depending on target environment.
-
-## After Deployment
-
-Once deployed, add the Application Insights connection string to Key Vault:
-
-```bash
-az keyvault secret set \
-  --vault-name kv-snaxers-dev \
-  --name "ApplicationInsights--ConnectionString" \
-  --value "<connection-string-from-output>"
+```powershell
+az deployment group create --resource-group rg-snaxers-dev --template-file infra/main.bicep --parameters @infra/parameters/dev.json managedIdentityId="<id-från-steg-1>" managedIdentityClientId="<clientId-från-steg-1>" keyVaultUri="<uri-från-steg-1>" logAnalyticsWorkspaceId="<id-från-steg-2>"
 ```
 
-The Container App must also be configured with:
-- `KeyVault__Url` environment variable pointing to the Key Vault URI
-- The Managed Identity assigned to the Container App
+Byt ut `dev` mot `staging` eller `prod` för andra miljöer.
+
+---
+
+## Efter deployment
+
+| Uppgift | Ansvarig |
+|---------|----------|
+| Lägga in App Insights connection string i Key Vault | Tomek |
+| Lägga in Google OAuth ClientId/ClientSecret i Key Vault | Tomek |
+| Lägga in Blob Storage connection string i Key Vault | Martina |
