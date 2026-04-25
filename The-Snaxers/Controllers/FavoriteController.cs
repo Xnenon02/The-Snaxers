@@ -46,7 +46,8 @@ public class FavoriteController : Controller
         if (returnUrl == "Product") return RedirectToAction("Index", "Product");
         if (returnUrl == "Favorite") return RedirectToAction("Index", "Favorite");
         // Preserve search parameters when returning to Chocolate gallery
-        return RedirectToAction("Index", "Chocolate", new { searchTerm, minCocoa });
+        // Only pass minCocoa if it has a value to avoid sending empty string
+        return RedirectToAction("Index", "Chocolate", new { searchTerm, minCocoa = minCocoa.HasValue ? minCocoa : null });
     }
     [HttpPost]
     public async Task<IActionResult> Remove(string productId, string returnUrl = "Chocolate", string? searchTerm = null, int? minCocoa = null)
@@ -62,6 +63,7 @@ public class FavoriteController : Controller
         if (returnUrl == "Product") return RedirectToAction("Index", "Product");
         if (returnUrl == "Favorite") return RedirectToAction("Index", "Favorite");
         // Preserve search parameters when returning to Chocolate gallery
-        return RedirectToAction("Index", "Chocolate", new { searchTerm, minCocoa });
+        // Only pass minCocoa if it has a value to avoid sending empty string
+        return RedirectToAction("Index", "Chocolate", new { searchTerm, minCocoa = minCocoa.HasValue ? minCocoa : null });
     }
 }
