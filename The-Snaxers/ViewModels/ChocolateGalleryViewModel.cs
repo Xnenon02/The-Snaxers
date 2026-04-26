@@ -8,6 +8,7 @@ public class ChocolateGalleryViewModel
     public int CocoaPercentage { get; set; }
     public string Description { get; set; } = string.Empty;
     public decimal Price { get; set; }
+    public int Weight { get; set; }
     public string ImageUrl { get; set; } = "/images/placeholder-choco.png";
     public string CountryName { get; set; } = "Okänt";
     public string? CountryCode { get; set; }
