@@ -32,6 +32,8 @@ public class Product
     [Display(Name = "Pris")]
     public decimal Price { get; set; }
 
+    public int Weight { get; set; } 
+
     [Required(ErrorMessage = "Du måste ange en kategori.")]
     [Display(Name = "Kategori")]
     public string Category { get; set; } = string.Empty;
