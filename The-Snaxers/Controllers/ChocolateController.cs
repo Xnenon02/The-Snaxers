@@ -38,31 +38,43 @@ public class ChocolateController : Controller
 
     public async Task<IActionResult> Index(string? searchTerm, int? minCocoa)
     {
-        // 1. Hämta produkterna från ProductService (som nu kör mot Cosmos DB)
-        List<Product> products;
-        if (!string.IsNullOrWhiteSpace(searchTerm) || minCocoa.HasValue)
-        {
-            _logger.LogInformation("Searching products with term '{SearchTerm}' and minCocoa {MinCocoa}", searchTerm, minCocoa);
-            products = await _productService.SearchProductsAsync(searchTerm ?? "", minCocoa);
-        }
-        else
-        {
-            products = await _productService.GetAllProductsAsync();
-        }
+        // 1. Fetch products and favorites in parallel to reduce total wait time
+        var userId = _userManager.GetUserId(User);
+
+        var productsTask = (!string.IsNullOrWhiteSpace(searchTerm) || minCocoa.HasValue)
+            ? _productService.SearchProductsAsync(searchTerm ?? "", minCocoa)
+            : _productService.GetAllProductsAsync();
+
+        var favoritesTask = userId != null
+            ? _favoriteService.GetUserFavoritesAsync(userId)
+            : Task.FromResult<List<Favorite>>(new List<Favorite>());
+
+        await Task.WhenAll(productsTask, favoritesTask);
+
+        var products = await productsTask;
+        var favoriteIds = (await favoritesTask).Select(f => f.ProductId).ToList();
 
         _logger.LogInformation("Retrieved {ProductCount} products", products.Count);
 
-        // 2. Hantera favoriter för den inloggade användaren
-        var userId = _userManager.GetUserId(User);
-        ViewBag.FavoriteIds = userId != null 
-            ? (await _favoriteService.GetUserFavoritesAsync(userId)).Select(f => f.ProductId).ToList() 
-            : new List<string>();
-
+        ViewBag.FavoriteIds = favoriteIds;
         ViewBag.SearchTerm = searchTerm;
         ViewBag.MinCocoa = minCocoa;
+
+        // 2. Fetch all country info in parallel instead of one-by-one
+        var countryNames = products
+            .Select(p => !string.IsNullOrWhiteSpace(p.Country) ? p.Country : "Sweden")
+            .Distinct()
+            .ToList();
+
+        var countryTasks = countryNames.ToDictionary(
+            name => name,
+            name => _countryService.GetCountryInfoAsync(name)
+        );
+
+        await Task.WhenAll(countryTasks.Values);
+
         // 3. Mappa produkterna till ViewModels och berika med CountryInfo
-        var viewModel = new List<ChocolateGalleryViewModel>();
-        foreach (var p in products)
+        var viewModel = products.Select(p =>
         {
             var searchCountry = !string.IsNullOrWhiteSpace(p.Country) ? p.Country : "Sweden";
 
@@ -99,22 +111,14 @@ public class ChocolateController : Controller
                     "dominikanska republiken" => "do",
                     "spanien" => "es",
                     "spain" => "es",
-                    _ => "un" 
+                    _ => "un"
                 };
             }
             // --- MARTINA FIXAR TOMS DB-SLARV SLUT ---
 
-            CountryInfo? countryInfo = null;
-            try
-            {
-                countryInfo = await _countryService.GetCountryInfoAsync(searchCountry);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Failed to fetch country info for {Country}", searchCountry);
-            }
+            var countryInfo = countryTasks[searchCountry].Result;
 
-            viewModel.Add(new ChocolateGalleryViewModel
+            return new ChocolateGalleryViewModel
             {
                 Id = p.Id,
                 Name = p.Name ?? "Okänt",
@@ -127,56 +131,55 @@ public class ChocolateController : Controller
                 CountryName = countryInfo?.Name ?? p.Country ?? "Okänt",
                 CountryCode = fixedCountryCode, // <-- Använd den fixade koden här!
                 FlagUrl = countryInfo?.FlagUrl ?? ""
-            });
-        }
+            };
+        }).ToList();
 
         return View(viewModel);
     }
 
-  
     // GET: Chocolate/Create
-public IActionResult Create()
-{
-    return View();
-}
-
-// POST: Chocolate/Create
-[HttpPost]
-[ValidateAntiForgeryToken]
-public async Task<IActionResult> Create(Product product, IFormFile imageFile)
-{
-    // Ta bort ImageUrl från valideringen eftersom vi sätter den manuellt efter uppladdning
-    ModelState.Remove("ImageUrl"); 
-    ModelState.Remove("imageFile"); // Ibland klagar den på filen också om den inte finns i modellen
-
-    if (ModelState.IsValid)
+    public IActionResult Create()
     {
-        try
-        {
-            if (imageFile != null && imageFile.Length > 0)
-            {
-                _logger.LogInformation("Uploading image {FileName} to Blob Storage", imageFile.FileName);
-                
-                using var stream = imageFile.OpenReadStream();
-                // Här anropar vi din tjänst!
-                var imageUrl = await _blobService.UploadImageAsync(stream, imageFile.FileName);
-                
-                // Spara URL:en från Azure i produktobjektet
-                product.ImageUrl = imageUrl;
-            }
-
-            // Spara produkten i Cosmos DB via ProductService
-            await _productService.AddProductAsync(product);
-            
-            return RedirectToAction(nameof(Index));
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error creating product");
-            ModelState.AddModelError("", "Ett fel uppstod när chokladen skulle sparas.");
-        }
+        return View();
     }
 
-    return View(product);
-}
+    // POST: Chocolate/Create
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Create(Product product, IFormFile imageFile)
+    {
+        // Ta bort ImageUrl från valideringen eftersom vi sätter den manuellt efter uppladdning
+        ModelState.Remove("ImageUrl"); 
+        ModelState.Remove("imageFile"); // Ibland klagar den på filen också om den inte finns i modellen
+
+        if (ModelState.IsValid)
+        {
+            try
+            {
+                if (imageFile != null && imageFile.Length > 0)
+                {
+                    _logger.LogInformation("Uploading image {FileName} to Blob Storage", imageFile.FileName);
+                    
+                    using var stream = imageFile.OpenReadStream();
+                    // Här anropar vi din tjänst!
+                    var imageUrl = await _blobService.UploadImageAsync(stream, imageFile.FileName);
+                    
+                    // Spara URL:en från Azure i produktobjektet
+                    product.ImageUrl = imageUrl;
+                }
+
+                // Spara produkten i Cosmos DB via ProductService
+                await _productService.AddProductAsync(product);
+                
+                return RedirectToAction(nameof(Index));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating product");
+                ModelState.AddModelError("", "Ett fel uppstod när chokladen skulle sparas.");
+            }
+        }
+
+        return View(product);
+    }
 }
