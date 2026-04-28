@@ -1,0 +1,98 @@
+@model IEnumerable<TheSnaxers.Models.CartItem>
+
+@{
+    ViewData["Title"] = "Din Varukorg";
+}
+
+<div class="container mt-5">
+    <h2 class="display-6 mb-4 shadow-text">Din Varukorg 🛒</h2>
+
+    @if (!Model.Any())
+{
+    <div class="text-center p-5 border-0 rounded bg-white shadow-sm">
+        <img src="~/images/empty-cart.jpg" alt="Tom varukorg" 
+             class="img-fluid mb-4 rounded shadow" style="max-width: 500px;">
+        
+        <h3 class="fw-bold text-dark">Din varukorg gapar tom...</h3>
+        <p class="lead mb-4 text-muted">Men lugn, vi har lagret fullt av godsaker som väntar på dig!</p>
+        
+        <a asp-controller="Chocolate" asp-action="Index" class="btn btn-snaxers-gold btn-lg px-5">
+            Börja shoppa här 🍫
+        </a>
+    </div>
+}
+    else
+    {
+        <div class="row">
+            <div class="col-lg-8">
+                @foreach (var item in Model)
+                {
+                    <div class="card mb-3 shadow-sm border-0 hover-shadow transition">
+                        <div class="row g-0 align-items-center">
+                            <div class="col-md-2 p-2">
+                                <img src="@item.ImageUrl" class="img-fluid rounded" alt="@item.ProductName"
+                                     style="max-height: 80px; object-fit: cover;">
+                            </div>
+                            <div class="col-md-5">
+                                <div class="card-body">
+                                    <h5 class="card-title mb-0">@item.ProductName</h5>
+                                    <p class="text-muted small">@item.Price kr / st</p>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="d-flex align-items-center justify-content-center">
+                                    <form asp-action="RemoveFromCart" method="post" class="d-inline">
+                                        <input type="hidden" name="productId" value="@item.ProductId" />
+                                        <button type="submit" class="btn btn-outline-secondary btn-sm shadow-none">-</button>
+                                    </form>
+                                    
+                                    <span class="mx-3 fw-bold">@item.Quantity</span>
+                                    
+                                    <form asp-action="AddToCart" method="post" class="d-inline">
+                                        <input type="hidden" name="productId" value="@item.ProductId" />
+                                        <button type="submit" class="btn btn-outline-secondary btn-sm shadow-none">+</button>
+                                    </form>
+                                </div>
+                            </div>
+                            <div class="col-md-2 text-center d-flex align-items-center justify-content-between">
+                                <span class="fw-bold">@item.TotalPrice kr</span>
+    
+                                <form asp-action="RemoveProductCompletely" method="post" class="d-inline">
+                                    <input type="hidden" name="productId" value="@item.ProductId" />
+                                    <button type="submit" class="btn btn-link text-danger p-0 ms-2" title="Ta bort alla">
+                                        <i class="bi bi-trash3 fs-5"></i> @* Eller ett vanligt 'X' om du inte kör Bootstrap
+                                Icons *@
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card shadow-sm border-0 p-4 bg-dark text-white">
+                    <h4 class="mb-4">Sammanställning</h4>
+                    <div class="d-flex justify-content-between mb-3">
+                        <span>Delsumma:</span>
+                        <span>@ViewBag.CartTotal kr</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-4">
+                        <span>Frakt:</span>
+                        <span class="text-success">Fri frakt!</span>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between mb-4 fs-4 fw-bold">
+                        <span>Totalt:</span>
+                        <span class="text-snaxers-gold">@ViewBag.CartTotal kr</span>
+                    </div>
+                    <button class="btn btn-light btn-lg w-100 shadow">Gå till Kassan</button>
+                </div>
+                <a asp-controller="Chocolate" asp-action="Index"
+                       class="btn btn-link text-dark mt-3 d-block text-center text-decoration-none">
+                    ← Fortsätt handla
+                </a>
+            </div>
+        </div>
+    }
+</div>

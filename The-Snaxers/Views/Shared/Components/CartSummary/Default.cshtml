@@ -1,0 +1,13 @@
+@model int
+
+<a class="nav-link text-white position-relative p-2" asp-controller="Cart" asp-action="Index">
+    <i class="bi bi-cart3 fs-4"></i> 
+    @if (Model > 0)
+    {
+        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-light" 
+              style="font-size: 0.65rem; padding: 0.35em 0.5em;">
+            @Model
+            <span class="visually-hidden">varor i varukorgen</span>
+        </span>
+    }
+</a>

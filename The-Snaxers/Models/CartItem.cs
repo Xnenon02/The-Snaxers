@@ -1,3 +1,4 @@
+namespace TheSnaxers.Models;
 public class CartItem
 {
     public required string ProductId { get; set; }    
