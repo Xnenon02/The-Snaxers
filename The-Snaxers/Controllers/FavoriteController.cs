@@ -38,7 +38,8 @@ public class FavoriteController : Controller
     public async Task<IActionResult> Add(string productId, string returnUrl = "Chocolate", string? searchTerm = null, int? minCocoa = null)
     {
         // Om detta är ett GET-anrop (t.ex. efter inloggning), skicka användaren till galleriet
-        if (HttpMethods.IsGet(Request.Method)) return RedirectToAction("Index", "Chocolate");
+        // Skickar med sökparametrar för att bevara användarens filter
+        if (HttpMethods.IsGet(Request.Method)) return RedirectToAction("Index", "Chocolate", new { searchTerm, minCocoa });
 
         var userId = _userManager.GetUserId(User);
         if (string.IsNullOrEmpty(userId))
