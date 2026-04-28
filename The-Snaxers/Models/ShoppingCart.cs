@@ -1,3 +1,5 @@
+namespace TheSnaxers.Models
+{
 using Newtonsoft.Json;
 public class ShoppingCart
 {
@@ -9,4 +11,5 @@ public class ShoppingCart
     public List<CartItem> Items { get; set; } = new List<CartItem>();
     
     public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
+}
 }

@@ -113,6 +113,18 @@ builder.Services.AddHttpClient();
 builder.Services.AddMemoryCache(); // Enables in-memory caching for CountryService
 builder.Services.AddScoped<ICountryService, CountryService>();
 
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICartRepository, CartRepository>();
+
+// Aktivera Session
+builder.Services.AddDistributedMemoryCache();
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromMinutes(30);
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+});
+
 // Identity - SQLite tills VM är uppsatt
 builder.Services.AddDefaultIdentity<IdentityUser>(options =>
     options.SignIn.RequireConfirmedAccount = false)
@@ -161,6 +173,7 @@ app.UseStaticFiles();
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseSession();
 
 // OpenAPI/Swagger — endast i Development
 if (app.Environment.IsDevelopment())
