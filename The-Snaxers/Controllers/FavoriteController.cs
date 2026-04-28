@@ -32,9 +32,15 @@ public class FavoriteController : Controller
         var favorites = await _favoriteService.GetUserFavoritesAsync(userId);
         return View(favorites);
     }
+
+    [HttpGet] // Tillagt för att hantera redirect efter inloggning (förhindrar 404)
     [HttpPost]
     public async Task<IActionResult> Add(string productId, string returnUrl = "Chocolate", string? searchTerm = null, int? minCocoa = null)
     {
+        // Om detta är ett GET-anrop (t.ex. efter inloggning), skicka användaren till galleriet
+        // Skickar med sökparametrar för att bevara användarens filter
+        if (HttpMethods.IsGet(Request.Method)) return RedirectToAction("Index", "Chocolate", new { searchTerm, minCocoa });
+
         var userId = _userManager.GetUserId(User);
         if (string.IsNullOrEmpty(userId))
         {
