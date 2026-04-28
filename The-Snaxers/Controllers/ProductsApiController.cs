@@ -13,7 +13,7 @@ namespace TheSnaxers.Controllers;
 // Skyddas av API-nyckel via X-Api-Key header (ApiKeyFilter)
 // ===================================================
 [ApiController]
-[Route("api/products")]
+[Route("api/v1/products")]
 [ServiceFilter(typeof(ApiKeyFilter))]
 public class ProductsApiController : ControllerBase
 {
@@ -28,7 +28,7 @@ public class ProductsApiController : ControllerBase
         _logger = logger;
     }
 
-    // GET /api/products
+    // GET /api/v1/products
     /// <summary>Returns all chocolate products</summary>
     [HttpGet]
     [ProducesResponseType(typeof(IEnumerable<ProductDto>), 200)]
@@ -40,7 +40,7 @@ public class ProductsApiController : ControllerBase
         return Ok(products.Select(MapToDto));
     }
 
-    // GET /api/products/{id}
+    // GET /api/v1/products/{id}
     /// <summary>Returns a single chocolate product by ID</summary>
     [HttpGet("{id}")]
     [ProducesResponseType(typeof(ProductDto), 200)]
@@ -60,7 +60,7 @@ public class ProductsApiController : ControllerBase
         return Ok(MapToDto(product));
     }
 
-    // GET /api/products/search
+    // GET /api/v1/products/search
     /// <summary>Search and filter products by name and cocoa percentage</summary>
     [HttpGet("search")]
     [ProducesResponseType(typeof(IEnumerable<ProductDto>), 200)]
