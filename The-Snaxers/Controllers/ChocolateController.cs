@@ -122,6 +122,7 @@ public class ChocolateController : Controller
                 CocoaPercentage = p.CocoaPercentage,
                 Description = p.Description ?? "",
                 Price = p.Price,
+                Weight = p.Weight,
                 ImageUrl = !string.IsNullOrWhiteSpace(p.ImageUrl) ? p.ImageUrl : "/images/placeholder-choco.png",
                 CountryName = countryInfo?.Name ?? p.Country ?? "Okänt",
                 CountryCode = fixedCountryCode, // <-- Använd den fixade koden här!
