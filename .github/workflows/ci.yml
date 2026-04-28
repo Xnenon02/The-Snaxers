@@ -29,3 +29,17 @@ jobs:
 
     - name: Docker build
       run: docker build -t thesnaxers:latest -f The-Snaxers/Dockerfile .
+
+ #   # Om du vill pusha till Azure Container Registry, avkommentera nedan och se till att du har satt upp dina secrets i GitHub
+ #   - name: Log in to Azure Container Registry
+ #     uses: azure/docker-login@v2
+ #     with:
+ #       login-server: ${{ secrets.ACR_LOGIN_SERVER }}
+ #       username: ${{ secrets.ACR_USERNAME }}
+ #       password: ${{ secrets.ACR_PASSWORD }}
+
+ #   - name: Build and Push Docker image
+ #     run: |
+ #       # Vi taggar bilden med både 'latest' och ett unikt ID (SHA)
+ #       docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/thesnaxers:latest -t ${{ secrets.ACR_LOGIN_SERVER }}/thesnaxers:${{ github.sha }} -f Dockerfile .
+ #       docker push ${{ secrets.ACR_LOGIN_SERVER }}/thesnaxers --all-tags
