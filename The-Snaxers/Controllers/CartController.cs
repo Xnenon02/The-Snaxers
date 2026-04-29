@@ -26,25 +26,30 @@ namespace TheSnaxers.Controllers
 
         // Visar själva varukorgs-sidan
         public async Task<IActionResult> Index()
-{
-    var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-    var cart = await _cartService.GetCartByUserIdAsync(userId);
-
-    // För varje sak i korgen, hämta den riktiga produkt-infon (inkl. bild!)
-    foreach (var item in cart.Items)
-    {
-        var product = await _productService.GetProductByIdAsync(item.ProductId);
-        if (product != null)
         {
-            // Vi "lånar" informationen från produkten och lägger på korg-objektet
-            item.ProductName = product.Name;
-            item.Price = product.Price;
-            item.ImageUrl = product.ImageUrl; // HÄR KOMMER BILDEN TILLBAKA!
-        }
-    }
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var cart = await _cartService.GetCartByUserIdAsync(userId);
 
-    return View(cart.Items);
-}
+            decimal runningTotal = 0;
+
+            // För varje sak i korgen, hämta den riktiga produkt-infon från produktservicen
+            foreach (var item in cart.Items)
+            {
+                var product = await _productService.GetProductByIdAsync(item.ProductId);
+                if (product != null)
+                {
+                    // Vi "lånar" informationen från produkten och lägger på korg-objektet
+                    item.ProductName = product.Name;
+                    item.Price = product.Price;
+                    item.ImageUrl = product.ImageUrl; 
+                    runningTotal += (item.Price * item.Quantity);
+                }
+            }
+
+            ViewBag.GrandTotal = runningTotal;
+
+            return View(cart.Items);
+        }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -55,12 +60,12 @@ namespace TheSnaxers.Controllers
             if (chocolate != null)
             {
                 // FIX 3: Skicka med UserId och skapa ett CartItem
-                await _cartService.AddToCartAsync(UserId, new CartItem 
-                { 
-                    ProductId = productId, 
+                await _cartService.AddToCartAsync(UserId, new CartItem
+                {
+                    ProductId = productId,
                     ProductName = chocolate.Name, // Om din modell har namn
                     Price = chocolate.Price,
-                    Quantity = 1 
+                    Quantity = 1
                 });
             }
 
