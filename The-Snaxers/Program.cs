@@ -222,4 +222,19 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
+// Warm up product cache on startup to avoid slow first page load
+using (var scope = app.Services.CreateScope())
+{
+    var productService = scope.ServiceProvider.GetRequiredService<IProductService>();
+    try
+    {
+        await productService.GetAllProductsAsync();
+        app.Logger.LogInformation("Product cache warmed up on startup.");
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogWarning(ex, "Cache warm-up failed — will load on first request.");
+    }
+}
+
 app.Run();
