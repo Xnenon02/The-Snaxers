@@ -30,7 +30,7 @@ namespace TheSnaxers.Controllers
     var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
     var cart = await _cartService.GetCartByUserIdAsync(userId);
 
-    // För varje sak i korgen, hämta den riktiga produkt-infon (inkl. bild!)
+    // För varje sak i korgen, hämta den riktiga produkt-infon så vi kan visa namn, pris, bild etc.
     foreach (var item in cart.Items)
     {
         var product = await _productService.GetProductByIdAsync(item.ProductId);
@@ -39,7 +39,7 @@ namespace TheSnaxers.Controllers
             // Vi "lånar" informationen från produkten och lägger på korg-objektet
             item.ProductName = product.Name;
             item.Price = product.Price;
-            item.ImageUrl = product.ImageUrl; // HÄR KOMMER BILDEN TILLBAKA!
+            item.ImageUrl = product.ImageUrl; 
         }
     }
 
@@ -63,6 +63,7 @@ namespace TheSnaxers.Controllers
                     Quantity = 1 
                 });
             }
+            TempData["SuccessMessage"] = "Produkten har lagts i din varukorg! 🍫";
 
             // Om vi har en returnUrl, skicka användaren tillbaka dit
             if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
