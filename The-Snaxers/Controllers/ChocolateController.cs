@@ -38,6 +38,8 @@ public class ChocolateController : Controller
 
     public async Task<IActionResult> Index(string? searchTerm, int? minCocoa)
     {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+
         // 1. Fetch products and favorites in parallel to reduce total wait time
         var userId = _userManager.GetUserId(User);
 
@@ -51,6 +53,8 @@ public class ChocolateController : Controller
 
         await Task.WhenAll(productsTask, favoritesTask);
 
+        _logger.LogInformation("Products + favorites fetched in {Ms}ms", sw.ElapsedMilliseconds);
+
         var products = await productsTask;
         var favoriteIds = (await favoritesTask).Select(f => f.ProductId).ToList();
 
@@ -60,20 +64,8 @@ public class ChocolateController : Controller
         ViewBag.SearchTerm = searchTerm;
         ViewBag.MinCocoa = minCocoa;
 
-        // 2. Fetch all country info in parallel instead of one-by-one
-        var countryNames = products
-            .Select(p => !string.IsNullOrWhiteSpace(p.Country) ? p.Country : "Sweden")
-            .Distinct()
-            .ToList();
-
-        var countryTasks = countryNames.ToDictionary(
-            name => name,
-            name => _countryService.GetCountryInfoAsync(name)
-        );
-
-        await Task.WhenAll(countryTasks.Values);
-
-        // 3. Mappa produkterna till ViewModels och berika med CountryInfo
+        // 2. Mappa produkterna till ViewModels — country API anropas ej vid sidladdning,
+        //    flagg-info hämtas lazy via JS vid hover istället
         var viewModel = products.Select(p =>
         {
             var searchCountry = !string.IsNullOrWhiteSpace(p.Country) ? p.Country : "Sweden";
@@ -116,8 +108,6 @@ public class ChocolateController : Controller
             }
             // --- MARTINA FIXAR TOMS DB-SLARV SLUT ---
 
-            var countryInfo = countryTasks[searchCountry].Result;
-
             return new ChocolateGalleryViewModel
             {
                 Id = p.Id,
@@ -128,11 +118,13 @@ public class ChocolateController : Controller
                 Price = p.Price,
                 Weight = p.Weight,
                 ImageUrl = !string.IsNullOrWhiteSpace(p.ImageUrl) ? p.ImageUrl : "/images/placeholder-choco.png",
-                CountryName = countryInfo?.Name ?? p.Country ?? "Okänt",
+                CountryName = p.Country ?? "Okänt",
                 CountryCode = fixedCountryCode, // <-- Använd den fixade koden här!
-                FlagUrl = countryInfo?.FlagUrl ?? ""
+                FlagUrl = "" // Loaded lazily via JS on hover — no server-side API call needed
             };
         }).ToList();
+
+        _logger.LogInformation("Gallery page ready in {Ms}ms total", sw.ElapsedMilliseconds);
 
         return View(viewModel);
     }
