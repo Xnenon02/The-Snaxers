@@ -1,100 +1,48 @@
-using System.Text.Json;
+using Microsoft.Azure.Cosmos;
 using TheSnaxers.Models;
+using TheSnaxers.Repositories;
+using TheSnaxers.Services;
 
-namespace TheSnaxers.Repositories
+public class CosmosCartRepository : ICartRepository
 {
-    public class CartRepository : ICartRepository
+    private readonly Container _container;
+
+    public CosmosCartRepository(CosmosClient cosmosClient, string databaseName, string containerName)
     {
-        private readonly IHttpContextAccessor _httpContextAccessor;
-        private const string CartSessionKey = "SnaxersCart";
-
-        public CartRepository(IHttpContextAccessor httpContextAccessor)
-        {
-            _httpContextAccessor = httpContextAccessor;
-        }
-
-        private ISession? Session => _httpContextAccessor.HttpContext?.Session;
-
-        public void AddToCart(Product chocolate)
-        {
-            var cart = GetCartItems();
-            var cartItem = cart.FirstOrDefault(c => c.ProductId == chocolate.Id);
-
-            if (cartItem == null)
-            {
-                cart.Add(new CartItem
-                {
-                    ProductId = chocolate.Id,
-                    ProductName = chocolate.Name, // Mappa namnet
-                    Price = chocolate.Price,       // Mappa priset
-                    ImageUrl = chocolate.ImageUrl, // Mappa bilden
-                    Quantity = 1
-                });
-            }
-            else
-            {
-                cartItem.Quantity++;
-            }
-
-            SaveCart(cart);
-        }
-
-        public int RemoveFromCart(Product chocolate)
-        {
-            var cart = GetCartItems();
-            var cartItem = cart.FirstOrDefault(c => c.ProductId == chocolate.Id);
-            int remainingQuantity = 0;
-
-            if (cartItem != null)
-            {
-                if (cartItem.Quantity > 1)
-                {
-                    cartItem.Quantity--;
-                    remainingQuantity = cartItem.Quantity;
-                }
-                else
-                {
-                    cart.Remove(cartItem);
-                }
-            }
-
-            SaveCart(cart);
-            return remainingQuantity;
-        }
-
-        public List<CartItem> GetCartItems()
-        {
-            var sessionData = Session?.GetString(CartSessionKey);
-            return sessionData == null
-                ? new List<CartItem>()
-                : JsonSerializer.Deserialize<List<CartItem>>(sessionData) ?? new List<CartItem>();
-        }
-
-        public void ClearCart()
-        {
-            Session?.Remove(CartSessionKey);
-        }
-
-        public decimal GetCartTotal()
-        {
-            var cart = GetCartItems();
-            return cart.Sum(item => item.TotalPrice);
-        }
-
-        private void SaveCart(List<CartItem> cart)
-        {
-            Session?.SetString(CartSessionKey, JsonSerializer.Serialize(cart));
-        }
-
-        public void RemoveProductCompletely(string productId)
-        {
-            var cart = GetCartItems();
-            var item = cart.FirstOrDefault(c => c.ProductId == productId);
-            if (item != null)
-            {
-                cart.Remove(item);
-                SaveCart(cart);
-            }
-        }
+        _container = cosmosClient.GetContainer(databaseName, containerName);
     }
+
+    public async Task<ShoppingCart> GetCartByUserIdAsync(string userId)
+{
+    try
+    {
+        // Ändra PartitionKey till userId (eftersom id och userId är samma i din modell)
+        ItemResponse<ShoppingCart> response = await _container.ReadItemAsync<ShoppingCart>(userId, new PartitionKey(userId));
+        return response.Resource;
+    }
+    catch (CosmosException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+    {
+        return new ShoppingCart { Id = userId, UserId = userId, Items = new List<CartItem>() };
+    }
+}
+
+public async Task SaveCartAsync(ShoppingCart cart)
+{
+    // Ändra från cart.UserId till cart.Id här! 
+    // I Products-containern är det 'id' som gäller som partition key.
+    await _container.UpsertItemAsync(cart, new PartitionKey(cart.Id));
+}
+    public async Task ClearCartAsync(string userId)
+{
+    // I CosmosDB är det säkraste sättet att "tömma" korgen att 
+    // helt enkelt spara en ny korg-instans som bara har en tom lista.
+    var emptyCart = new ShoppingCart 
+    { 
+        Id = userId, 
+        UserId = userId, 
+        Items = new List<CartItem>() 
+    };
+    
+    await SaveCartAsync(emptyCart);
+}
 }

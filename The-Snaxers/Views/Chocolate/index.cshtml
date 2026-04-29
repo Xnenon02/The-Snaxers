@@ -122,10 +122,15 @@
                                     }
                                     <p class="fw-bold mt-2">💰 Pris: @chocolate.Price kr</p>
 
-                                    @* --- HÄR ÄR DEN NYA KÖPKNAPPEN --- *@
+                                    @* --- KÖPKNAPPEN --- *@
                                     <form asp-controller="Cart" asp-action="AddToCart" method="post" class="mt-2 w-100"
                                           onclick="event.stopPropagation()">
+    
                                         <input type="hidden" name="productId" value="@chocolate.Id" />
+    
+                                        <input type="hidden" name="returnUrl"
+                                               value="@Context.Request.Path@Context.Request.QueryString" />
+
                                         <button type="submit" class="btn btn-snaxers-gold w-75 shadow-sm">
                                             Lägg i korgen 🛒
                                         </button>
@@ -165,20 +170,20 @@
                             const data = await response.json();
 
                             popover.innerHTML = `
-                                <div style="padding: 5px;">
-                                    <strong class="text-snaxers-gold">${data.name}</strong><br>
-                                    <small class="text-muted">Visste du att...</small><br>
-                                    <div class="mt-1">${data.fact}</div>
-                                </div>
-                            `;
+                                    <div style="padding: 5px;">
+                                        <strong class="text-snaxers-gold">${data.name}</strong><br>
+                                        <small class="text-muted">Visste du att...</small><br>
+                                        <div class="mt-1">${data.fact}</div>
+                                    </div>
+                                `;
                         } catch (error) {
                             console.error("Fetch error:", error);
                             popover.innerHTML = `
-                                <div style="padding: 5px; color: #b00020;">
-                                    <small>⚠️ Oj!</small><br>
-                                    <span>Kunde inte hämta fakta just nu.</span>
-                                </div>
-                            `;
+                                    <div style="padding: 5px; color: #b00020;">
+                                        <small>⚠️ Oj!</small><br>
+                                        <span>Kunde inte hämta fakta just nu.</span>
+                                    </div>
+                                `;
                             setTimeout(() => {
                                 if (popover.innerText.includes("Kunde inte hämta")) {
                                     popover.innerHTML = "Laddar...";
