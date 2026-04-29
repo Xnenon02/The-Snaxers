@@ -226,8 +226,15 @@ using (var scope = app.Services.CreateScope())
 using (var scope = app.Services.CreateScope())
 {
     var productService = scope.ServiceProvider.GetRequiredService<IProductService>();
-    await productService.GetAllProductsAsync();
-    app.Logger.LogInformation("Product cache warmed up on startup.");
+    try
+    {
+        await productService.GetAllProductsAsync();
+        app.Logger.LogInformation("Product cache warmed up on startup.");
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogWarning(ex, "Cache warm-up failed — will load on first request.");
+    }
 }
 
 app.Run();
