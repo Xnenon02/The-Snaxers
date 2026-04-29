@@ -38,8 +38,6 @@ public class ChocolateController : Controller
 
     public async Task<IActionResult> Index(string? searchTerm, int? minCocoa)
     {
-        var sw = System.Diagnostics.Stopwatch.StartNew();
-
         // 1. Fetch products and favorites in parallel to reduce total wait time
         var userId = _userManager.GetUserId(User);
 
@@ -52,8 +50,6 @@ public class ChocolateController : Controller
             : Task.FromResult<List<Favorite>>(new List<Favorite>());
 
         await Task.WhenAll(productsTask, favoritesTask);
-
-        _logger.LogInformation("Products + favorites fetched in {Ms}ms", sw.ElapsedMilliseconds);
 
         var products = await productsTask;
         var favoriteIds = (await favoritesTask).Select(f => f.ProductId).ToList();
@@ -123,8 +119,6 @@ public class ChocolateController : Controller
                 FlagUrl = "" // Loaded lazily via JS on hover — no server-side API call needed
             };
         }).ToList();
-
-        _logger.LogInformation("Gallery page ready in {Ms}ms total", sw.ElapsedMilliseconds);
 
         return View(viewModel);
     }
