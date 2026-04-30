@@ -122,7 +122,6 @@ builder.Services.AddMemoryCache();
 builder.Services.AddScoped<ICountryService, CountryService>();
 
 builder.Services.AddHttpContextAccessor();
-builder.Services.AddScoped<ICartService, CartService>();
 
 // Aktivera Session
 builder.Services.AddDistributedMemoryCache();
