@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Mvc;
 using TheSnaxers.Services; 
 using System.Security.Claims;
 using Microsoft.Extensions.Caching.Memory;
-using System.Security.Claims;
 
 namespace TheSnaxers.ViewComponents
 {

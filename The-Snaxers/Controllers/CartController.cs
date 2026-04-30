@@ -32,6 +32,9 @@ namespace TheSnaxers.Controllers
         public async Task<IActionResult> Index()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+                return RedirectToAction("Login", "Account");
+
             var cart = await _cartService.GetCartByUserIdAsync(userId);
 
             if (cart.Items.Any())
