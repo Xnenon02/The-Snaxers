@@ -4,6 +4,8 @@ using TheSnaxers.Repositories;
 using TheSnaxers.Services; // Se till att du har denna!
 using TheSnaxers.Models;
 using System.Security.Claims;
+using Microsoft.VisualBasic;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace TheSnaxers.Controllers
 {
@@ -13,16 +15,18 @@ namespace TheSnaxers.Controllers
         private readonly IProductRepository _chocolateRepository;
         private readonly ICartService _cartService;
         private readonly IProductService _productService;
+        private readonly IMemoryCache _cache;
 
         // FIX 1: Se till att namnen matchar i konstruktorn (_cartService, inte _cartRepository)
-        public CartController(IProductRepository chocolateRepository, ICartService cartService, IProductService productService)
+        public CartController(IProductRepository chocolateRepository, ICartService cartService, IProductService productService, IMemoryCache cache)
         {
             _chocolateRepository = chocolateRepository;
             _cartService = cartService;
             _productService = productService;
+            _cache = cache;
         }
 
-        private string UserId => User.FindFirstValue(ClaimTypes.NameIdentifier);
+        private string UserId => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
 
         // Visar själva varukorgs-sidan
         public async Task<IActionResult> Index()
@@ -30,24 +34,25 @@ namespace TheSnaxers.Controllers
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var cart = await _cartService.GetCartByUserIdAsync(userId);
 
-            decimal runningTotal = 0;
-
-            // För varje sak i korgen, hämta den riktiga produkt-infon från produktservicen
-            foreach (var item in cart.Items)
+            if (cart.Items.Any())
             {
-                var product = await _productService.GetProductByIdAsync(item.ProductId);
-                if (product != null)
+                // 1. Hämta ALLA produkter som finns i korgen i ett svep
+                var allProducts = await _productService.GetAllProductsAsync(); // Eller en metod som tar en lista med ID:n
+
+                // 2. Matcha ihop dem (Berika korgen)
+                foreach (var item in cart.Items)
                 {
-                    // Vi "lånar" informationen från produkten och lägger på korg-objektet
-                    item.ProductName = product.Name;
-                    item.Price = product.Price;
-                    item.ImageUrl = product.ImageUrl; 
-                    runningTotal += (item.Price * item.Quantity);
+                    var product = allProducts.FirstOrDefault(p => p.Id == item.ProductId);
+                    if (product != null)
+                    {
+                        item.ProductName = product.Name;
+                        item.Price = product.Price;
+                        item.ImageUrl = product.ImageUrl;
+                    }
                 }
             }
 
-            ViewBag.GrandTotal = runningTotal;
-
+            ViewBag.GrandTotal = cart.Items.Sum(x => x.Price * x.Quantity).ToString("N2");
             return View(cart.Items);
         }
 
@@ -59,17 +64,20 @@ namespace TheSnaxers.Controllers
 
             if (chocolate != null)
             {
-                // FIX 3: Skicka med UserId och skapa ett CartItem
+                // Här skapar vi variabeln istället för att hårdkoda '1' längre ner
+                int quantity = 1;
+
                 await _cartService.AddToCartAsync(UserId, new CartItem
                 {
                     ProductId = productId,
-                    ProductName = chocolate.Name, // Om din modell har namn
+                    ProductName = chocolate.Name,
                     Price = chocolate.Price,
-                    Quantity = 1
+                    Quantity = quantity // Använd variabeln här!
+
                 });
+                _cache.Remove($"cart_count_{UserId}");
             }
 
-            // Om vi har en returnUrl, skicka användaren tillbaka dit
             if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
             {
                 return Redirect(returnUrl);
@@ -84,6 +92,7 @@ namespace TheSnaxers.Controllers
         {
             // FIX 4: Använd servicens asynkrona metod
             await _cartService.RemoveFromCartAsync(UserId, productId);
+            _cache.Remove($"cart_count_{UserId}");
             return RedirectToAction("Index");
         }
 
@@ -93,6 +102,7 @@ namespace TheSnaxers.Controllers
         {
             // FIX 5: Gör även denna asynkron i servicen!
             await _cartService.ClearProductFromCartAsync(UserId, productId);
+            _cache.Remove($"cart_count_{UserId}");
             return RedirectToAction("Index");
         }
     }
