@@ -89,6 +89,10 @@ var productsContainer = builder.Configuration["CosmosDb:ContainerName"]
     ?? throw new InvalidOperationException("CosmosDb:ContainerName saknas.");
 var favoritesContainer = builder.Configuration["CosmosDb:FavoritesContainerName"] ?? "Favorites";
 
+// FULHACK: Vi använder Products-containern temporärt tills Tom fixat Bicep
+// var cartsContainer = builder.Configuration["CosmosDb:CartContainerName"] ?? "Carts"; // Denna är pausad
+var cartsContainer = productsContainer; 
+
 builder.Services.AddScoped<IProductRepository>(sp =>
     new CosmosProductRepository(
         sp.GetRequiredService<CosmosClient>(),
@@ -106,12 +110,27 @@ builder.Services.AddScoped<IFavoriteRepository>(sp =>
         sp.GetRequiredService<ILogger<CosmosFavoriteRepository>>()
     ));
 
+// Registrera CartRepository — Nu med fulhacket som gör att det inte kraschar!
+builder.Services.AddSingleton<ICartRepository, InMemoryCartRepository>();
+
+builder.Services.AddScoped<ICartService, CartService>();
 builder.Services.AddScoped<IFavoriteService, FavoriteService>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IBlobService, BlobService>();
 builder.Services.AddHttpClient();
-builder.Services.AddMemoryCache(); // Enables in-memory caching for CountryService
+builder.Services.AddMemoryCache(); 
 builder.Services.AddScoped<ICountryService, CountryService>();
+
+builder.Services.AddHttpContextAccessor();
+
+// Aktivera Session
+builder.Services.AddDistributedMemoryCache();
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromMinutes(30);
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+});
 
 // Identity - SQLite tills VM är uppsatt
 builder.Services.AddDefaultIdentity<IdentityUser>(options =>
@@ -161,6 +180,7 @@ app.UseStaticFiles();
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseSession();
 
 // OpenAPI/Swagger — endast i Development
 if (app.Environment.IsDevelopment())
@@ -238,3 +258,14 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.Run();
+
+public class InMemoryCartRepository : ICartRepository
+{
+    private readonly Dictionary<string, ShoppingCart> _carts = new();
+    public async Task<ShoppingCart> GetCartByUserIdAsync(string userId) => 
+        _carts.TryGetValue(userId, out var cart) ? cart : new ShoppingCart { Id = userId, UserId = userId };
+    public async Task SaveCartAsync(ShoppingCart cart) => _carts[cart.Id] = cart;
+    public async Task ClearCartAsync(string userId) => _carts.Remove(userId);
+}
+
+

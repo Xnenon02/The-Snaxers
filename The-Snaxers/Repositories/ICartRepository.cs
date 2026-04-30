@@ -1,16 +1,13 @@
 using TheSnaxers.Models;
 
-namespace TheSnaxers.Repositories;
-
 public interface ICartRepository
 {
-    // Hämtar vagnen för en specifik användare
-    // Om ingen vagn finns, returnerar den en ny, tom vagn
+    // Hämta hela "lådan" (ShoppingCart-objektet) för en specifik person
     Task<ShoppingCart> GetCartByUserIdAsync(string userId);
+    
+    // Spara/Uppdatera hela "lådan" i ett svep
+    Task SaveCartAsync(ShoppingCart cart);
 
-    // Sparar eller uppdaterar hela vagnen i Cosmos
-    Task UpsertCartAsync(ShoppingCart cart);
-
-    // Tömmer vagnen (t.ex. efter ett köp)
+    // Om ni vill ha en specifik metod för att tömma
     Task ClearCartAsync(string userId);
 }
