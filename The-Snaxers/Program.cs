@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using Azure.Identity;
+using Azure.Storage.Blobs;
 using TheSnaxers.Data;
 using TheSnaxers.Services;
 using TheSnaxers.Repositories;
@@ -8,6 +9,8 @@ using Microsoft.Azure.Cosmos;
 using TheSnaxers.Models;
 using Scalar.AspNetCore;
 using TheSnaxers.Filters;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -40,8 +43,12 @@ if (!string.IsNullOrEmpty(appInsightsConnectionString) && appInsightsConnectionS
 
 // Add services
 builder.Services.AddControllersWithViews();
-builder.Services.AddHealthChecks();
 builder.Services.AddLogging();
+
+builder.Services.AddHealthChecks()
+    .AddCheck("self", () => HealthCheckResult.Healthy())
+    .AddCheck<CosmosHealthCheck>("cosmos", tags: new[] { "ready" })
+    .AddCheck<BlobHealthCheck>("blob", tags: new[] { "ready" });
 
 // Registrera ApiKeyFilter som Singleton — bättre prestanda då det är stateless
 builder.Services.AddSingleton<ApiKeyFilter>();
@@ -77,6 +84,22 @@ builder.Services.AddSingleton(sp =>
     });
 
     return new CosmosClient(endpoint, credential);
+});
+
+// BlobServiceClient — used by BlobHealthCheck to verify storage connectivity
+builder.Services.AddSingleton(sp =>
+{
+    var configuration = sp.GetRequiredService<IConfiguration>();
+    var endpoint = configuration["AzureStorage:BlobEndpoint"];
+    if (!string.IsNullOrWhiteSpace(endpoint))
+        return new BlobServiceClient(new Uri(endpoint), new DefaultAzureCredential());
+
+    var connStr = configuration["AzureStorage:ConnectionString"];
+    if (!string.IsNullOrWhiteSpace(connStr))
+        return new BlobServiceClient(connStr);
+
+    // Dev fallback: no storage config present locally — BlobHealthCheck will report Unhealthy
+    return new BlobServiceClient(new Uri("https://localhost"), new DefaultAzureCredential());
 });
 
 // ===================================================
@@ -210,7 +233,24 @@ if (app.Environment.IsDevelopment())
 }
 
 app.MapStaticAssets();
-app.MapHealthChecks("/health");
+
+// Liveness — answers "is this process alive", no dependency checks
+app.MapHealthChecks("/health/live", new HealthCheckOptions
+{
+    Predicate = _ => false
+});
+
+// Readiness — answers "is this replica ready to serve traffic"
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = c => c.Tags.Contains("ready")
+});
+
+// Diagnostic — full JSON breakdown for humans and dashboards
+app.MapHealthChecks("/health", new HealthCheckOptions
+{
+    ResponseWriter = WriteJsonResponse
+});
 
 app.MapControllerRoute(
     name: "default",
@@ -279,6 +319,23 @@ using (var scope = app.Services.CreateScope())
 
 app.Run();
 
+// Writes a JSON health report for the diagnostic /health endpoint
+static Task WriteJsonResponse(HttpContext ctx, HealthReport report)
+{
+    ctx.Response.ContentType = "application/json";
+    var payload = System.Text.Json.JsonSerializer.Serialize(new
+    {
+        status = report.Status.ToString(),
+        checks = report.Entries.Select(e => new
+        {
+            name = e.Key,
+            status = e.Value.Status.ToString(),
+            duration_ms = (int)e.Value.Duration.TotalMilliseconds
+        })
+    });
+    return ctx.Response.WriteAsync(payload);
+}
+
 public class InMemoryCartRepository : ICartRepository
 {
     private readonly Dictionary<string, ShoppingCart> _carts = new();
@@ -287,5 +344,3 @@ public class InMemoryCartRepository : ICartRepository
     public async Task SaveCartAsync(ShoppingCart cart) => _carts[cart.Id] = cart;
     public async Task ClearCartAsync(string userId) => _carts.Remove(userId);
 }
-
-
