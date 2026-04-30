@@ -182,6 +182,26 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UseSession();
 
+// Generates a per-request correlation ID and pushes it onto the logger scope
+// so every log call inside the request automatically carries it — no changes needed at each call site
+app.Use(async (context, next) =>
+{
+    var correlationId = Guid.NewGuid().ToString("N");
+    context.Items["CorrelationId"] = correlationId;
+
+    var logger = context.RequestServices
+        .GetRequiredService<ILoggerFactory>()
+        .CreateLogger("CorrelationIdMiddleware");
+
+    using (logger.BeginScope(new Dictionary<string, object>
+    {
+        ["RequestId"] = correlationId
+    }))
+    {
+        await next();
+    }
+});
+
 // OpenAPI/Swagger — endast i Development
 if (app.Environment.IsDevelopment())
 {
