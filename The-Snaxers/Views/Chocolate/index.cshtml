@@ -50,10 +50,10 @@
                         <div class="flip-card" onclick="this.classList.toggle('flipped')">
                             <div class="flip-card-inner">
 
-                                @* FRAMSIDA *@
-                                <div class="flip-card-front card h-100 shadow-sm hover-shadow transition">
-                                    <div class="position-relative">
-                                        <img src="@chocolate.ImageUrl" class="card-img-top choco-card-img" alt="@chocolate.Name">
+                            @* FRAMSIDA *@
+                            <div class="flip-card-front card h-100 shadow-sm hover-shadow transition">
+                                <div class="position-relative">
+                                    <img src="@chocolate.ImageUrl" class="card-img-top choco-card-img" alt="@chocolate.Name" loading="lazy">
 
                                         @if (chocolate.CocoaPercentage > 0)
                                         {

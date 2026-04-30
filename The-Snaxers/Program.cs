@@ -242,6 +242,22 @@ using (var scope = app.Services.CreateScope())
         Console.WriteLine("System: Admin-uppgifter saknas i konfigurationen (User Secrets). Hoppar över seeding.");
     }
 }
+
+// Warm up product cache on startup to avoid slow first page load
+using (var scope = app.Services.CreateScope())
+{
+    var productService = scope.ServiceProvider.GetRequiredService<IProductService>();
+    try
+    {
+        await productService.GetAllProductsAsync();
+        app.Logger.LogInformation("Product cache warmed up on startup.");
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogWarning(ex, "Cache warm-up failed — will load on first request.");
+    }
+}
+
 app.Run();
 
 public class InMemoryCartRepository : ICartRepository
@@ -252,4 +268,3 @@ public class InMemoryCartRepository : ICartRepository
     public async Task SaveCartAsync(ShoppingCart cart) => _carts[cart.Id] = cart;
     public async Task ClearCartAsync(string userId) => _carts.Remove(userId);
 }
-
