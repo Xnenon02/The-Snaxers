@@ -93,8 +93,13 @@ builder.Services.AddSingleton(sp =>
     var endpoint = configuration["AzureStorage:BlobEndpoint"];
     if (!string.IsNullOrWhiteSpace(endpoint))
         return new BlobServiceClient(new Uri(endpoint), new DefaultAzureCredential());
+
     var connStr = configuration["AzureStorage:ConnectionString"];
-    return new BlobServiceClient(connStr);
+    if (!string.IsNullOrWhiteSpace(connStr))
+        return new BlobServiceClient(connStr);
+
+    // Dev fallback: no storage config present locally — BlobHealthCheck will report Unhealthy
+    return new BlobServiceClient(new Uri("https://localhost"), new DefaultAzureCredential());
 });
 
 // ===================================================
