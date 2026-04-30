@@ -80,6 +80,7 @@ namespace TheSnaxers.Controllers
                 });
                 _cache.Remove($"cart_count_{UserId}");
             }
+            TempData["SuccessMessage"] = "Produkten har lagts i din varukorg! 🍫";
 
             if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
             {
