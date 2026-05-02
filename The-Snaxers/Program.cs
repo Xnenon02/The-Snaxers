@@ -31,15 +31,13 @@ if (builder.Environment.IsProduction())
 // ===================================================
 // APPLICATION INSIGHTS
 // ===================================================
-var appInsightsConnectionString = builder.Configuration["ApplicationInsights:ConnectionString"];
-if (!string.IsNullOrEmpty(appInsightsConnectionString) && appInsightsConnectionString != "placeholder")
+// Always register TelemetryClient — SDK silently drops telemetry if connection string is missing
+builder.Services.AddApplicationInsightsTelemetry(options =>
 {
-    // TODO: Lägg till riktig ConnectionString i Azure Key Vault när Tom satt upp miljön
-    builder.Services.AddApplicationInsightsTelemetry(options =>
-    {
-        options.ConnectionString = appInsightsConnectionString;
-    });
-}
+    var connStr = builder.Configuration["ApplicationInsights:ConnectionString"];
+    if (!string.IsNullOrEmpty(connStr) && connStr != "placeholder")
+        options.ConnectionString = connStr;
+});
 
 // Add services
 builder.Services.AddControllersWithViews();
@@ -204,6 +202,26 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseSession();
+
+// Generates a per-request correlation ID and pushes it onto the logger scope
+// so every log call inside the request automatically carries it — no changes needed at each call site
+app.Use(async (context, next) =>
+{
+    var correlationId = Guid.NewGuid().ToString("N");
+    context.Items["CorrelationId"] = correlationId;
+
+    var logger = context.RequestServices
+        .GetRequiredService<ILoggerFactory>()
+        .CreateLogger("CorrelationIdMiddleware");
+
+    using (logger.BeginScope(new Dictionary<string, object>
+    {
+        ["RequestId"] = correlationId
+    }))
+    {
+        await next();
+    }
+});
 
 // OpenAPI/Swagger — endast i Development
 if (app.Environment.IsDevelopment())
