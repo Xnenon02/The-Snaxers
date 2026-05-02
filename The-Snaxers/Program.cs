@@ -31,18 +31,13 @@ if (builder.Environment.IsProduction())
 // ===================================================
 // APPLICATION INSIGHTS
 // ===================================================
-var appInsightsConnectionString = builder.Configuration["ApplicationInsights:ConnectionString"];
-if (!string.IsNullOrEmpty(appInsightsConnectionString) && appInsightsConnectionString != "placeholder")
+// Always register TelemetryClient — SDK silently drops telemetry if connection string is missing
+builder.Services.AddApplicationInsightsTelemetry(options =>
 {
-    // FIX: Registrera bastjänsterna för Application Insights (Martinas feedback)
-    builder.Services.AddApplicationInsightsTelemetry();
-
-    // TODO: Lägg till riktig ConnectionString i Azure Key Vault när Tom satt upp miljön
-    builder.Services.AddApplicationInsightsTelemetry(options =>
-    {
-        options.ConnectionString = appInsightsConnectionString;
-    });
-}
+    var connStr = builder.Configuration["ApplicationInsights:ConnectionString"];
+    if (!string.IsNullOrEmpty(connStr) && connStr != "placeholder")
+        options.ConnectionString = connStr;
+});
 
 // Add services
 builder.Services.AddControllersWithViews();

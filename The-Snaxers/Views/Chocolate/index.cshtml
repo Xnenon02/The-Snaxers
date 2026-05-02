@@ -124,7 +124,8 @@
                                 <p class="fw-bold fs-5 mt-2 text-snaxers-gold">@chocolate.Price kr</p>
 
                                 @* KÖPKNAPP *@
-                                @if (User.Identity.IsAuthenticated)
+                                @* Null-safe check — User.Identity can be null for unauthenticated requests *@
+                                @if (User.Identity?.IsAuthenticated == true)
                                 {
                                     <form asp-controller="Cart" asp-action="AddToCart" method="post" class="mt-2 w-100"
                                           onclick="event.stopPropagation()">
