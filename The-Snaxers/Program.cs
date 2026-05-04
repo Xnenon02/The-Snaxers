@@ -40,7 +40,11 @@ builder.Services.AddApplicationInsightsTelemetry(options =>
 });
 
 // Add services
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllersWithViews(options =>
+{
+    // 🔒 Tvingar validering av antiförfalskningstoken för alla POST-anrop globalt
+    options.Filters.Add(new Microsoft.AspNetCore.Mvc.AutoValidateAntiforgeryTokenAttribute());
+});
 builder.Services.AddLogging();
 
 builder.Services.AddHealthChecks()
