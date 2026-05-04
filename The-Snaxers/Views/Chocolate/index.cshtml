@@ -157,6 +157,9 @@
             }
         </div>
     }
+    <button type="button" class="btn btn-snaxers-gold btn-floating btn-lg" id="btn-back-to-top">
+  <i class="bi bi-arrow-up"></i>
+</button>
 </div>
 
 <script>
@@ -202,6 +205,24 @@
                     }
                 }
             });
+        });
+    });
+    let mybutton = document.getElementById("btn-back-to-top");
+
+    // Visa knappen när man scrollat ner 20 pixlar
+    window.onscroll = function () {
+        if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
+            mybutton.style.display = "block";
+        } else {
+            mybutton.style.display = "none";
+        }
+    };
+
+    // När man klickar på knappen, scrolla mjukt upp till toppen
+    mybutton.addEventListener("click", () => {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
         });
     });
 </script>
