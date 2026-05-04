@@ -53,8 +53,8 @@
                                 @* --- FRAMSIDA --- *@
                                 <div class="flip-card-front card h-100 shadow-sm hover-shadow transition">
                                     <div class="position-relative">
-                                        <img src="@chocolate.ImageUrl" class="card-img-top choco-card-img" alt="@chocolate.Name"
-                                             loading="lazy">
+                                        <img src="@chocolate.DynamicImageUrl" class="card-img-top choco-card-img"
+                                             alt="@chocolate.Name" loading="lazy">
 
                                         @* Kakao-badge (Uppe till vänster) *@
                                         @if (chocolate.CocoaPercentage > 0)
@@ -214,22 +214,24 @@
                 });
             });
         });
-        let mybutton = document.getElementById("btn-back-to-top");
+        document.addEventListener("DOMContentLoaded", () => {
+            const mybutton = document.getElementById("btn-back-to-top");
 
-        // Visa knappen när man scrollat ner 20 pixlar
-        window.onscroll = function () {
-            if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
-                mybutton.style.display = "block";
-            } else {
-                mybutton.style.display = "none";
-            }
-        };
+            // Visa knappen när man scrollat ner 20 pixlar
+            window.onscroll = function () {
+                if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
+                    mybutton.style.display = "block";
+                } else {
+                    mybutton.style.display = "none";
+                }
+            };
 
-        // När man klickar på knappen, scrolla mjukt upp till toppen
-        mybutton.addEventListener("click", () => {
-            window.scrollTo({
-                top: 0,
-                behavior: 'smooth'
+            // När man klickar på knappen, scrolla mjukt upp till toppen
+            mybutton.addEventListener("click", () => {
+                window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
             });
         });
     </script>
