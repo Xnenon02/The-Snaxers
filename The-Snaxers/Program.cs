@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using Azure.Identity;
+using Azure.Storage.Blobs;
 using TheSnaxers.Data;
 using TheSnaxers.Services;
 using TheSnaxers.Repositories;
@@ -8,6 +9,8 @@ using Microsoft.Azure.Cosmos;
 using TheSnaxers.Models;
 using Scalar.AspNetCore;
 using TheSnaxers.Filters;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,20 +31,22 @@ if (builder.Environment.IsProduction())
 // ===================================================
 // APPLICATION INSIGHTS
 // ===================================================
-var appInsightsConnectionString = builder.Configuration["ApplicationInsights:ConnectionString"];
-if (!string.IsNullOrEmpty(appInsightsConnectionString) && appInsightsConnectionString != "placeholder")
+// Always register TelemetryClient — SDK silently drops telemetry if connection string is missing
+builder.Services.AddApplicationInsightsTelemetry(options =>
 {
-    // TODO: Lägg till riktig ConnectionString i Azure Key Vault när Tom satt upp miljön
-    builder.Services.AddApplicationInsightsTelemetry(options =>
-    {
-        options.ConnectionString = appInsightsConnectionString;
-    });
-}
+    var connStr = builder.Configuration["ApplicationInsights:ConnectionString"];
+    if (!string.IsNullOrEmpty(connStr) && connStr != "placeholder")
+        options.ConnectionString = connStr;
+});
 
 // Add services
 builder.Services.AddControllersWithViews();
-builder.Services.AddHealthChecks();
 builder.Services.AddLogging();
+
+builder.Services.AddHealthChecks()
+    .AddCheck("self", () => HealthCheckResult.Healthy())
+    .AddCheck<CosmosHealthCheck>("cosmos", tags: new[] { "ready" })
+    .AddCheck<BlobHealthCheck>("blob", tags: new[] { "ready" });
 
 // Registrera ApiKeyFilter som Singleton — bättre prestanda då det är stateless
 builder.Services.AddSingleton<ApiKeyFilter>();
@@ -79,6 +84,22 @@ builder.Services.AddSingleton(sp =>
     return new CosmosClient(endpoint, credential);
 });
 
+// BlobServiceClient — used by BlobHealthCheck to verify storage connectivity
+builder.Services.AddSingleton(sp =>
+{
+    var configuration = sp.GetRequiredService<IConfiguration>();
+    var endpoint = configuration["AzureStorage:BlobEndpoint"];
+    if (!string.IsNullOrWhiteSpace(endpoint))
+        return new BlobServiceClient(new Uri(endpoint), new DefaultAzureCredential());
+
+    var connStr = configuration["AzureStorage:ConnectionString"];
+    if (!string.IsNullOrWhiteSpace(connStr))
+        return new BlobServiceClient(connStr);
+
+    // Dev fallback: no storage config present locally — BlobHealthCheck will report Unhealthy
+    return new BlobServiceClient(new Uri("https://localhost"), new DefaultAzureCredential());
+});
+
 // ===================================================
 // REPOSITORIES — DI Cleanup (punkt 5)
 // Containernamn skickas in direkt, IConfiguration behövs inte i repositories
@@ -88,6 +109,10 @@ var dbName = builder.Configuration["CosmosDb:DatabaseName"]
 var productsContainer = builder.Configuration["CosmosDb:ContainerName"]
     ?? throw new InvalidOperationException("CosmosDb:ContainerName saknas.");
 var favoritesContainer = builder.Configuration["CosmosDb:FavoritesContainerName"] ?? "Favorites";
+
+// FULHACK: Vi använder Products-containern temporärt tills Tom fixat Bicep
+// var cartsContainer = builder.Configuration["CosmosDb:CartContainerName"] ?? "Carts"; // Denna är pausad
+var cartsContainer = productsContainer; 
 
 builder.Services.AddScoped<IProductRepository>(sp =>
     new CosmosProductRepository(
@@ -106,15 +131,18 @@ builder.Services.AddScoped<IFavoriteRepository>(sp =>
         sp.GetRequiredService<ILogger<CosmosFavoriteRepository>>()
     ));
 
+// Registrera CartRepository — Nu med fulhacket som gör att det inte kraschar!
+builder.Services.AddSingleton<ICartRepository, InMemoryCartRepository>();
+
+builder.Services.AddScoped<ICartService, CartService>();
 builder.Services.AddScoped<IFavoriteService, FavoriteService>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IBlobService, BlobService>();
 builder.Services.AddHttpClient();
-builder.Services.AddMemoryCache(); // Enables in-memory caching for CountryService
+builder.Services.AddMemoryCache(); 
 builder.Services.AddScoped<ICountryService, CountryService>();
 
 builder.Services.AddHttpContextAccessor();
-builder.Services.AddScoped<ICartRepository, CartRepository>();
 
 // Aktivera Session
 builder.Services.AddDistributedMemoryCache();
@@ -175,6 +203,26 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UseSession();
 
+// Generates a per-request correlation ID and pushes it onto the logger scope
+// so every log call inside the request automatically carries it — no changes needed at each call site
+app.Use(async (context, next) =>
+{
+    var correlationId = Guid.NewGuid().ToString("N");
+    context.Items["CorrelationId"] = correlationId;
+
+    var logger = context.RequestServices
+        .GetRequiredService<ILoggerFactory>()
+        .CreateLogger("CorrelationIdMiddleware");
+
+    using (logger.BeginScope(new Dictionary<string, object>
+    {
+        ["RequestId"] = correlationId
+    }))
+    {
+        await next();
+    }
+});
+
 // OpenAPI/Swagger — endast i Development
 if (app.Environment.IsDevelopment())
 {
@@ -183,7 +231,24 @@ if (app.Environment.IsDevelopment())
 }
 
 app.MapStaticAssets();
-app.MapHealthChecks("/health");
+
+// Liveness — answers "is this process alive", no dependency checks
+app.MapHealthChecks("/health/live", new HealthCheckOptions
+{
+    Predicate = _ => false
+});
+
+// Readiness — answers "is this replica ready to serve traffic"
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = c => c.Tags.Contains("ready")
+});
+
+// Diagnostic — full JSON breakdown for humans and dashboards
+app.MapHealthChecks("/health", new HealthCheckOptions
+{
+    ResponseWriter = WriteJsonResponse
+});
 
 app.MapControllerRoute(
     name: "default",
@@ -235,4 +300,45 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
+// Warm up product cache on startup to avoid slow first page load
+using (var scope = app.Services.CreateScope())
+{
+    var productService = scope.ServiceProvider.GetRequiredService<IProductService>();
+    try
+    {
+        await productService.GetAllProductsAsync();
+        app.Logger.LogInformation("Product cache warmed up on startup.");
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogWarning(ex, "Cache warm-up failed — will load on first request.");
+    }
+}
+
 app.Run();
+
+// Writes a JSON health report for the diagnostic /health endpoint
+static Task WriteJsonResponse(HttpContext ctx, HealthReport report)
+{
+    ctx.Response.ContentType = "application/json";
+    var payload = System.Text.Json.JsonSerializer.Serialize(new
+    {
+        status = report.Status.ToString(),
+        checks = report.Entries.Select(e => new
+        {
+            name = e.Key,
+            status = e.Value.Status.ToString(),
+            duration_ms = (int)e.Value.Duration.TotalMilliseconds
+        })
+    });
+    return ctx.Response.WriteAsync(payload);
+}
+
+public class InMemoryCartRepository : ICartRepository
+{
+    private readonly Dictionary<string, ShoppingCart> _carts = new();
+    public async Task<ShoppingCart> GetCartByUserIdAsync(string userId) => 
+        _carts.TryGetValue(userId, out var cart) ? cart : new ShoppingCart { Id = userId, UserId = userId };
+    public async Task SaveCartAsync(ShoppingCart cart) => _carts[cart.Id] = cart;
+    public async Task ClearCartAsync(string userId) => _carts.Remove(userId);
+}

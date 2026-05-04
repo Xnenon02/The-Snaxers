@@ -50,11 +50,13 @@
                         <div class="flip-card" onclick="this.classList.toggle('flipped')">
                             <div class="flip-card-inner">
 
-                                @* FRAMSIDA *@
+                                @* --- FRAMSIDA --- *@
                                 <div class="flip-card-front card h-100 shadow-sm hover-shadow transition">
                                     <div class="position-relative">
-                                        <img src="@chocolate.ImageUrl" class="card-img-top choco-card-img" alt="@chocolate.Name">
+                                        <img src="@chocolate.DynamicImageUrl" class="card-img-top choco-card-img"
+                                             alt="@chocolate.Name" loading="lazy">
 
+                                        @* Kakao-badge (Uppe till vänster) *@
                                         @if (chocolate.CocoaPercentage > 0)
                                         {
                                             <div class="position-absolute top-0 start-0 m-3 badge bg-dark fs-6 shadow-sm">
@@ -62,13 +64,15 @@
                                             </div>
                                         }
 
+                                        @* FLAGGAN OCH POPOVER (Nere till höger) *@
                                         <div class="position-absolute bottom-0 end-0 m-2 shadow-sm bg-white p-1 rounded country-wrapper"
                                              data-country-code="@chocolate.CountryCode" onclick="event.stopPropagation()">
-                                        
-                                            @if (!string.IsNullOrEmpty(chocolate.FlagUrl))
+
+                                            @if (!string.IsNullOrEmpty(chocolate.CountryCode) && chocolate.CountryCode.ToLower() !=
+                                                                                   "un")
                                             {
-                                                <img src="@chocolate.FlagUrl" alt="@chocolate.CountryName" class="flag-badge"
-                                                     style="max-width: 30px;">
+                                                <img src="https://flagcdn.com/w40/@(chocolate.CountryCode.ToLower()).png"
+                                                     alt="@chocolate.CountryName" class="flag-badge" style="max-width: 30px;">
                                             }
                                             else
                                             {
@@ -78,21 +82,20 @@
                                         </div>
                                     </div>
 
-                                    <div class="card-body d-flex flex-column p-3">
+                                    <div class="card-body d-flex flex-column p-3 text-start">
                                         <h5 class="card-title fw-bold">@chocolate.Name</h5>
                                         <p class="text-muted mb-3 small">Ursprung: @chocolate.CountryName</p>
-                                    
+
                                         <div class="mt-auto d-flex justify-content-between align-items-center">
                                             <button class="btn btn-outline-primary btn-sm">Läs mer</button>
-                                        
+
                                             <div class="favorite-zone" onclick="event.stopPropagation()">
                                                 <form asp-controller="Favorite" asp-action="@(isFavorite ? "Remove" : "Add")"
                                                       method="post" class="d-inline">
                                                     <input type="hidden" name="productId" value="@chocolate.Id" />
                                                     <input type="hidden" name="returnUrl" value="Chocolate" />
-                                                    <input type="hidden" name="searchTerm" value="@ViewBag.SearchTerm" />
-                                                    <input type="hidden" name="minCocoa" value="@ViewBag.MinCocoa" />
-                                                    <button type="submit" class="btn btn-link p-0 text-decoration-none">
+                                                    <button type="submit"
+                                                            class="btn btn-link p-0 text-decoration-none border-0 bg-transparent">
                                                         <i
                                                         class="bi @(isFavorite ? "bi-heart-fill" : "bi-heart") text-danger fs-4"></i>
                                                     </button>
@@ -102,46 +105,63 @@
                                     </div>
                                 </div>
 
-                                @* BAKSIDA *@
+                                @* --- BAKSIDA (Nu utan flagga!) --- *@
                                 <div
                                     class="flip-card-back p-4 d-flex flex-column justify-content-center align-items-center text-center">
-                                    <h5>@chocolate.Name</h5>
+                                    <h5 class="fw-bold">@chocolate.Name</h5>
+
                                     @if (chocolate.CocoaPercentage > 0)
                                     {
-                                        <span class="badge-cocoa mb-2 d-inline-block">🍫 @chocolate.CocoaPercentage% Kakao</span>
+                                        <span class="badge bg-light text-dark mb-2">🍫 @chocolate.CocoaPercentage% Kakao</span>
                                     }
-                                    <p>@chocolate.Description</p>
-                                    <p class="mb-1">🌍 Ursprung: @chocolate.CountryName</p>
-                                    @if (!string.IsNullOrEmpty(chocolate.Brand))
-                                    {
-                                        <p class="mb-1">✨ Märke: @chocolate.Brand</p>
-                                    }
+
+                                    <p class="small">@chocolate.Description</p>
+                                    <hr class="w-75 border-light">
+
+                                    <p class="mb-1 small">✨ Märke: @(chocolate.Brand ?? "Snaxers Choice")</p>
                                     @if (chocolate.Weight > 0)
                                     {
-                                        <p class="product-weight">Vikt: @chocolate.Weight g</p>
+                                        <p class="small">⚖️ Vikt: @chocolate.Weight g</p>
                                     }
-                                    <p class="fw-bold mt-2">💰 Pris: @chocolate.Price kr</p>
+                                    <p class="fw-bold fs-5 mt-2 text-snaxers-gold">@chocolate.Price kr</p>
 
-                                    @* --- HÄR ÄR DEN NYA KÖPKNAPPEN --- *@
-                                    <form asp-controller="Cart" asp-action="AddToCart" method="post" class="mt-2 w-100"
-                                          onclick="event.stopPropagation()">
-                                        <input type="hidden" name="productId" value="@chocolate.Id" />
-                                        <button type="submit" class="btn btn-snaxers-gold w-75 shadow-sm">
-                                            Lägg i korgen 🛒
-                                        </button>
-                                    </form>
-                                    @* --------------------------------- *@
+                                    @* KÖPKNAPP *@
+                                    @* Null-safe check — User.Identity can be null for unauthenticated requests *@
+                                    @if (User.Identity?.IsAuthenticated == true)
+                                    {
+                                        <form asp-controller="Cart" asp-action="AddToCart" method="post" class="mt-2 w-100"
+                                              onclick="event.stopPropagation()">
+                                            <input type="hidden" name="productId" value="@chocolate.Id" />
+                                            <input type="hidden" name="returnUrl"
+                                                   value="@Context.Request.Path@Context.Request.QueryString" />
+                                            <button type="submit" class="btn btn-snaxers-gold w-100 shadow-sm fw-bold">
+                                                Lägg i korgen 🛒
+                                            </button>
+                                        </form>
+                                    }
+                                    else
+                                    {
+                                        <a asp-area="Identity" asp-page="/Account/Login"
+                                               asp-route-returnUrl="@Context.Request.Path@Context.Request.QueryString"
+                                               class="btn btn-outline-light w-100 mt-2 fw-bold" onclick="event.stopPropagation()">
+                                            Logga in för att köpa 🛒
+                                        </a>
+                                    }
 
-                                    <button class="flip-back-btn mt-3 btn btn-outline-light btn-sm">
+                                    <button class="btn btn-link btn-sm text-white mt-3 text-decoration-none">
                                         ← Tillbaka
                                     </button>
                                 </div>
+
                             </div>
                         </div>
                     </div>
                 }
             </div>
         }
+        <button type="button" class="btn btn-snaxers-gold btn-floating btn-lg" id="btn-back-to-top">
+            <i class="bi bi-arrow-up"></i>
+        </button>
     </div>
 
     <script>
@@ -165,20 +185,20 @@
                             const data = await response.json();
 
                             popover.innerHTML = `
-                                <div style="padding: 5px;">
-                                    <strong class="text-snaxers-gold">${data.name}</strong><br>
-                                    <small class="text-muted">Visste du att...</small><br>
-                                    <div class="mt-1">${data.fact}</div>
-                                </div>
-                            `;
+                                                <div style="padding: 5px;">
+                                                    <strong class="text-snaxers-gold">${data.name}</strong><br>
+                                                    <small class="text-muted">Visste du att...</small><br>
+                                                    <div class="mt-1">${data.fact}</div>
+                                                </div>
+                                            `;
                         } catch (error) {
                             console.error("Fetch error:", error);
                             popover.innerHTML = `
-                                <div style="padding: 5px; color: #b00020;">
-                                    <small>⚠️ Oj!</small><br>
-                                    <span>Kunde inte hämta fakta just nu.</span>
-                                </div>
-                            `;
+                                                <div style="padding: 5px; color: #b00020;">
+                                                    <small>⚠️ Oj!</small><br>
+                                                    <span>Kunde inte hämta fakta just nu.</span>
+                                                </div>
+                                            `;
                             setTimeout(() => {
                                 if (popover.innerText.includes("Kunde inte hämta")) {
                                     popover.innerHTML = "Laddar...";
@@ -186,6 +206,26 @@
                             }, 3000);
                         }
                     }
+                });
+            });
+        });
+        document.addEventListener("DOMContentLoaded", () => {
+            const mybutton = document.getElementById("btn-back-to-top");
+
+            // Visa knappen när man scrollat ner 20 pixlar
+            window.onscroll = function () {
+                if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
+                    mybutton.style.display = "block";
+                } else {
+                    mybutton.style.display = "none";
+                }
+            };
+
+            // När man klickar på knappen, scrolla mjukt upp till toppen
+            mybutton.addEventListener("click", () => {
+                window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
                 });
             });
         });

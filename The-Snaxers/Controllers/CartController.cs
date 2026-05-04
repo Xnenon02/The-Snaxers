@@ -1,62 +1,112 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TheSnaxers.Repositories;
+using TheSnaxers.Services; // Se till att du har denna!
+using TheSnaxers.Models;
+using System.Security.Claims;
+using Microsoft.VisualBasic;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace TheSnaxers.Controllers
 {
+    [Authorize]
     public class CartController : Controller
     {
         private readonly IProductRepository _chocolateRepository;
-        private readonly ICartRepository _cartRepository;
+        private readonly ICartService _cartService;
+        private readonly IProductService _productService;
+        private readonly IMemoryCache _cache;
 
-        public CartController(IProductRepository chocolateRepository, ICartRepository cartRepository)
+        // FIX 1: Se till att namnen matchar i konstruktorn (_cartService, inte _cartRepository)
+        public CartController(IProductRepository chocolateRepository, ICartService cartService, IProductService productService, IMemoryCache cache)
         {
             _chocolateRepository = chocolateRepository;
-            _cartRepository = cartRepository;
+            _cartService = cartService;
+            _productService = productService;
+            _cache = cache;
         }
+
+        private string UserId => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
 
         // Visar själva varukorgs-sidan
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
-            var items = _cartRepository.GetCartItems();
-            var total = _cartRepository.GetCartTotal();
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+                return RedirectToAction("Login", "Account");
 
-            ViewBag.CartTotal = total;
-            return View(items);
+            var cart = await _cartService.GetCartByUserIdAsync(userId);
+
+            if (cart.Items.Any())
+            {
+                // 1. Hämta ALLA produkter som finns i korgen i ett svep
+                var allProducts = await _productService.GetAllProductsAsync(); // Eller en metod som tar en lista med ID:n
+
+                // 2. Matcha ihop dem (Berika korgen)
+                foreach (var item in cart.Items)
+                {
+                    var product = allProducts.FirstOrDefault(p => p.Id == item.ProductId);
+                    if (product != null)
+                    {
+                        item.ProductName = product.Name;
+                        item.Price = product.Price;
+                        item.ImageUrl = product.ImageUrl;
+                    }
+                }
+            }
+
+            ViewBag.GrandTotal = cart.Items.Sum(x => x.Price * x.Quantity).ToString("N2");
+            return View(cart.Items);
         }
 
-        // Action för att lägga till choklad
         [HttpPost]
-        public async Task<IActionResult> AddToCart(string productId)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AddToCart(string productId, string returnUrl)
         {
             var chocolate = await _chocolateRepository.GetByIdAsync(productId);
 
             if (chocolate != null)
             {
-                _cartRepository.AddToCart(chocolate);
+                // Här skapar vi variabeln istället för att hårdkoda '1' längre ner
+                int quantity = 1;
+
+                await _cartService.AddToCartAsync(UserId, new CartItem
+                {
+                    ProductId = productId,
+                    ProductName = chocolate.Name,
+                    Price = chocolate.Price,
+                    Quantity = quantity // Använd variabeln här!
+
+                });
+                _cache.Remove($"cart_count_{UserId}");
+            }
+            TempData["SuccessMessage"] = "Produkten har lagts i din varukorg! 🍫";
+
+            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+            {
+                return Redirect(returnUrl);
             }
 
-            // Efter man lagt till vill man oftast komma tillbaka till där man var
-            // eller direkt till varukorgen. Vi kör varukorgen för nu:
             return RedirectToAction("Index");
         }
 
-        // Action för att ta bort/minska antal
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> RemoveFromCart(string productId)
         {
-            var chocolate = await _chocolateRepository.GetByIdAsync(productId);
-
-            if (chocolate != null)
-            {
-                _cartRepository.RemoveFromCart(chocolate);
-            }
-
+            // FIX 4: Använd servicens asynkrona metod
+            await _cartService.RemoveFromCartAsync(UserId, productId);
+            _cache.Remove($"cart_count_{UserId}");
             return RedirectToAction("Index");
         }
+
         [HttpPost]
-        public IActionResult RemoveProductCompletely(string productId)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RemoveProductCompletely(string productId)
         {
-            _cartRepository.RemoveProductCompletely(productId);
+            // FIX 5: Gör även denna asynkron i servicen!
+            await _cartService.ClearProductFromCartAsync(UserId, productId);
+            _cache.Remove($"cart_count_{UserId}");
             return RedirectToAction("Index");
         }
     }

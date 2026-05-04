@@ -2,10 +2,12 @@ using TheSnaxers.Models;
 
 public interface ICartRepository
 {
-    void AddToCart(Product chocolate);
-    int RemoveFromCart(Product chocolate); // Returnerar antal kvar av varan
-    List<CartItem> GetCartItems();
-    void ClearCart();
-    decimal GetCartTotal();
-    void RemoveProductCompletely(string productId);
+    // Hämta hela "lådan" (ShoppingCart-objektet) för en specifik person
+    Task<ShoppingCart> GetCartByUserIdAsync(string userId);
+    
+    // Spara/Uppdatera hela "lådan" i ett svep
+    Task SaveCartAsync(ShoppingCart cart);
+
+    // Om ni vill ha en specifik metod för att tömma
+    Task ClearCartAsync(string userId);
 }
