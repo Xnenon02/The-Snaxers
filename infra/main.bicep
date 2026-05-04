@@ -142,6 +142,10 @@ resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
               value: 'Favorites'
             }
             {
+              name: 'CosmosDb__CartContainerName'
+              value: 'Carts'
+            }
+            {
               name: 'ApplicationInsights__ConnectionString'
               value: appInsightsConnectionString
             }

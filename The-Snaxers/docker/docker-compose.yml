@@ -14,6 +14,9 @@ services:
       - CosmosDb__TenantId=${COSMOS_TENANT_ID}
       - CosmosDb__AccountKey=${COSMOS_KEY}
       - CosmosDb__FavoritesContainerName=Favorites
+      - CosmosDb__CartContainerName=${COSMOS_CART_CONTAINER:-}
+      - Authentication__Google__ClientId=${GOOGLE_CLIENT_ID:-}
+      - Authentication__Google__ClientSecret=${GOOGLE_CLIENT_SECRET:-}
       - ConnectionStrings__AzureBlobStorage=${BLOB_CONNECTION_STRING}
       - AzureStorage__ProductContainerName=products
       - AdminSettings__Email=${ADMIN_EMAIL}

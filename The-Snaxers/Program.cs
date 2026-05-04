@@ -110,9 +110,7 @@ var productsContainer = builder.Configuration["CosmosDb:ContainerName"]
     ?? throw new InvalidOperationException("CosmosDb:ContainerName saknas.");
 var favoritesContainer = builder.Configuration["CosmosDb:FavoritesContainerName"] ?? "Favorites";
 
-// FULHACK: Vi använder Products-containern temporärt tills Tom fixat Bicep
-// var cartsContainer = builder.Configuration["CosmosDb:CartContainerName"] ?? "Carts"; // Denna är pausad
-var cartsContainer = productsContainer; 
+var cartsContainer = builder.Configuration["CosmosDb:CartContainerName"];
 
 builder.Services.AddScoped<IProductRepository>(sp =>
     new CosmosProductRepository(
@@ -131,8 +129,21 @@ builder.Services.AddScoped<IFavoriteRepository>(sp =>
         sp.GetRequiredService<ILogger<CosmosFavoriteRepository>>()
     ));
 
-// Registrera CartRepository — Nu med fulhacket som gör att det inte kraschar!
-builder.Services.AddSingleton<ICartRepository, InMemoryCartRepository>();
+// CartRepository — använder CosmosDB om CosmosDb:CartContainerName är konfigurerat,
+// annars InMemory (dev-fallback, cart nollställs vid omstart)
+if (!string.IsNullOrEmpty(cartsContainer))
+{
+    builder.Services.AddScoped<ICartRepository>(sp =>
+        new CosmosCartRepository(
+            sp.GetRequiredService<CosmosClient>(),
+            dbName,
+            cartsContainer
+        ));
+}
+else
+{
+    builder.Services.AddSingleton<ICartRepository, InMemoryCartRepository>();
+}
 
 builder.Services.AddScoped<ICartService, CartService>();
 builder.Services.AddScoped<IFavoriteService, FavoriteService>();
@@ -190,6 +201,14 @@ using (var scope = app.Services.CreateScope())
 }
 
 // Configure pipeline
+// Måste ligga FÖRE UseHttpsRedirection så att X-Forwarded-Proto:https
+// från Container Apps-proxyn känns igen och redirect-loopen undviks
+app.UseForwardedHeaders(new Microsoft.AspNetCore.HttpOverrides.ForwardedHeadersOptions
+{
+    ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor
+                     | Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto
+});
+
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
