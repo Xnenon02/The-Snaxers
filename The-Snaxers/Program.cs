@@ -11,6 +11,7 @@ using Scalar.AspNetCore;
 using TheSnaxers.Filters;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.HttpOverrides;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -203,10 +204,9 @@ using (var scope = app.Services.CreateScope())
 // Configure pipeline
 // Måste ligga FÖRE UseHttpsRedirection så att X-Forwarded-Proto:https
 // från Container Apps-proxyn känns igen och redirect-loopen undviks
-app.UseForwardedHeaders(new Microsoft.AspNetCore.HttpOverrides.ForwardedHeadersOptions
+app.UseForwardedHeaders(new ForwardedHeadersOptions
 {
-    ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor
-                     | Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
 });
 
 if (!app.Environment.IsDevelopment())
