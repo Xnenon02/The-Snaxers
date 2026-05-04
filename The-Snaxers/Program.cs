@@ -138,6 +138,7 @@ builder.Services.AddScoped<ICartService, CartService>();
 builder.Services.AddScoped<IFavoriteService, FavoriteService>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IBlobService, BlobService>();
+builder.Services.AddScoped<IInventoryService, InventoryService>();
 builder.Services.AddHttpClient();
 builder.Services.AddMemoryCache(); 
 builder.Services.AddScoped<ICountryService, CountryService>();
