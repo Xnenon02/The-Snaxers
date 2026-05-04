@@ -35,6 +35,7 @@ public class FavoriteController : Controller
 
     [HttpGet] // Tillagt för att hantera redirect efter inloggning (förhindrar 404)
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Add(string productId, string returnUrl = "Chocolate", string? searchTerm = null, int? minCocoa = null)
     {
         // Om detta är ett GET-anrop (t.ex. efter inloggning), skicka användaren till galleriet
@@ -56,6 +57,7 @@ public class FavoriteController : Controller
         return RedirectToAction("Index", "Chocolate", new { searchTerm, minCocoa = minCocoa.HasValue ? minCocoa : null });
     }
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Remove(string productId, string returnUrl = "Chocolate", string? searchTerm = null, int? minCocoa = null)
     {
         var userId = _userManager.GetUserId(User);
