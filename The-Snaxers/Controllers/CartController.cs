@@ -4,7 +4,6 @@ using TheSnaxers.Repositories;
 using TheSnaxers.Services; // Se till att du har denna!
 using TheSnaxers.Models;
 using System.Security.Claims;
-using Microsoft.VisualBasic;
 using Microsoft.Extensions.Caching.Memory;
 
 namespace TheSnaxers.Controllers
@@ -27,7 +26,10 @@ namespace TheSnaxers.Controllers
             _cache = cache;
         }
 
-        private string UserId => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        private string UserId => User.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? throw new InvalidOperationException(
+                "UserId saknas trots autentisering. Kontrollera att [Authorize] är satt och att " +
+                "ClaimTypes.NameIdentifier (NameIdentifier-claim) populeras korrekt i login-logiken.");
 
         // Visar själva varukorgs-sidan
         public async Task<IActionResult> Index()
@@ -43,11 +45,11 @@ namespace TheSnaxers.Controllers
                 // 1. Hämta ALLA produkter som finns i korgen i ett svep
                 var allProducts = await _productService.GetAllProductsAsync(); // Eller en metod som tar en lista med ID:n
 
-                // 2. Matcha ihop dem (Berika korgen)
+                // 2. Matcha ihop dem (Berika korgen) — dictionary för O(1)-lookup istället för O(n) per item
+                var productMap = allProducts.ToDictionary(p => p.Id);
                 foreach (var item in cart.Items)
                 {
-                    var product = allProducts.FirstOrDefault(p => p.Id == item.ProductId);
-                    if (product != null)
+                    if (productMap.TryGetValue(item.ProductId, out var product))
                     {
                         item.ProductName = product.Name;
                         item.Price = product.Price;

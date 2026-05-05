@@ -10,9 +10,9 @@ namespace TheSnaxers.Controllers;
 public class HomeController : Controller
 {
     private readonly ILogger<HomeController> _logger;
-    private readonly TelemetryClient _telemetry;
+    private readonly TelemetryClient? _telemetry;
 
-    public HomeController(ILogger<HomeController> logger, TelemetryClient telemetry)
+    public HomeController(ILogger<HomeController> logger, TelemetryClient? telemetry = null)
     {
         _logger = logger;
         _telemetry = telemetry;
@@ -24,7 +24,7 @@ public class HomeController : Controller
         _logger.LogInformation("Home page visited");
 
         // Track home page views as a pre-aggregated custom metric — cheap at any volume
-        _telemetry.GetMetric("home-page-views").TrackValue(1);
+        _telemetry?.GetMetric("home-page-views").TrackValue(1);
 
         return View();
     }

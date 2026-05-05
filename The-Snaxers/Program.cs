@@ -11,6 +11,7 @@ using Scalar.AspNetCore;
 using TheSnaxers.Filters;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.HttpOverrides;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -31,13 +32,16 @@ if (builder.Environment.IsProduction())
 // ===================================================
 // APPLICATION INSIGHTS
 // ===================================================
-// Always register TelemetryClient — SDK silently drops telemetry if connection string is missing
-builder.Services.AddApplicationInsightsTelemetry(options =>
+// Only register when a real connection string is present — avoids crash in local Docker
+// where no App Insights resource exists
+var appInsightsConnStr = builder.Configuration["ApplicationInsights:ConnectionString"];
+if (!string.IsNullOrEmpty(appInsightsConnStr) && appInsightsConnStr != "placeholder")
 {
-    var connStr = builder.Configuration["ApplicationInsights:ConnectionString"];
-    if (!string.IsNullOrEmpty(connStr) && connStr != "placeholder")
-        options.ConnectionString = connStr;
-});
+    builder.Services.AddApplicationInsightsTelemetry(options =>
+    {
+        options.ConnectionString = appInsightsConnStr;
+    });
+}
 
 // Add services
 builder.Services.AddControllersWithViews(options =>
@@ -114,9 +118,7 @@ var productsContainer = builder.Configuration["CosmosDb:ContainerName"]
     ?? throw new InvalidOperationException("CosmosDb:ContainerName saknas.");
 var favoritesContainer = builder.Configuration["CosmosDb:FavoritesContainerName"] ?? "Favorites";
 
-// FULHACK: Vi använder Products-containern temporärt tills Tom fixat Bicep
-// var cartsContainer = builder.Configuration["CosmosDb:CartContainerName"] ?? "Carts"; // Denna är pausad
-var cartsContainer = productsContainer; 
+var cartsContainer = builder.Configuration["CosmosDb:CartContainerName"];
 
 builder.Services.AddScoped<IProductRepository>(sp =>
     new CosmosProductRepository(
@@ -135,8 +137,21 @@ builder.Services.AddScoped<IFavoriteRepository>(sp =>
         sp.GetRequiredService<ILogger<CosmosFavoriteRepository>>()
     ));
 
-// Registrera CartRepository — Nu med fulhacket som gör att det inte kraschar!
-builder.Services.AddSingleton<ICartRepository, InMemoryCartRepository>();
+// CartRepository — använder CosmosDB om CosmosDb:CartContainerName är konfigurerat,
+// annars InMemory (dev-fallback, cart nollställs vid omstart)
+if (!string.IsNullOrEmpty(cartsContainer))
+{
+    builder.Services.AddScoped<ICartRepository>(sp =>
+        new CosmosCartRepository(
+            sp.GetRequiredService<CosmosClient>(),
+            dbName,
+            cartsContainer
+        ));
+}
+else
+{
+    builder.Services.AddSingleton<ICartRepository, InMemoryCartRepository>();
+}
 
 builder.Services.AddScoped<ICartService, CartService>();
 builder.Services.AddScoped<IFavoriteService, FavoriteService>();
@@ -195,6 +210,13 @@ using (var scope = app.Services.CreateScope())
 }
 
 // Configure pipeline
+// Måste ligga FÖRE UseHttpsRedirection så att X-Forwarded-Proto:https
+// från Container Apps-proxyn känns igen och redirect-loopen undviks
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+});
+
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
