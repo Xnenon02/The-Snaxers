@@ -144,13 +144,37 @@ builder.Services.AddScoped<ICountryService, CountryService>();
 
 builder.Services.AddHttpContextAccessor();
 
-// Aktivera Session
+// Aktivera Session och säkerställ strikta cookie-inställningar
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(options =>
 {
     options.IdleTimeout = TimeSpan.FromMinutes(30);
+    options.Cookie.HttpOnly = true;        // 🔒 Skyddar mot XSS (hindrar JavaScript från att läsa cookien)
+    options.Cookie.IsEssential = true;     // 🔒 Nödvändig för GDPR/funktion
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // 🔒 Kräver HTTPS i alla miljöer
+    options.Cookie.SameSite = SameSiteMode.Lax; // 🔒 Ändrat från Strict till Lax för att inte blockera Google OIDC eller externa redirects
+});
+
+builder.Services.AddCookiePolicy(options =>
+{
+    // Gör cookien säker och följer GDPR
+    options.CheckConsentNeeded = context => false; // Sätts till false om vi inte behöver samtycke för nödvändiga cookies
+    options.MinimumSameSitePolicy = SameSiteMode.Lax;
+    options.Secure = CookieSecurePolicy.Always;
+});
+
+// Säkra även standard-identitetscookies
+builder.Services.ConfigureApplicationCookie(options =>
+{
     options.Cookie.HttpOnly = true;
-    options.Cookie.IsEssential = true;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.SameSite = SameSiteMode.Lax; // Lax är standard för inloggningscookies och externa flöden
+    options.ExpireTimeSpan = TimeSpan.FromMinutes(20);
+    options.SlidingExpiration = true;
+    
+    // 🔒 Säkerställ att sökvägarna pekar rätt och inte till /Identity/Account/...
+    options.LoginPath = "/Account/Login";
+    options.AccessDeniedPath = "/Account/AccessDenied";
 });
 
 // Identity - SQLite tills VM är uppsatt

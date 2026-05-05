@@ -22,6 +22,7 @@ public static class CountryFactHelper
             "finland" or "finland" or "fi" => ("Finland har en växande chokladscen med fokus på hantverk och hållbarhet. Små producenter experimenterar gärna med nordiska smaker som lingon, hjortron och enbär.", "fi", "Finland"),
             "spanien" or "spain" or "es" => ("Spanien har en historisk koppling till choklad – det var hit kakao först kom till Europa från Amerika. Traditionellt dricks den som tjock choklad caliente, ofta tillsammans med churros. Idag finns även en växande craft-scen där producenter fokuserar på högkvalitativa bönor och rena smaker, ofta med influenser från Latinamerika.", "es", "Spanien"),
             "brasilien" or "brazil" or "br" => ("Brasilien är en av världens större kakaoproducenter men har också börjat satsa mer på exklusiv choklad. Särskilt regionen Bahia är känd för fin kakao med mjuka, fruktiga toner. På senare år har en ny generation bean-to-bar-tillverkare vuxit fram, med fokus på hållbarhet, ursprung och unik smakprofil.", "br", "Brasilien"),
+            "frankrike" or "france" or "fr" => ("Frankrike har en lång tradition av lyxig choklad, särskilt i regioner som Bayonne och Paris. Här skapas eleganta praliner och ganacher med fokus på balans och kvalitet. Fransk choklad är ofta rik och komplex, med subtila smaker av vanilj, nötter och frukt.", "fr", "Frankrike"),
             _ => ("Ett spännande land med unika kakaotraditioner!", "un", "Okänd") // "un" för unknown
         };
     }

@@ -8,8 +8,8 @@
     @* AC5: Visa profilbild från Google om den finns, annars visas ett standardikon *@
     var pictureUrl = User.FindFirstValue("picture");
     var displayName = User.FindFirstValue(ClaimTypes.Name)
-                      ?? UserManager.GetUserName(User)
-                      ?? "Användare";
+                        ?? UserManager.GetUserName(User)
+                        ?? "Användare";
 
     <li class="nav-item d-flex align-items-center gap-2 ms-2">
         @if (!string.IsNullOrEmpty(pictureUrl))
@@ -38,6 +38,6 @@ else
         <a class="nav-link text-white" asp-area="Identity" asp-page="/Account/Register">Registrera</a>
     </li>
     <li class="nav-item">
-        <a class="nav-link text-white" asp-area="Identity" asp-page="/Account/Login">Logga in</a>
+        <a class="nav-link text-white" asp-area="" asp-controller="Account" asp-action="Login">Logga in</a>
     </li>
 }
