@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using TheSnaxers.Services;
 namespace TheSnaxers.Controllers;
 [Authorize]
+[ResponseCache(Location = ResponseCacheLocation.None, NoStore = true)]
 public class FavoriteController : Controller
 {
     private readonly IFavoriteService _favoriteService;

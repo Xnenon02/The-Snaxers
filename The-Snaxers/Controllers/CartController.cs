@@ -10,6 +10,7 @@ using Microsoft.Extensions.Caching.Memory;
 namespace TheSnaxers.Controllers
 {
     [Authorize]
+    [ResponseCache(Location = ResponseCacheLocation.None, NoStore = true)] // Förhindrar cachning av varukorgsdata och tokens
     public class CartController : Controller
     {
         private readonly IProductRepository _chocolateRepository;

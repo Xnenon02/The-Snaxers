@@ -11,6 +11,7 @@ using System;
 
 namespace TheSnaxers.Controllers;
 
+[ResponseCache(Location = ResponseCacheLocation.None, NoStore = true)] // Förhindrar cachning av sökningar, vyer och tokens
 public class ChocolateController : Controller
 {
     private readonly IBlobService _blobService;
@@ -99,6 +100,8 @@ public class ChocolateController : Controller
                     "dominikanska republiken" => "do",
                     "spanien" => "es",
                     "spain" => "es",
+                    "frankrike" => "fr",
+                    "france" => "fr",
                     _ => "un"
                 };
             }
