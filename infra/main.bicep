@@ -27,6 +27,9 @@ param logAnalyticsWorkspaceId string
 @description('Application Insights connection string — from monitoring.bicep output')
 param appInsightsConnectionString string = ''
 
+@description('Cosmos DB account endpoint — from database.bicep output or manual input')
+param cosmosAccountEndpoint string = 'https://snaxers.documents.azure.com:443/'
+
 // ===================================================
 // AZURE CONTAINER REGISTRY (ACR)
 // ===================================================
@@ -125,9 +128,8 @@ resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
               value: keyVaultUri
             }
             {
-              // TODO: Ersätt med parameter från database.bicep när US5 är klar (Martina)
               name: 'CosmosDb__AccountEndpoint'
-              value: 'https://snaxers.documents.azure.com:443/'
+              value: cosmosAccountEndpoint
             }
             {
               name: 'CosmosDb__DatabaseName'
