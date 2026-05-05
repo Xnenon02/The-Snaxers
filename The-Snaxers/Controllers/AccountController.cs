@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 
 namespace TheSnaxers.Controllers;
 
+[ResponseCache(Location = ResponseCacheLocation.None, NoStore = true)] // Förhindrar cachning av inloggningsdata och sessionsinformation
 public class AccountController : Controller
 {
     private readonly SignInManager<IdentityUser> _signInManager;
@@ -24,10 +25,18 @@ public class AccountController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Login(string username, string password, string? returnUrl = null)
+    public async Task<IActionResult> Login(string email, string password, string? returnUrl = null)
     {
-        // Använd er befintliga identity-databas
-        var result = await _signInManager.PasswordSignInAsync(username, password, isPersistent: false, lockoutOnFailure: false);
+        // Vi kontrollerar att inmatningen inte är tom
+        if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
+        {
+            ModelState.AddModelError(string.Empty, "E-post och lösenord måste anges.");
+            ViewData["ReturnUrl"] = returnUrl;
+            return View();
+        }
+
+        // Eftersom parametern i ASP.NET Identity heter "userName" skickar vi in vår e-post dit
+        var result = await _signInManager.PasswordSignInAsync(email, password, isPersistent: false, lockoutOnFailure: false);
 
         if (result.Succeeded)
         {
@@ -35,7 +44,7 @@ public class AccountController : Controller
             {
                 return Redirect(returnUrl);
             }
-            return RedirectToAction("Index", "Product");
+            return RedirectToAction("Index", "Chocolate");
         }
 
         ModelState.AddModelError(string.Empty, "Ogiltigt användarnamn eller lösenord.");
