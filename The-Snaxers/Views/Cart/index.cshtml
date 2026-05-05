@@ -42,6 +42,7 @@
                             <div class="col-md-3">
                                 <div class="d-flex align-items-center justify-content-center">
                                     <form asp-action="RemoveFromCart" method="post" class="d-inline">
+                                        @Html.AntiForgeryToken()
                                         <input type="hidden" name="productId" value="@item.ProductId" />
                                         <button type="submit" class="btn btn-outline-secondary btn-sm shadow-none">-</button>
                                     </form>
@@ -49,6 +50,7 @@
                                     <span class="mx-3 fw-bold">@item.Quantity</span>
                                     
                                     <form asp-action="AddToCart" method="post" class="d-inline">
+                                        @Html.AntiForgeryToken()
                                         <input type="hidden" name="productId" value="@item.ProductId" />
                                         <button type="submit" class="btn btn-outline-secondary btn-sm shadow-none">+</button>
                                     </form>
@@ -58,6 +60,7 @@
                                 <span class="fw-bold">@item.TotalPrice kr</span>
     
                                 <form asp-action="RemoveProductCompletely" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
                                     <input type="hidden" name="productId" value="@item.ProductId" />
                                     <button type="submit" class="btn btn-link text-danger p-0 ms-2" title="Ta bort alla">
                                         <i class="bi bi-trash3 fs-5"></i> @* Eller ett vanligt 'X' om du inte kör Bootstrap

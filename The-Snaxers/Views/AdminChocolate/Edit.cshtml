@@ -13,6 +13,7 @@
                 </div>
                 <div class="card-body">
                     <form asp-action="Edit" method="post" enctype="multipart/form-data">
+                    @Html.AntiForgeryToken()
                         <input type="hidden" asp-for="Id" />
                         <input type="hidden" name="originalCategory" value="@Model.Category" />
 
@@ -59,6 +60,7 @@
             <div class="mb-3">
                 <label asp-for="Country" class="form-label fw-bold">Ursprungsland</label>
                 <input asp-for="Country" class="form-control shadow-sm" />
+                <span asp-validation-for="Country" class="text-danger"></span>
             </div>
 
             <div class="mb-3">

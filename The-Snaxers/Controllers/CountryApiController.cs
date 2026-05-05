@@ -6,6 +6,7 @@ using TheSnaxers.Services;
 public class CountryController : ControllerBase
 {
     [HttpGet("{code}")]
+    [ResponseCache(Location = ResponseCacheLocation.None, NoStore = true)]
 public IActionResult GetCountryInfo(string code)
 {
     // Vi anropar din helper med rätt namn

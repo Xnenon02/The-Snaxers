@@ -6,6 +6,7 @@ using Microsoft.ApplicationInsights;
 
 namespace TheSnaxers.Controllers;
 
+[ResponseCache(Location = ResponseCacheLocation.None, NoStore = true)] // Förhindrar cachning av fel och sidvisningar
 public class HomeController : Controller
 {
     private readonly ILogger<HomeController> _logger;
