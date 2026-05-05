@@ -54,10 +54,18 @@ public class CosmosFavoriteRepository : IFavoriteRepository
             if (emptyIds.Any())
                 _logger.LogWarning("{EmptyCount} favorite(s) har tomt ProductId — troligen gammal data i Cosmos.", emptyIds.Count);
 
-            // Hämta produkter i ett svep med IN-operatorn
-            var idList = string.Join(",", cosmosFavorites.Select(f => $"'{f.ProductId}'"));
+            // Hämta produkter i ett svep med IN-operatorn — parametriserat för att undvika injection
+            var validIds = cosmosFavorites
+                .Select(f => f.ProductId)
+                .Where(id => !string.IsNullOrWhiteSpace(id))
+                .Distinct()
+                .ToList();
+
+            var paramNames = validIds.Select((_, i) => $"@id{i}").ToList();
             var productQuery = new QueryDefinition(
-                $"SELECT * FROM c WHERE c.id IN ({idList})");
+                $"SELECT * FROM c WHERE c.id IN ({string.Join(",", paramNames)})");
+            for (int i = 0; i < validIds.Count; i++)
+                productQuery = productQuery.WithParameter($"@id{i}", validIds[i]);
 
             var productMap = new Dictionary<string, Product>();
             var productIterator = _productsContainer.GetItemQueryIterator<CosmosProductDocument>(productQuery);
