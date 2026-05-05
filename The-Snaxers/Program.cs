@@ -32,13 +32,16 @@ if (builder.Environment.IsProduction())
 // ===================================================
 // APPLICATION INSIGHTS
 // ===================================================
-// Always register TelemetryClient — SDK silently drops telemetry if connection string is missing
-builder.Services.AddApplicationInsightsTelemetry(options =>
+// Only register when a real connection string is present — avoids crash in local Docker
+// where no App Insights resource exists
+var appInsightsConnStr = builder.Configuration["ApplicationInsights:ConnectionString"];
+if (!string.IsNullOrEmpty(appInsightsConnStr) && appInsightsConnStr != "placeholder")
 {
-    var connStr = builder.Configuration["ApplicationInsights:ConnectionString"];
-    if (!string.IsNullOrEmpty(connStr) && connStr != "placeholder")
-        options.ConnectionString = connStr;
-});
+    builder.Services.AddApplicationInsightsTelemetry(options =>
+    {
+        options.ConnectionString = appInsightsConnStr;
+    });
+}
 
 // Add services
 builder.Services.AddControllersWithViews();
