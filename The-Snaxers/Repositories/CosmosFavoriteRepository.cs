@@ -45,10 +45,10 @@ public class CosmosFavoriteRepository : IFavoriteRepository
             if (!cosmosFavorites.Any())
                 return new List<Favorite>();
 
-            // Logga ProductIds för att underlätta felsökning av stale data
+            // Logga enbart antal för att undvika långa loggrader vid många favoriter
             var productIds = cosmosFavorites.Select(f => f.ProductId).ToList();
-            _logger.LogInformation("Found {Count} favorites. Looking up ProductIds: {ProductIds}",
-                cosmosFavorites.Count, string.Join(", ", productIds));
+            _logger.LogInformation("Found {Count} favorites for user {UserId}.",
+                cosmosFavorites.Count, userId);
 
             var emptyIds = productIds.Where(string.IsNullOrWhiteSpace).ToList();
             if (emptyIds.Any())

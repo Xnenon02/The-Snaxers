@@ -26,7 +26,9 @@ namespace TheSnaxers.Controllers
         }
 
         private string UserId => User.FindFirstValue(ClaimTypes.NameIdentifier)
-            ?? throw new InvalidOperationException("UserId saknas — kontrollera att [Authorize] är satt på kontrollern.");
+            ?? throw new InvalidOperationException(
+                "UserId saknas trots autentisering. Kontrollera att [Authorize] är satt och att " +
+                "ClaimTypes.NameIdentifier (NameIdentifier-claim) populeras korrekt i login-logiken.");
 
         // Visar själva varukorgs-sidan
         public async Task<IActionResult> Index()
