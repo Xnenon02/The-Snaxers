@@ -1,15 +1,21 @@
 namespace TheSnaxers.Models
 {
 using System.Text.Json.Serialization;
+using Newtonsoft.Json;
+
 public class ShoppingCart
 {
-    // CosmosDB SDK v3 uses System.Text.Json — [JsonPropertyName] ensures correct casing
+    // Both attribute types are required:
+    // [JsonProperty]     = Newtonsoft.Json  — used by CosmosDB SDK v3 default serializer
+    // [JsonPropertyName] = System.Text.Json — used if SDK is configured with STJ serializer
     // "id" must be lowercase (CosmosDB requirement)
-    // "userId" must match the container's /userId partition key path exactly
+    [JsonProperty("id")]
     [JsonPropertyName("id")]
     public string Id { get; set; } = string.Empty;
 
+    // "userId" must match the container's /userId partition key path exactly
     // Id must always be set explicitly to userId — Cosmos DB requires it to match the /userId partition key
+    [JsonProperty("userId")]
     [JsonPropertyName("userId")]
     public string UserId { get; set; } = string.Empty; // Kopplingen till din Identity-user
 
