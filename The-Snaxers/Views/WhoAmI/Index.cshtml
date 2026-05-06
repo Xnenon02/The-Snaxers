@@ -24,7 +24,7 @@
 
 @if (User.Identity?.IsAuthenticated == true)
 {
-    <form asp-controller="Account" asp-action="Logout" method="post" data-testid="logout-form">
+    <form asp-area="Identity" asp-page="/Account/Logout" method="post" data-testid="logout-form">
         @Html.AntiForgeryToken()
         <button type="submit" class="btn btn-outline-secondary" data-testid="logout-submit">
             Logga ut
@@ -33,5 +33,5 @@
 }
 else
 {
-    <a asp-area="" asp-controller="Account" asp-action="Login" class="btn btn-primary" data-testid="whoami-loginlink">Logga in</a>
+    <a asp-area="Identity" asp-page="/Account/Login" class="btn btn-primary" data-testid="whoami-loginlink">Logga in</a>
 }
