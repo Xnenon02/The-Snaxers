@@ -15,6 +15,7 @@ namespace TheSnaxers.Controllers;
 [ApiController]
 [Route("api/v1/products")]
 [ServiceFilter(typeof(ApiKeyFilter))]
+[ResponseCache(Location = ResponseCacheLocation.None, NoStore = true)] // Förhindrar cachning av produktdata i API:et
 public class ProductsApiController : ControllerBase
 {
     private readonly IProductService _productService;

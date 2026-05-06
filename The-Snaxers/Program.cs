@@ -44,7 +44,11 @@ if (!string.IsNullOrEmpty(appInsightsConnStr) && appInsightsConnStr != "placehol
 }
 
 // Add services
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllersWithViews(options =>
+{
+    // 🔒 Tvingar validering av antiförfalskningstoken för alla POST-anrop globalt
+    options.Filters.Add(new Microsoft.AspNetCore.Mvc.AutoValidateAntiforgeryTokenAttribute());
+});
 builder.Services.AddLogging();
 
 builder.Services.AddHealthChecks()
@@ -153,6 +157,7 @@ builder.Services.AddScoped<ICartService, CartService>();
 builder.Services.AddScoped<IFavoriteService, FavoriteService>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IBlobService, BlobService>();
+builder.Services.AddScoped<IInventoryService, InventoryService>();
 builder.Services.AddHttpClient();
 builder.Services.AddMemoryCache(); 
 builder.Services.AddScoped<ICountryService, CountryService>();

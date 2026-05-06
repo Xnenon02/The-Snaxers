@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Identity;
 namespace TheSnaxers.Controllers;
 
 [Authorize(Roles = "Admin")]
+[ResponseCache(Location = ResponseCacheLocation.None, NoStore = true)] // Hindrar cachning av känsliga formulär och data
 public class AdminChocolateController : Controller
 {
     private readonly IProductService _productService;
