@@ -4,7 +4,9 @@ using Newtonsoft.Json;
 public class ShoppingCart
 {
     [JsonProperty("id")] // Cosmos vill ha ett småbokstavs-id
-    public string Id { get; set; } = Guid.NewGuid().ToString();
+    
+    // Id must always be set explicitly to userId — Cosmos DB requires it to match the /userId partition key
+    public string Id { get; set; } = string.Empty;
     
     public string UserId { get; set; } = string.Empty; // Kopplingen till din Identity-user
     
