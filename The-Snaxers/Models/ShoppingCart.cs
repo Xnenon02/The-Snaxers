@@ -4,7 +4,7 @@ using Newtonsoft.Json;
 public class ShoppingCart
 {
     [JsonProperty("id")] // Cosmos vill ha ett småbokstavs-id
-    public string Id { get; set; } = Guid.NewGuid().ToString();
+    public string Id { get; set; } = string.Empty;
     
     public string UserId { get; set; } = string.Empty; // Kopplingen till din Identity-user
     
