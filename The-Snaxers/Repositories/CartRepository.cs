@@ -28,9 +28,9 @@ public class CosmosCartRepository : ICartRepository
 
 public async Task SaveCartAsync(ShoppingCart cart)
 {
-    // Ändra från cart.UserId till cart.Id här! 
-    // I Products-containern är det 'id' som gäller som partition key.
-    await _container.UpsertItemAsync(cart, new PartitionKey(cart.Id));
+        // Partition key must match /userId as defined in the Cosmos DB Carts container
+        // Using cart.Id caused a partition key mismatch (fix: use cart.UserId)
+    await _container.UpsertItemAsync(cart, new PartitionKey(cart.UserId));
 }
     public async Task ClearCartAsync(string userId)
 {
