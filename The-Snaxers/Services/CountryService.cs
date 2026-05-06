@@ -23,21 +23,38 @@ public class CountryService : ICountryService
     public async Task<CountryInfo> GetCountryInfoAsync(string countryName)
     {
         if (string.IsNullOrWhiteSpace(countryName))
-           return new CountryInfo { Name = "Okänt land", FlagUrl = "" };
+            return new CountryInfo { Name = "Okänt land", FlagUrl = "" };
+
+        // 🇫🇷 Översätt både svenska namn och koder till API:ets engelska namn
+        var translatedName = countryName.Trim().ToLower() switch
+        {
+            "frankrike" or "fr" => "france",
+            "tyskland" or "de" => "germany",
+            "belgien" or "be" => "belgium",
+            "schweiz" or "ch" => "switzerland",
+            "italien" or "it" => "italy",
+            "japan" or "jp" => "japan",
+            "finland" or "fi" => "finland",
+            "spanien" or "es" => "spain",
+            "brasilien" or "br" => "brazil",
+
+            // Fallback: använd namnet som skickades in
+            _ => countryName
+        };
 
         // Return cached result if available, avoiding redundant API calls per page load
-        var cacheKey = $"country_{countryName.ToLower()}";
+        var cacheKey = $"country_{translatedName.ToLower()}";
         if (_cache.TryGetValue(cacheKey, out CountryInfo? cached) && cached != null)
             return cached;
 
-        try 
+        try
         {
             // Short timeout: fail fast instead of blocking the page for 21 seconds
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
 
             var response = await _http.GetFromJsonAsync<List<RestCountryResponse>>(
-                $"https://restcountries.com/v3.1/name/{countryName}?fullText=true&fields=name,flags",
-                cts.Token);
+$"https://restcountries.com/v3.1/name/{translatedName}?fullText=true&fields=name,flags",
+cts.Token);
 
             var country = response?.FirstOrDefault();
 
@@ -79,7 +96,8 @@ public class CountryService : ICountryService
     }
 }
 
-public class RestCountryResponse {
+public class RestCountryResponse
+{
     public CountryNameResponse Name { get; set; } = new();
     public CountryFlagResponse Flags { get; set; } = new();
 }

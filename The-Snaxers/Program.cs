@@ -150,7 +150,7 @@ if (!string.IsNullOrEmpty(cartsContainer))
 }
 else
 {
-    builder.Services.AddSingleton<ICartRepository, InMemoryCartRepository>();
+    builder.Services.AddSingleton<ICartRepository, InMemoryCartRepositoryFallback>();
 }
 
 builder.Services.AddScoped<ICartService, CartService>();
@@ -164,13 +164,38 @@ builder.Services.AddScoped<ICountryService, CountryService>();
 
 builder.Services.AddHttpContextAccessor();
 
-// Aktivera Session
+// Aktivera Session och säkerställ strikta cookie-inställningar
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(options =>
 {
     options.IdleTimeout = TimeSpan.FromMinutes(30);
+    options.Cookie.HttpOnly = true;          // 🔒 Skyddar mot XSS
+    options.Cookie.IsEssential = true;     // 🔒 Nödvändig för GDPR/funktion
+    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest; // 🔒 Bytte från Always till SameAsRequest för att stödja HTTP i Docker
+    options.Cookie.SameSite = SameSiteMode.Lax;
+});
+
+builder.Services.AddCookiePolicy(options =>
+{
+    // 🔒 Ändrad till true för att efterleva GDPR och hantera samtycke
+    options.CheckConsentNeeded = context => true; 
+    options.MinimumSameSitePolicy = SameSiteMode.Lax;
+    options.Secure = CookieSecurePolicy.SameAsRequest;
+});
+
+// Säkra även standard-identitetscookies
+builder.Services.ConfigureApplicationCookie(options =>
+{
     options.Cookie.HttpOnly = true;
-    options.Cookie.IsEssential = true;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+    options.Cookie.SameSite = SameSiteMode.Lax;
+    options.ExpireTimeSpan = TimeSpan.FromMinutes(60); // 60 minuter istället för 20 som ni diskuterade
+    options.SlidingExpiration = true;
+    
+    // Säkerställ att sökvägarna pekar mot standard Identity-sidorna
+    options.LoginPath = "/Identity/Account/Login";
+    options.AccessDeniedPath = "/Identity/Account/AccessDenied";
+    options.LogoutPath = "/Identity/Account/Logout";
 });
 
 // Identity - SQLite tills VM är uppsatt
@@ -231,7 +256,6 @@ app.UseAuthorization();
 app.UseSession();
 
 // Generates a per-request correlation ID and pushes it onto the logger scope
-// so every log call inside the request automatically carries it — no changes needed at each call site
 app.Use(async (context, next) =>
 {
     var correlationId = Guid.NewGuid().ToString("N");
@@ -298,7 +322,6 @@ using (var scope = app.Services.CreateScope())
     var adminEmail = builder.Configuration["AdminSettings:Email"];
     var adminPassword = builder.Configuration["AdminSettings:Password"];
 
-    // 3. Null-check: Kör bara om vi faktiskt har uppgifterna
     if (!string.IsNullOrEmpty(adminEmail) && !string.IsNullOrEmpty(adminPassword)) 
     {
         var adminUser = await userManager.FindByEmailAsync(adminEmail);
@@ -361,7 +384,7 @@ static Task WriteJsonResponse(HttpContext ctx, HealthReport report)
     return ctx.Response.WriteAsync(payload);
 }
 
-public class InMemoryCartRepository : ICartRepository
+public class InMemoryCartRepositoryFallback : ICartRepository
 {
     private readonly Dictionary<string, ShoppingCart> _carts = new();
     public async Task<ShoppingCart> GetCartByUserIdAsync(string userId) => 
