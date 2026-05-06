@@ -79,17 +79,27 @@ builder.Services.AddSingleton(sp =>
     if (string.IsNullOrWhiteSpace(endpoint))
         throw new InvalidOperationException("CosmosDb:AccountEndpoint saknas i konfigurationen.");
 
+    // CamelCase serialization ensures property names match Cosmos DB partition key paths
+    // e.g. UserId → "userId", Id → "id" — without this, Cosmos SDK (System.Text.Json) uses PascalCase by default
+    var cosmosOptions = new CosmosClientOptions
+    {
+        SerializerOptions = new CosmosSerializationOptions
+        {
+            PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase
+        }
+    };
+
     // Dual-mode: use account key if available (local Docker), otherwise use Managed Identity (Azure production)
     var accountKey = configuration["CosmosDb:AccountKey"];
     if (!string.IsNullOrWhiteSpace(accountKey))
-        return new CosmosClient(endpoint, accountKey);
+        return new CosmosClient(endpoint, accountKey, cosmosOptions);
 
     var credential = new DefaultAzureCredential(new DefaultAzureCredentialOptions
     {
         TenantId = configuration["CosmosDb:TenantId"]
     });
 
-    return new CosmosClient(endpoint, credential);
+    return new CosmosClient(endpoint, credential, cosmosOptions);
 });
 
 // BlobServiceClient — used by BlobHealthCheck to verify storage connectivity
