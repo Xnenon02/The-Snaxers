@@ -177,8 +177,8 @@ builder.Services.AddSession(options =>
 
 builder.Services.AddCookiePolicy(options =>
 {
-    // 🔒 Ändrad till true för att efterleva GDPR och hantera samtycke
-    options.CheckConsentNeeded = context => true; 
+    // Set to false — CheckConsentNeeded=true blocks Identity auth cookies and causes HTTP 400 on login
+    options.CheckConsentNeeded = context => false; 
     options.MinimumSameSitePolicy = SameSiteMode.Lax;
     options.Secure = CookieSecurePolicy.SameAsRequest;
 });
@@ -251,6 +251,7 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
+app.UseCookiePolicy(); // Applies cookie consent and security policy
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseSession();
