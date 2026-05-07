@@ -18,11 +18,14 @@ FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 COPY --from=build /app/publish .
 
-# Miljövariabler för Azure (förberett för din US7)
+# Bake the Git commit SHA into the image at build time.
+# The CI pipeline passes --build-arg BUILD_SHA=${{ github.sha }}.
+# Falls back to "local" when building outside CI (e.g. docker build locally).
+ARG BUILD_SHA=local
+ENV BUILD_SHA=$BUILD_SHA
+
 ENV ASPNETCORE_ENVIRONMENT=Production
-# TODO: Lägg till dessa i Azure Container Apps Environment Variables istället för här för bättre säkerhet:
-# ENV AzureKeyVault_Url=https://ditt-valv.vault.azure.net/
-# ENV ApplicationInsights_ConnectionString=InstrumentationKey=...
+ENV ASPNETCORE_URLS=http://+:8080
 
 EXPOSE 8080
 ENTRYPOINT ["dotnet", "The-Snaxers.dll"]

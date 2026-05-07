@@ -7,42 +7,128 @@ on:
     branches: [ main, develop ]
 
 jobs:
+  # ============================================================
+  # BUILD JOB — körs på alla branches och pull requests
+  # Ansvar: kompilera, testa, bygga Docker-image, lokal smoke test
+  # ============================================================
   build:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: '10.0.x'
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
 
-    - name: Restore dependencies
-      run: dotnet restore
+      - name: Restore dependencies
+        run: dotnet restore
 
-    - name: Build
-      run: dotnet build --no-restore
+      - name: Build
+        run: dotnet build --no-restore
 
-    - name: Test
-      run: dotnet test --no-build --verbosity normal
+      - name: Test
+        run: dotnet test --no-build --verbosity normal
 
-# --- BUILD ---
-    - name: Docker build
-      run: docker build -t thesnaxers:latest -f The-Snaxers/Dockerfile .
+      # Buildx krävs för GHA layer-cache (type=gha)
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-# --- DEPLOY (ACR PUSH) ---
-    - name: Log in to Azure Container Registry
-      uses: azure/docker-login@v2
-      with:
-        login-server: ${{ secrets.ACR_LOGIN_SERVER }}
-        username: ${{ secrets.ACR_USERNAME }}
-        password: ${{ secrets.ACR_PASSWORD }}
+      # Bygger imagen med:
+      #   - BUILD_SHA inbakat (synligt på startsidan för att bekräfta vilken version som körs)
+      #   - GitHub Actions layer-cache (sparar ~1 min per build efter första körningen)
+      #   - Dubbla taggar: :latest (rörlig pekare) + :<sha> (oföränderlgt, möjliggör rollback)
+      - name: Build Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: The-Snaxers/Dockerfile
+          push: false      # push=false här — deploy-jobbet nedan hanterar ACR-push
+          load: true       # load=true så imagen finns lokalt för smoke test nedan
+          build-args: |
+            BUILD_SHA=${{ github.sha }}
+          tags: |
+            thesnaxers:latest
+            thesnaxers:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-    - name: Tag and Push Docker image to ACR
-      run: |
-        docker tag thesnaxers:latest ${{ secrets.ACR_LOGIN_SERVER }}/thesnaxers:latest
-        docker tag thesnaxers:latest ${{ secrets.ACR_LOGIN_SERVER }}/thesnaxers:${{ github.sha }}
-        
-        # Nu skickar vi upp båda versionerna till molnet
-        docker push ${{ secrets.ACR_LOGIN_SERVER }}/thesnaxers --all-tags
+      # Startar containern lokalt, väntar på att den svarar och verifierar /health/live → 200.
+      # /health/live har Predicate = _ => false (inga beroendechecks) — svarar 200 om processen lever.
+      # Cosmos-emulatornyckeln är offentlig (Microsoft docs) och enbart för CI-start — ingen riktig data.
+      - name: Smoke test — container starts and responds
+        run: |
+          docker run -d --name snaxers-smoke -p 8080:8080 \
+            -e CosmosDb__AccountEndpoint=https://localhost:8081/ \
+            -e CosmosDb__AccountKey=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw== \
+            -e CosmosDb__DatabaseName=test \
+            -e CosmosDb__ContainerName=test \
+            -e CosmosDb__FavoritesContainerName=test \
+            -e CosmosDb__CartContainerName=test \
+            thesnaxers:${{ github.sha }}
+          curl --fail --max-time 30 --retry 6 --retry-delay 5 --retry-all-errors \
+            http://localhost:8080/health/live
+          docker stop snaxers-smoke && docker rm snaxers-smoke
+
+  # ============================================================
+  # DEPLOY JOB 
+  # Körs bara på main/develop efter att build-jobbet är grönt
+  #
+  # Vad som behöver sättas upp (se Exercise 2 & 3 i kursmaterialet):
+  #   GitHub Secrets (OIDC, inga lösenord):
+  #     AZURE_CLIENT_ID       — app registration client ID
+  #     AZURE_TENANT_ID       — Entra tenant ID
+  #     AZURE_SUBSCRIPTION_ID — Toms subscription ID
+  #
+  #   Azure RBAC på id-snaxers-dev (Managed Identity för Container App):
+  #     AcrPull på acrsnaxersdev
+  #
+  #   Azure RBAC på service principal (för CI-pipeline):
+  #     AcrPush på acrsnaxersdev
+  #     Container Apps Contributor på ca-snaxers-dev
+  # ============================================================
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+    permissions:
+      id-token: write   # KRÄVS för OIDC!
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sign in to Azure (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Log in to ACR
+        run: az acr login --name acrsnaxersdev
+
+      - name: Push image to ACR
+        run: |
+          docker tag thesnaxers:${{ github.sha }} acrsnaxersdev.azurecr.io/thesnaxers:${{ github.sha }}
+          docker tag thesnaxers:${{ github.sha }} acrsnaxersdev.azurecr.io/thesnaxers:latest
+          docker push acrsnaxersdev.azurecr.io/thesnaxers:${{ github.sha }}
+          docker push acrsnaxersdev.azurecr.io/thesnaxers:latest
+
+      - name: Deploy to Container App
+        run: |
+          az containerapp update \
+            --resource-group rg-snaxers-dev \
+            --name ca-snaxers-dev \
+            --image acrsnaxersdev.azurecr.io/thesnaxers:${{ github.sha }}
+  # ============================================================
+  # SMOKE TEST JOB — körs mot live-URL efter deploy (Exercise 2)
+  # ============================================================
+  # smoke-test:
+  #   runs-on: ubuntu-latest
+  #   needs: deploy
+  #   steps:
+  #     - name: Smoke test live app
+  #       run: |
+  #         curl --fail --max-time 30 --retry 5 --retry-delay 5 --retry-all-errors \
+  #           https://ca-snaxers-dev.purplerock-eb58c8d2.swedencentral.azurecontainerapps.io/health/live
