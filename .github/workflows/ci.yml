@@ -68,13 +68,10 @@ jobs:
 
       # ============================================================
       # DEPLOY STEPS
-      # Körs endast på main, develop eller din specifika branch
+      # Körs endast på main eller develop
       # ============================================================
       - name: Sign in to Azure (OIDC)
-        if: |
-          github.ref == 'refs/heads/main' || 
-          github.ref == 'refs/heads/develop' || 
-          contains(github.ref, 'feature/ACR-preparation2')
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
@@ -82,17 +79,11 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Log in to ACR
-        if: |
-          github.ref == 'refs/heads/main' || 
-          github.ref == 'refs/heads/develop' || 
-          contains(github.ref, 'feature/ACR-preparation2')
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
         run: az acr login --name acrsnaxersdev
 
       - name: Push image to ACR
-        if: |
-          github.ref == 'refs/heads/main' || 
-          github.ref == 'refs/heads/develop' || 
-          contains(github.ref, 'feature/ACR-preparation2')
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
         run: |
           docker tag thesnaxers:${{ github.sha }} acrsnaxersdev.azurecr.io/thesnaxers:${{ github.sha }}
           docker tag thesnaxers:${{ github.sha }} acrsnaxersdev.azurecr.io/thesnaxers:latest
@@ -100,10 +91,7 @@ jobs:
           docker push acrsnaxersdev.azurecr.io/thesnaxers:latest
 
       - name: Deploy to Container App
-        if: |
-          github.ref == 'refs/heads/main' || 
-          github.ref == 'refs/heads/develop' || 
-          contains(github.ref, 'feature/ACR-preparation2')
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
         run: |
           az containerapp update \
             --resource-group rg-snaxers-dev \
