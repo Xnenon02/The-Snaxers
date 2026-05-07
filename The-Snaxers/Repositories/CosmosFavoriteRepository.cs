@@ -2,6 +2,9 @@ using Microsoft.Azure.Cosmos;
 using Newtonsoft.Json;
 using TheSnaxers.Models;
 using Microsoft.Extensions.Logging;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace TheSnaxers.Repositories;
 
@@ -45,16 +48,9 @@ public class CosmosFavoriteRepository : IFavoriteRepository
             if (!cosmosFavorites.Any())
                 return new List<Favorite>();
 
-            // Logga enbart antal för att undvika långa loggrader vid många favoriter
             var productIds = cosmosFavorites.Select(f => f.ProductId).ToList();
-            _logger.LogInformation("Found {Count} favorites for user {UserId}.",
-                cosmosFavorites.Count, userId);
+            _logger.LogInformation("Found {Count} favorites for user {UserId}.", cosmosFavorites.Count, userId);
 
-            var emptyIds = productIds.Where(string.IsNullOrWhiteSpace).ToList();
-            if (emptyIds.Any())
-                _logger.LogWarning("{EmptyCount} favorite(s) har tomt ProductId — troligen gammal data i Cosmos.", emptyIds.Count);
-
-            // Hämta produkter i ett svep med IN-operatorn — parametriserat för att undvika injection
             var validIds = cosmosFavorites
                 .Select(f => f.ProductId)
                 .Where(id => !string.IsNullOrWhiteSpace(id))
@@ -90,15 +86,6 @@ public class CosmosFavoriteRepository : IFavoriteRepository
                 }
             }
 
-            _logger.LogInformation("Product lookup complete. Found {FoundCount}/{TotalCount} products in map.",
-                productMap.Count, productIds.Count);
-
-            // Logga vilka ProductIds som inte matchade någon produkt
-            var missingIds = productIds.Where(id => !string.IsNullOrWhiteSpace(id) && !productMap.ContainsKey(id)).ToList();
-            if (missingIds.Any())
-                _logger.LogWarning("Följande ProductIds hittades inte i Products-containern (stale data?): {MissingIds}",
-                    string.Join(", ", missingIds));
-
             return cosmosFavorites.Select(f => new Favorite
             {
                 Id = f.id,
@@ -123,20 +110,16 @@ public class CosmosFavoriteRepository : IFavoriteRepository
             .WithParameter("@productId", productId);
 
         var iterator = _container.GetItemQueryIterator<CosmosFavoriteDocument>(query);
-
         while (iterator.HasMoreResults)
         {
             var response = await iterator.ReadNextAsync();
             if (response.Any()) return true;
         }
-
         return false;
     }
 
     public async Task AddAsync(Favorite favorite)
     {
-        _logger.LogInformation("Adding product {ProductId} to favorites for user {UserId}", favorite.ProductId, favorite.UserId);
-
         try
         {
             var doc = new CosmosFavoriteDocument
@@ -146,46 +129,30 @@ public class CosmosFavoriteRepository : IFavoriteRepository
                 ProductId = favorite.ProductId,
                 SavedAt = favorite.SavedAt
             };
-
             await _container.CreateItemAsync(doc, new PartitionKey(doc.UserId));
-            _logger.LogInformation("Successfully added favorite for user {UserId}", favorite.UserId);
         }
         catch (CosmosException ex)
         {
-            _logger.LogError(ex, "Failed to add favorite for user {UserId}", favorite.UserId);
+            _logger.LogError(ex, "Failed to add favorite");
             throw;
         }
     }
 
     public async Task RemoveAsync(string userId, string productId)
     {
-        _logger.LogInformation("Removing product {ProductId} from favorites for user {UserId}", productId, userId);
+        var query = new QueryDefinition(
+            "SELECT * FROM c WHERE c.UserId = @userId AND c.ProductId = @productId")
+            .WithParameter("@userId", userId)
+            .WithParameter("@productId", productId);
 
-        try
+        var iterator = _container.GetItemQueryIterator<CosmosFavoriteDocument>(query);
+        while (iterator.HasMoreResults)
         {
-            var query = new QueryDefinition(
-                "SELECT * FROM c WHERE c.UserId = @userId AND c.ProductId = @productId")
-                .WithParameter("@userId", userId)
-                .WithParameter("@productId", productId);
-
-            var iterator = _container.GetItemQueryIterator<CosmosFavoriteDocument>(query);
-
-            while (iterator.HasMoreResults)
+            var response = await iterator.ReadNextAsync();
+            foreach (var doc in response)
             {
-                var response = await iterator.ReadNextAsync();
-                foreach (var doc in response)
-                {
-                    await _container.DeleteItemAsync<CosmosFavoriteDocument>(
-                        doc.id, new PartitionKey(userId));
-                }
+                await _container.DeleteItemAsync<CosmosFavoriteDocument>(doc.id, new PartitionKey(userId));
             }
-
-            _logger.LogInformation("Removed favorite for user {UserId}, product {ProductId}", userId, productId);
-        }
-        catch (CosmosException ex)
-        {
-            _logger.LogError(ex, "Error removing favorite for user {UserId}", userId);
-            throw;
         }
     }
 
@@ -199,7 +166,7 @@ public class CosmosFavoriteRepository : IFavoriteRepository
 
     private class CosmosProductDocument
     {
-        [JsonProperty("id")]
+        [JsonProperty("id")] // Endast EN rad här nu!
         public string id { get; set; } = string.Empty;
         public string Name { get; set; } = string.Empty;
         public string Brand { get; set; } = string.Empty;
