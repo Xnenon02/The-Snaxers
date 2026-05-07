@@ -34,29 +34,62 @@ public class FavoriteController : Controller
         return View(favorites);
     }
 
+    // [ValidateAntiForgeryToken] is intentionally removed from Add.
+    // GET requests (post-login redirects from Identity) carry no antiforgery token,
+    // so the attribute would cause HTTP 400 on every login redirect.
+    // Instead, antiforgery is validated manually for POST requests only.
+    // The unauthenticated favorite flow works as follows:
+    //   1. User clicks favorite → redirected to login with returnUrl=/Favorite/Add?productId=...
+    //   2. After login, Identity redirects back via GET → favorite is saved automatically
     [HttpGet] // Tillagt för att hantera redirect efter inloggning (förhindrar 404)
     [HttpPost]
-    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Add(string productId, string returnUrl = "Chocolate", string? searchTerm = null, int? minCocoa = null)
     {
-        // Om detta är ett GET-anrop (t.ex. efter inloggning), skicka användaren till galleriet
-        // Skickar med sökparametrar för att bevara användarens filter
-        if (HttpMethods.IsGet(Request.Method)) return RedirectToAction("Index", "Chocolate", new { searchTerm, minCocoa });
+        // GET requests after login redirect — save favorite and redirect to gallery
+        if (HttpMethods.IsGet(Request.Method))
+        {
+            var userId = _userManager.GetUserId(User);
+            if (string.IsNullOrEmpty(userId))
+                return RedirectToAction("Index", "Chocolate");
 
-        var userId = _userManager.GetUserId(User);
-        if (string.IsNullOrEmpty(userId))
+            if (!string.IsNullOrEmpty(productId))
+            {
+                _logger.LogInformation("User {UserId} added product {ProductId} to favorites via GET (post-login redirect)", userId, productId);
+                await _favoriteService.AddToFavoritesAsync(userId, productId);
+            }
+
+            // Skickar med sökparametrar för att bevara användarens filter
+            return RedirectToAction("Index", "Chocolate", new { searchTerm, minCocoa });
+        }
+
+        // POST requests — validate antiforgery token manually
+        try
+        {
+            var antiforgery = HttpContext.RequestServices.GetRequiredService<Microsoft.AspNetCore.Antiforgery.IAntiforgery>();
+            await antiforgery.ValidateRequestAsync(HttpContext);
+        }
+        catch
+        {
+            _logger.LogWarning("Antiforgery validation failed for Add favorite, product {ProductId}", productId);
+            return BadRequest();
+        }
+
+        var userIdPost = _userManager.GetUserId(User);
+        if (string.IsNullOrEmpty(userIdPost))
         {
             _logger.LogWarning("Unauthorized add favorite attempt for product {ProductId}", productId);
             return RedirectToAction("Index", "Chocolate");
         }
-        _logger.LogInformation("User {UserId} added product {ProductId} to favorites", userId, productId);
-        await _favoriteService.AddToFavoritesAsync(userId, productId);
+
+        _logger.LogInformation("User {UserId} added product {ProductId} to favorites", userIdPost, productId);
+        await _favoriteService.AddToFavoritesAsync(userIdPost, productId);
         if (returnUrl == "Product") return RedirectToAction("Index", "Product");
         if (returnUrl == "Favorite") return RedirectToAction("Index", "Favorite");
         // Preserve search parameters when returning to Chocolate gallery
         // Only pass minCocoa if it has a value to avoid sending empty string
         return RedirectToAction("Index", "Chocolate", new { searchTerm, minCocoa = minCocoa.HasValue ? minCocoa : null });
     }
+
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Remove(string productId, string returnUrl = "Chocolate", string? searchTerm = null, int? minCocoa = null)

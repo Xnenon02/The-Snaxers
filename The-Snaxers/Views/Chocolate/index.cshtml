@@ -95,17 +95,34 @@
                                     <div class="mt-auto d-flex justify-content-between align-items-center">
                                         <button class="btn btn-outline-primary btn-sm">Läs mer</button>
 
+                                        @* Favorite zone — authenticated users get a POST form with antiforgery protection.
+                                           Unauthenticated users get a GET link to login with returnUrl pointing to
+                                           Favorite/Add, which FavoriteController handles as a GET and saves the favorite
+                                           automatically after login — no antiforgery token needed for GET requests. *@
                                         <div class="favorite-zone" onclick="event.stopPropagation()">
-                                            <form asp-controller="Favorite" asp-action="@(isFavorite ? "Remove" : "Add")"
-                                                  method="post" class="d-inline">
-                                                @Html.AntiForgeryToken()
-                                                <input type="hidden" name="productId" value="@chocolate.Id" />
-                                                <input type="hidden" name="returnUrl" value="Chocolate" />
-                                                <button type="submit"
-                                                        class="btn btn-link p-0 text-decoration-none border-0 bg-transparent">
-                                                    <i class="bi @(isFavorite ? "bi-heart-fill" : "bi-heart") text-danger fs-4"></i>
-                                                </button>
-                                            </form>
+                                            @if (User.Identity?.IsAuthenticated == true)
+                                            {
+                                                <form asp-controller="Favorite" asp-action="@(isFavorite ? "Remove" : "Add")"
+                                                      method="post" class="d-inline">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="productId" value="@chocolate.Id" />
+                                                    <input type="hidden" name="returnUrl" value="Chocolate" />
+                                                    <button type="submit"
+                                                            class="btn btn-link p-0 text-decoration-none border-0 bg-transparent">
+                                                        <i class="bi @(isFavorite ? "bi-heart-fill" : "bi-heart") text-danger fs-4"></i>
+                                                    </button>
+                                                </form>
+                                            }
+                                            else
+                                            {
+                                                @* Redirect to login with returnUrl pointing to Favorite/Add GET endpoint.
+                                                   After login, Identity redirects back and FavoriteController saves the favorite. *@
+                                                <a asp-area="Identity" asp-page="/Account/Login"
+                                                   asp-route-returnUrl="/Favorite/Add?productId=@chocolate.Id&returnUrl=Chocolate"
+                                                   class="btn btn-link p-0 text-decoration-none border-0 bg-transparent">
+                                                    <i class="bi bi-heart text-danger fs-4"></i>
+                                                </a>
+                                            }
                                         </div>
                                     </div>
                                 </div>
@@ -133,7 +150,10 @@
                                     Lagerstatus: <strong>@(chocolate.StockLevel > 0 ? $"{chocolate.StockLevel} st i lager" : "Slut i lager")</strong>
                                 </p>
 
-                                @* KÖPKNAPP *@
+                                @* KÖPKNAPP — authenticated users get a POST form with antiforgery protection.
+                                   Unauthenticated users get a GET link to login with returnUrl pointing to
+                                   Cart/AddToCart, which CartController handles as a GET and adds the product
+                                   automatically after login — no antiforgery token needed for GET requests. *@
                                 @if (User.Identity?.IsAuthenticated == true)
                                 {
                                     <form asp-controller="Cart" asp-action="AddToCart" method="post" class="mt-2 w-100"
@@ -149,8 +169,10 @@
                                 }
                                 else
                                 {
+                                    @* Redirect to login with returnUrl pointing to Cart/AddToCart GET endpoint.
+                                       After login, Identity redirects back and CartController adds the product to cart. *@
                                     <a asp-area="Identity" asp-page="/Account/Login"
-                                       asp-route-returnUrl="@Context.Request.Path@Context.Request.QueryString"
+                                       asp-route-returnUrl="/Cart/AddToCart?productId=@chocolate.Id&returnUrl=/Chocolate"
                                        class="btn btn-outline-light w-100 mt-2 fw-bold" onclick="event.stopPropagation()">
                                         Logga in för att köpa 🛒
                                     </a>
@@ -206,7 +228,7 @@
                             <div style="padding: 5px;">
                                 <strong class="text-snaxers-gold">${data.name}</strong><br>
                                 <small class="text-muted">Visste du att...</small><br>
-                                <div class="mt-1">${data.fact}</div>
+                                <div class="mt-01">${data.fact}</div>
                             </div>
                         `;
                     } catch (error) {

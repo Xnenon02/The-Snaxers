@@ -62,13 +62,61 @@ namespace TheSnaxers.Controllers
             return View(cart.Items);
         }
 
+        // [ValidateAntiForgeryToken] is intentionally removed from AddToCart.
+        // GET requests (post-login redirects from Identity) carry no antiforgery token,
+        // so the attribute would cause HTTP 400 on every login redirect.
+        // Instead, antiforgery is validated manually for POST requests only.
+        // The unauthenticated cart flow works as follows:
+        //   1. User clicks "Lägg i korgen" → redirected to login with returnUrl=/Cart/AddToCart?productId=...
+        //   2. After login, Identity redirects back via GET → product is added to cart automatically
+        [HttpGet]
         [HttpPost]
-        [ValidateAntiForgeryToken]
         public async Task<IActionResult> AddToCart(string productId, string returnUrl)
         {
-            var chocolate = await _chocolateRepository.GetByIdAsync(productId);
+            // GET requests after login redirect — add product to cart and redirect
+            if (HttpMethods.IsGet(Request.Method))
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId))
+                    return RedirectToAction("Index", "Chocolate");
 
-            if (chocolate != null)
+                if (!string.IsNullOrEmpty(productId))
+                {
+                    var chocolate = await _chocolateRepository.GetByIdAsync(productId);
+                    if (chocolate != null)
+                    {
+                        await _cartService.AddToCartAsync(userId, new CartItem
+                        {
+                            ProductId = productId,
+                            ProductName = chocolate.Name,
+                            Price = chocolate.Price,
+                            Quantity = 1
+                        });
+                        _cache.Remove($"cart_count_{userId}");
+                        TempData["SuccessMessage"] = "Produkten har lagts i din varukorg! 🍫";
+                    }
+                }
+
+                if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+                    return Redirect(returnUrl);
+
+                return RedirectToAction("Index", "Chocolate");
+            }
+
+            // POST requests — validate antiforgery token manually
+            try
+            {
+                var antiforgery = HttpContext.RequestServices.GetRequiredService<Microsoft.AspNetCore.Antiforgery.IAntiforgery>();
+                await antiforgery.ValidateRequestAsync(HttpContext);
+            }
+            catch
+            {
+                return BadRequest();
+            }
+
+            var chocolate2 = await _chocolateRepository.GetByIdAsync(productId);
+
+            if (chocolate2 != null)
             {
                 // Här skapar vi variabeln istället för att hårdkoda '1' längre ner
                 int quantity = 1;
@@ -76,10 +124,9 @@ namespace TheSnaxers.Controllers
                 await _cartService.AddToCartAsync(UserId, new CartItem
                 {
                     ProductId = productId,
-                    ProductName = chocolate.Name,
-                    Price = chocolate.Price,
+                    ProductName = chocolate2.Name,
+                    Price = chocolate2.Price,
                     Quantity = quantity // Använd variabeln här!
-
                 });
                 _cache.Remove($"cart_count_{UserId}");
             }

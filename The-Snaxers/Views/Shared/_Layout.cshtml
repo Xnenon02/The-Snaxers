@@ -14,6 +14,8 @@
 </head>
 
 <body>
+    @* Used by site.js to check auth state without server-side logic in JS *@
+    <input type="hidden" id="isAuthenticated" value="@User.Identity?.IsAuthenticated.ToString().ToLower()" />
     <header>
         <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-dark mb-3"
              style="background-color: #3e2723 !important; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
@@ -36,7 +38,6 @@
                                 <a class="nav-link text-white" asp-area="" asp-controller="Favorite" asp-action="Index">❤️
                                     Mina favoriter</a>
                                 </li>
-
                         
                             </ul>
                             <ul class="navbar-nav align-items-center"> @* Lade till align-items-center för att centrera allt i
