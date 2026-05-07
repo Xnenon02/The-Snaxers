@@ -74,7 +74,7 @@ jobs:
         if: |
           github.ref == 'refs/heads/main' || 
           github.ref == 'refs/heads/develop' || 
-          contains(github.ref, 'feature/ACR-preparation')
+          contains(github.ref, 'feature/ACR-preparation2')
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
@@ -85,14 +85,14 @@ jobs:
         if: |
           github.ref == 'refs/heads/main' || 
           github.ref == 'refs/heads/develop' || 
-          contains(github.ref, 'feature/ACR-preparation')
+          contains(github.ref, 'feature/ACR-preparation2')
         run: az acr login --name acrsnaxersdev
 
       - name: Push image to ACR
         if: |
           github.ref == 'refs/heads/main' || 
           github.ref == 'refs/heads/develop' || 
-          contains(github.ref, 'feature/ACR-preparation')
+          contains(github.ref, 'feature/ACR-preparation2')
         run: |
           docker tag thesnaxers:${{ github.sha }} acrsnaxersdev.azurecr.io/thesnaxers:${{ github.sha }}
           docker tag thesnaxers:${{ github.sha }} acrsnaxersdev.azurecr.io/thesnaxers:latest
@@ -103,7 +103,7 @@ jobs:
         if: |
           github.ref == 'refs/heads/main' || 
           github.ref == 'refs/heads/develop' || 
-          contains(github.ref, 'feature/ACR-preparation')
+          contains(github.ref, 'feature/ACR-preparation2')
         run: |
           az containerapp update \
             --resource-group rg-snaxers-dev \
