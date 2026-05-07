@@ -120,6 +120,8 @@ public class CosmosFavoriteRepository : IFavoriteRepository
 
     public async Task AddAsync(Favorite favorite)
     {
+        _logger.LogInformation("Adding product {ProductId} to favorites for user {UserId}", favorite.ProductId, favorite.UserId);
+
         try
         {
             var doc = new CosmosFavoriteDocument
@@ -130,29 +132,42 @@ public class CosmosFavoriteRepository : IFavoriteRepository
                 SavedAt = favorite.SavedAt
             };
             await _container.CreateItemAsync(doc, new PartitionKey(doc.UserId));
+            _logger.LogInformation("Successfully added favorite for user {UserId}", favorite.UserId);
         }
         catch (CosmosException ex)
         {
-            _logger.LogError(ex, "Failed to add favorite");
+            _logger.LogError(ex, "Failed to add favorite for user {UserId}", favorite.UserId);
             throw;
         }
     }
 
     public async Task RemoveAsync(string userId, string productId)
     {
-        var query = new QueryDefinition(
-            "SELECT * FROM c WHERE c.UserId = @userId AND c.ProductId = @productId")
-            .WithParameter("@userId", userId)
-            .WithParameter("@productId", productId);
+        _logger.LogInformation("Removing product {ProductId} from favorites for user {UserId}", productId, userId);
 
-        var iterator = _container.GetItemQueryIterator<CosmosFavoriteDocument>(query);
-        while (iterator.HasMoreResults)
+        try
         {
-            var response = await iterator.ReadNextAsync();
-            foreach (var doc in response)
+            var query = new QueryDefinition(
+                "SELECT * FROM c WHERE c.UserId = @userId AND c.ProductId = @productId")
+                .WithParameter("@userId", userId)
+                .WithParameter("@productId", productId);
+
+            var iterator = _container.GetItemQueryIterator<CosmosFavoriteDocument>(query);
+            while (iterator.HasMoreResults)
             {
-                await _container.DeleteItemAsync<CosmosFavoriteDocument>(doc.id, new PartitionKey(userId));
+                var response = await iterator.ReadNextAsync();
+                foreach (var doc in response)
+                {
+                    await _container.DeleteItemAsync<CosmosFavoriteDocument>(doc.id, new PartitionKey(userId));
+                }
             }
+
+            _logger.LogInformation("Removed favorite for user {UserId}, product {ProductId}", userId, productId);
+        }
+        catch (CosmosException ex)
+        {
+            _logger.LogError(ex, "Error removing favorite for user {UserId}", userId);
+            throw;
         }
     }
 
