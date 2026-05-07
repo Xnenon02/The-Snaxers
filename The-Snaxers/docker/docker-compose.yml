@@ -1,19 +1,31 @@
-# TODO: Byt snaxers_data volume mot CosmosDB connection string när migrering av databasen är gjord
-# TODO: Lägg till Azure Key Vault och App Insights miljövariabler i environment-sektionen
-version: '3.8'
-
 services:
   web:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ../..
+      dockerfile: The-Snaxers/Dockerfile
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-    volumes:
-      # Använder en namngiven volym istället för en hårdkodad filsökväg
-      - snaxers_data:/app
-
-volumes:
-  snaxers_data:
+      - CosmosDb__AccountEndpoint=${COSMOS_ENDPOINT}
+      - CosmosDb__DatabaseName=${COSMOS_DATABASE}
+      - CosmosDb__ContainerName=${COSMOS_CONTAINER}
+      - CosmosDb__TenantId=${COSMOS_TENANT_ID}
+      - CosmosDb__AccountKey=${COSMOS_KEY}
+      - CosmosDb__FavoritesContainerName=Favorites
+      - CosmosDb__CartContainerName=${COSMOS_CART_CONTAINER:-}
+      - Authentication__Google__ClientId=${GOOGLE_CLIENT_ID:-}
+      - Authentication__Google__ClientSecret=${GOOGLE_CLIENT_SECRET:-}
+      - ConnectionStrings__AzureBlobStorage=${BLOB_CONNECTION_STRING}
+      - AzureStorage__ProductContainerName=products
+      - AdminSettings__Email=${ADMIN_EMAIL}
+      - AdminSettings__Password=${ADMIN_PASSWORD}
+      - ApplicationInsights__ConnectionString=${APP_INSIGHTS_CONNECTION_STRING:-}
+    # Volume disabled: mounting /app overwrites the published app binaries.
+    # SQLite (Identity) is recreated automatically by EnsureCreated() on startup.
+    # Re-enable and adjust path if local persistence is needed in the future.
+    # volumes:
+    #   - snaxers_data:/app
+    restart: unless-stopped
+# volumes:
+#   snaxers_data:

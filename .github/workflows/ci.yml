@@ -7,25 +7,93 @@ on:
     branches: [ main, develop ]
 
 jobs:
+  # ============================================================
+  # BUILD & DEPLOY JOB
+  # Ansvar: Allt från kompilering till Azure-publicering
+  # ============================================================
   build:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write   # Krävs för OIDC-inloggning mot Azure
+      contents: read
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: '10.0.x'
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
 
-    - name: Restore dependencies
-      run: dotnet restore
+      - name: Restore dependencies
+        run: dotnet restore
 
-    - name: Build
-      run: dotnet build --no-restore
+      - name: Build
+        run: dotnet build --no-restore
 
-    - name: Test
-      run: dotnet test --no-build --verbosity normal
+      - name: Test
+        run: dotnet test --no-build --verbosity normal
 
-    - name: Docker build
-      run: docker build -t thesnaxers:latest -f The-Snaxers/Dockerfile .
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: The-Snaxers/Dockerfile
+          push: false
+          load: true
+          build-args: |
+            BUILD_SHA=${{ github.sha }}
+          tags: |
+            thesnaxers:latest
+            thesnaxers:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Smoke test — container starts and responds
+        run: |
+          docker run -d --name snaxers-smoke -p 8080:8080 \
+            -e CosmosDb__AccountEndpoint=https://localhost:8081/ \
+            -e CosmosDb__AccountKey=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw== \
+            -e CosmosDb__DatabaseName=test \
+            -e CosmosDb__ContainerName=test \
+            -e CosmosDb__FavoritesContainerName=test \
+            -e CosmosDb__CartContainerName=test \
+            thesnaxers:${{ github.sha }}
+          curl --fail --max-time 30 --retry 6 --retry-delay 5 --retry-all-errors \
+            http://localhost:8080/health/live
+          docker stop snaxers-smoke && docker rm snaxers-smoke
+
+      # ============================================================
+      # DEPLOY STEPS
+      # Körs endast på main eller develop
+      # ============================================================
+      - name: Sign in to Azure (OIDC)
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Log in to ACR
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+        run: az acr login --name acrsnaxersdev
+
+      - name: Push image to ACR
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+        run: |
+          docker tag thesnaxers:${{ github.sha }} acrsnaxersdev.azurecr.io/thesnaxers:${{ github.sha }}
+          docker tag thesnaxers:${{ github.sha }} acrsnaxersdev.azurecr.io/thesnaxers:latest
+          docker push acrsnaxersdev.azurecr.io/thesnaxers:${{ github.sha }}
+          docker push acrsnaxersdev.azurecr.io/thesnaxers:latest
+
+      - name: Deploy to Container App
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+        run: |
+          az containerapp update \
+            --resource-group rg-snaxers-dev \
+            --name ca-snaxers-dev \
+            --image acrsnaxersdev.azurecr.io/thesnaxers:${{ github.sha }}

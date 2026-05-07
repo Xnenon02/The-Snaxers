@@ -4,6 +4,7 @@ using TheSnaxers.Models;
 using TheSnaxers.Services;
 
 namespace TheSnaxers.Controllers;
+[ResponseCache(Location = ResponseCacheLocation.None, NoStore = true)] // Förhindrar cachning av produktlistor och detaljer
 
 public class ProductController : Controller
 {

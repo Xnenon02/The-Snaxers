@@ -19,6 +19,9 @@ public class Product
     [Display(Name = "Kakaoprocent")]
     public int CocoaPercentage { get; set; }
     public string Country { get; set; } = string.Empty;
+
+    [Display(Name = "Landskod (ISO)")]
+    public string CountryCode { get; set; } = string.Empty;
     
     [Required(ErrorMessage = "Du måste ange en beskrivning.")]
     [Display(Name = "Beskrivning")]
@@ -28,6 +31,9 @@ public class Product
     [Range(0.01, 10000, ErrorMessage = "Priset måste vara mellan 0.01 och 10000.")]
     [Display(Name = "Pris")]
     public decimal Price { get; set; }
+    public int StockLevel { get; set; }
+
+    public int Weight { get; set; } 
 
     [Required(ErrorMessage = "Du måste ange en kategori.")]
     [Display(Name = "Kategori")]

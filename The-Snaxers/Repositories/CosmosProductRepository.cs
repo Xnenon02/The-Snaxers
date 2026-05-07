@@ -177,6 +177,7 @@ public class CosmosProductRepository : IProductRepository
         Country = doc.Country ?? "Okänt",
         Description = doc.Description ?? string.Empty,
         Price = doc.Price,
+        Weight = doc.Weight,
         Category = doc.Category ?? string.Empty,
         ImageUrl = doc.ImageUrl ?? string.Empty
     };
@@ -190,6 +191,7 @@ public class CosmosProductRepository : IProductRepository
         Country = product.Country ?? "Okänt",
         Description = product.Description ?? string.Empty,
         Price = product.Price,
+        Weight = product.Weight,
         Category = product.Category ?? string.Empty,
         ImageUrl = product.ImageUrl ?? string.Empty
     };
@@ -204,6 +206,7 @@ public class CosmosProductRepository : IProductRepository
         public string Country { get; set; } = "Okänt";
         public string Description { get; set; } = string.Empty;
         public decimal Price { get; set; }
+        public int Weight { get; set; }
         public string Category { get; set; } = string.Empty;
         public string ImageUrl { get; set; } = string.Empty;
     }

@@ -63,6 +63,7 @@
     @if (roles != null && roles.Contains("Admin"))
     {
         <form asp-action="RemoveAdmin" method="post" class="d-inline">
+            @Html.AntiForgeryToken()
             <input type="hidden" name="userId" value="@user.Id" />
             <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3"
                     onclick="return confirm('Är du säker på att du vill degradera @user.UserName?')">
@@ -73,6 +74,7 @@
     else
     {
         <form asp-action="MakeAdmin" method="post" class="d-inline">
+            @Html.AntiForgeryToken()
             <input type="hidden" name="userId" value="@user.Id" />
             <button type="submit" class="btn btn-sm btn-snaxers-gold rounded-pill px-3 shadow-sm">
                 Gör till Admin
