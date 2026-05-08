@@ -178,7 +178,7 @@ builder.Services.AddSession(options =>
 builder.Services.AddCookiePolicy(options =>
 {
     // Set to false — CheckConsentNeeded=true blocks Identity auth cookies and causes HTTP 400 on login
-    options.CheckConsentNeeded = context => false; 
+    options.CheckConsentNeeded = context => true; 
     options.MinimumSameSitePolicy = SameSiteMode.Lax;
     options.Secure = CookieSecurePolicy.SameAsRequest;
 });
