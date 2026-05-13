@@ -1,8 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 
-@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
-
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -14,9 +12,6 @@
     <link rel="stylesheet" href="~/The_Snaxers.styles.css" asp-append-version="true" />
     @await RenderSectionAsync("Styles", required: false)
 </head>
-
-@* Detta gör nyckeln tillgänglig för ALLA dina javascript-filer *@
-<input type="hidden" id="apiKeyToken" value="@Configuration["ApiKey"]" />
 
 <body>
     @* Used by site.js to check auth state without server-side logic in JS *@

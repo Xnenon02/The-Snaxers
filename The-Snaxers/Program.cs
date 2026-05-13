@@ -16,21 +16,6 @@ using Microsoft.AspNetCore.HttpOverrides;
 var builder = WebApplication.CreateBuilder(args);
 
 // ===================================================
-// CORS POLICY — För att tillåta lokal frontend att prata med API:et
-// ===================================================
-const string LocalDevCorsPolicy = "LocalDev";
-
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy(LocalDevCorsPolicy, policy =>
-    {
-        policy.WithOrigins("http://localhost:3000")
-              .AllowAnyHeader()
-              .AllowAnyMethod();
-    });
-});
-
-// ===================================================
 // KEY VAULT — Azure Key Vault i produktion, User Secrets lokalt
 // ===================================================
 if (builder.Environment.IsProduction())
@@ -47,8 +32,6 @@ if (builder.Environment.IsProduction())
 // ===================================================
 // APPLICATION INSIGHTS
 // ===================================================
-// Only register when a real connection string is present — avoids crash in local Docker
-// where no App Insights resource exists
 var appInsightsConnStr = builder.Configuration["ApplicationInsights:ConnectionString"];
 if (!string.IsNullOrEmpty(appInsightsConnStr) && appInsightsConnStr != "placeholder")
 {
@@ -94,7 +77,6 @@ builder.Services.AddSingleton(sp =>
     if (string.IsNullOrWhiteSpace(endpoint))
         throw new InvalidOperationException("CosmosDb:AccountEndpoint saknas i konfigurationen.");
 
-    // Dual-mode: use account key if available (local Docker), otherwise use Managed Identity (Azure production)
     var accountKey = configuration["CosmosDb:AccountKey"];
     if (!string.IsNullOrWhiteSpace(accountKey))
         return new CosmosClient(endpoint, accountKey);
@@ -107,7 +89,7 @@ builder.Services.AddSingleton(sp =>
     return new CosmosClient(endpoint, credential);
 });
 
-// BlobServiceClient — used by BlobHealthCheck to verify storage connectivity
+// BlobServiceClient
 builder.Services.AddSingleton(sp =>
 {
     var configuration = sp.GetRequiredService<IConfiguration>();
@@ -119,20 +101,17 @@ builder.Services.AddSingleton(sp =>
     if (!string.IsNullOrWhiteSpace(connStr))
         return new BlobServiceClient(connStr);
 
-    // Dev fallback: no storage config present locally — BlobHealthCheck will report Unhealthy
     return new BlobServiceClient(new Uri("https://localhost"), new DefaultAzureCredential());
 });
 
 // ===================================================
-// REPOSITORIES — DI Cleanup (punkt 5)
-// Containernamn skickas in direkt, IConfiguration behövs inte i repositories
+// REPOSITORIES
 // ===================================================
 var dbName = builder.Configuration["CosmosDb:DatabaseName"]
     ?? throw new InvalidOperationException("CosmosDb:DatabaseName saknas.");
 var productsContainer = builder.Configuration["CosmosDb:ContainerName"]
     ?? throw new InvalidOperationException("CosmosDb:ContainerName saknas.");
 var favoritesContainer = builder.Configuration["CosmosDb:FavoritesContainerName"] ?? "Favorites";
-
 var cartsContainer = builder.Configuration["CosmosDb:CartContainerName"];
 
 builder.Services.AddScoped<IProductRepository>(sp =>
@@ -152,8 +131,6 @@ builder.Services.AddScoped<IFavoriteRepository>(sp =>
         sp.GetRequiredService<ILogger<CosmosFavoriteRepository>>()
     ));
 
-// CartRepository — använder CosmosDB om CosmosDb:CartContainerName är konfigurerat,
-// annars InMemory (dev-fallback, cart nollställs vid omstart)
 if (!string.IsNullOrEmpty(cartsContainer))
 {
     builder.Services.AddScoped<ICartRepository>(sp =>
@@ -176,52 +153,43 @@ builder.Services.AddScoped<IInventoryService, InventoryService>();
 builder.Services.AddHttpClient();
 builder.Services.AddMemoryCache(); 
 builder.Services.AddScoped<ICountryService, CountryService>();
-
 builder.Services.AddHttpContextAccessor();
 
-// Aktivera Session och säkerställ strikta cookie-inställningar
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(options =>
 {
     options.IdleTimeout = TimeSpan.FromMinutes(30);
-    options.Cookie.HttpOnly = true;          // 🔒 Skyddar mot XSS
-    options.Cookie.IsEssential = true;      // 🔒 Nödvändig för GDPR/funktion
-    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest; // 🔒 Bytte från Always till SameAsRequest för att stödja HTTP i Docker
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
     options.Cookie.SameSite = SameSiteMode.Lax;
 });
 
 builder.Services.AddCookiePolicy(options =>
 {
-    // Set to false — CheckConsentNeeded=true blocks Identity auth cookies and causes HTTP 400 on login
     options.CheckConsentNeeded = context => true; 
     options.MinimumSameSitePolicy = SameSiteMode.Lax;
     options.Secure = CookieSecurePolicy.SameAsRequest;
 });
 
-// Säkra även standard-identitetscookies
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.Cookie.HttpOnly = true;
     options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
     options.Cookie.SameSite = SameSiteMode.Lax;
-    options.ExpireTimeSpan = TimeSpan.FromMinutes(60); // 60 minuter istället för 20 som ni diskuterade
+    options.ExpireTimeSpan = TimeSpan.FromMinutes(60);
     options.SlidingExpiration = true;
-    
-    // Säkerställ att sökvägarna pekar mot standard Identity-sidorna
     options.LoginPath = "/Identity/Account/Login";
     options.AccessDeniedPath = "/Identity/Account/AccessDenied";
     options.LogoutPath = "/Identity/Account/Logout";
 });
 
-// Identity - SQLite tills VM är uppsatt
 builder.Services.AddDefaultIdentity<IdentityUser>(options =>
     options.SignIn.RequireConfirmedAccount = false)
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>();
 
-// ===================================================
-// GOOGLE OAUTH — User Secrets lokalt, Key Vault i produktion
-// ===================================================
+// GOOGLE OAUTH
 var googleClientId = builder.Configuration["Authentication:Google:ClientId"];
 var googleClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
 
@@ -232,26 +200,19 @@ if (!string.IsNullOrEmpty(googleClientId) && !string.IsNullOrEmpty(googleClientS
         {
             options.ClientId = googleClientId;
             options.ClientSecret = googleClientSecret;
-
-            // Hämta profilbild och namn från Google
             options.Scope.Add("profile");
             options.SaveTokens = true;
         });
 }
 
-
 var app = builder.Build();
 
-// Säkerställ att SQLite-databasen finns för Identity
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     db.Database.EnsureCreated();
 }
 
-// Configure pipeline
-// Måste ligga FÖRE UseHttpsRedirection så att X-Forwarded-Proto:https
-// från Container Apps-proxyn känns igen och redirect-loopen undviks
 app.UseForwardedHeaders(new ForwardedHeadersOptions
 {
     ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
@@ -267,56 +228,36 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
 
-// CORS måste ligga före Authentication/Authorization
-app.UseCors(LocalDevCorsPolicy);
-
-app.UseCookiePolicy(); // Applies cookie consent and security policy
+app.UseCookiePolicy(); 
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseSession();
 
-// Generates a per-request correlation ID and pushes it onto the logger scope
 app.Use(async (context, next) =>
 {
     var correlationId = Guid.NewGuid().ToString("N");
     context.Items["CorrelationId"] = correlationId;
-
-    var logger = context.RequestServices
-        .GetRequiredService<ILoggerFactory>()
-        .CreateLogger("CorrelationIdMiddleware");
-
-    using (logger.BeginScope(new Dictionary<string, object>
-    {
-        ["RequestId"] = correlationId
-    }))
+    var logger = context.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("CorrelationIdMiddleware");
+    using (logger.BeginScope(new Dictionary<string, object> { ["RequestId"] = correlationId }))
     {
         await next();
     }
 });
 
-// OpenAPI/Swagger — Nu tillgängligt även i produktion för att stödja externa anrop och Scalar
-app.MapOpenApi();
-app.MapScalarApiReference();
+// ===================================================
+// DOKUMENTATION — Endast tillgänglig under utveckling
+// ===================================================
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi();
+    app.MapScalarApiReference();
+}
 
 app.MapStaticAssets();
 
-// Liveness — answers "is this process alive", no dependency checks
-app.MapHealthChecks("/health/live", new HealthCheckOptions
-{
-    Predicate = _ => false
-});
-
-// Readiness — answers "is this replica ready to serve traffic"
-app.MapHealthChecks("/health/ready", new HealthCheckOptions
-{
-    Predicate = c => c.Tags.Contains("ready")
-});
-
-// Diagnostic — full JSON breakdown for humans and dashboards
-app.MapHealthChecks("/health", new HealthCheckOptions
-{
-    ResponseWriter = WriteJsonResponse
-});
+app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false });
+app.MapHealthChecks("/health/ready", new HealthCheckOptions { Predicate = c => c.Tags.Contains("ready") });
+app.MapHealthChecks("/health", new HealthCheckOptions { ResponseWriter = WriteJsonResponse });
 
 app.MapControllerRoute(
     name: "default",
@@ -342,49 +283,23 @@ using (var scope = app.Services.CreateScope())
     if (!string.IsNullOrEmpty(adminEmail) && !string.IsNullOrEmpty(adminPassword)) 
     {
         var adminUser = await userManager.FindByEmailAsync(adminEmail);
-        
         if (adminUser == null)
         {
-            adminUser = new IdentityUser 
-            { 
-                UserName = adminEmail, 
-                Email = adminEmail, 
-                EmailConfirmed = true 
-            };
-
+            adminUser = new IdentityUser { UserName = adminEmail, Email = adminEmail, EmailConfirmed = true };
             var result = await userManager.CreateAsync(adminUser, adminPassword);
-            
-            if (result.Succeeded)
-            {
-                await userManager.AddToRoleAsync(adminUser, "Admin");
-                Console.WriteLine($"System: Admin-användare {adminEmail} skapad.");
-            }
+            if (result.Succeeded) await userManager.AddToRoleAsync(adminUser, "Admin");
         }
-    }
-    else 
-    {
-        Console.WriteLine("System: Admin-uppgifter saknas i konfigurationen (User Secrets). Hoppar över seeding.");
     }
 }
 
-// Warm up product cache on startup to avoid slow first page load
 using (var scope = app.Services.CreateScope())
 {
     var productService = scope.ServiceProvider.GetRequiredService<IProductService>();
-    try
-    {
-        await productService.GetAllProductsAsync();
-        app.Logger.LogInformation("Product cache warmed up on startup.");
-    }
-    catch (Exception ex)
-    {
-        app.Logger.LogWarning(ex, "Cache warm-up failed — will load on first request.");
-    }
+    try { await productService.GetAllProductsAsync(); } catch { }
 }
 
 app.Run();
 
-// Writes a JSON health report for the diagnostic /health endpoint
 static Task WriteJsonResponse(HttpContext ctx, HealthReport report)
 {
     ctx.Response.ContentType = "application/json";
@@ -404,8 +319,7 @@ static Task WriteJsonResponse(HttpContext ctx, HealthReport report)
 public class InMemoryCartRepositoryFallback : ICartRepository
 {
     private readonly Dictionary<string, ShoppingCart> _carts = new();
-    public async Task<ShoppingCart> GetCartByUserIdAsync(string userId) => 
-        _carts.TryGetValue(userId, out var cart) ? cart : new ShoppingCart { Id = userId, UserId = userId };
+    public async Task<ShoppingCart> GetCartByUserIdAsync(string userId) => _carts.TryGetValue(userId, out var cart) ? cart : new ShoppingCart { Id = userId, UserId = userId };
     public async Task SaveCartAsync(ShoppingCart cart) => _carts[cart.Id] = cart;
     public async Task ClearCartAsync(string userId) => _carts.Remove(userId);
 }

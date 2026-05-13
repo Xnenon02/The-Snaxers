@@ -8,7 +8,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const isAuthenticated = document.getElementById('isAuthenticated')?.value === 'true';
     const antiForgeryToken = document.getElementById('antiForgeryToken')?.value;
-    const apiKey = document.getElementById('apiKeyToken')?.value;
 
     // Replay pending action after login redirect
     if (isAuthenticated && antiForgeryToken) {
@@ -23,7 +22,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
                     'RequestVerificationToken': antiForgeryToken,
-                    'X-Api-Key': apiKey
                 },
                 body: `productId=${encodeURIComponent(action.productId)}&returnUrl=Chocolate`
             }).then(() => {
