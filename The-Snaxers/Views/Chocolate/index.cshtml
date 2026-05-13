@@ -1,5 +1,7 @@
 ﻿@model IEnumerable<TheSnaxers.ViewModels.ChocolateGalleryViewModel>
 
+@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
+
 @{
     ViewData["Title"] = "Chokladgalleriet";
 }
@@ -210,14 +212,16 @@
 
                 if (popover && popover.innerHTML === 'Laddar...') {
                     try {
-                        // Hämta anti-forgery token från det dolda fältet
+                        // Hämta anti-forgery token OCH API-nyckeln från de dolda fälten
                         const token = document.getElementById('antiForgeryToken')?.value || '';
+                        const apiKey = document.getElementById('apiKeyToken')?.value || ''; 
 
                         const response = await fetch(`/api/country/${code}`, {
                             method: 'GET',
                             headers: {
                                 'Content-Type': 'application/json',
-                                'RequestVerificationToken': token // Hanitas krav på säkerhetstoken
+                                'RequestVerificationToken': token,
+                                'X-Api-Key': apiKey // <--- (Måste matcha namnet i ApiKeyFilter.cs)
                             }
                         });
 
