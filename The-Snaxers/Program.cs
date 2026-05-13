@@ -16,6 +16,21 @@ using Microsoft.AspNetCore.HttpOverrides;
 var builder = WebApplication.CreateBuilder(args);
 
 // ===================================================
+// CORS POLICY — För att tillåta lokal frontend att prata med API:et
+// ===================================================
+const string LocalDevCorsPolicy = "LocalDev";
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(LocalDevCorsPolicy, policy =>
+    {
+        policy.WithOrigins("http://localhost:3000")
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
+
+// ===================================================
 // KEY VAULT — Azure Key Vault i produktion, User Secrets lokalt
 // ===================================================
 if (builder.Environment.IsProduction())
@@ -170,7 +185,7 @@ builder.Services.AddSession(options =>
 {
     options.IdleTimeout = TimeSpan.FromMinutes(30);
     options.Cookie.HttpOnly = true;          // 🔒 Skyddar mot XSS
-    options.Cookie.IsEssential = true;     // 🔒 Nödvändig för GDPR/funktion
+    options.Cookie.IsEssential = true;      // 🔒 Nödvändig för GDPR/funktion
     options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest; // 🔒 Bytte från Always till SameAsRequest för att stödja HTTP i Docker
     options.Cookie.SameSite = SameSiteMode.Lax;
 });
@@ -251,6 +266,10 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
+
+// CORS måste ligga före Authentication/Authorization
+app.UseCors(LocalDevCorsPolicy);
+
 app.UseCookiePolicy(); // Applies cookie consent and security policy
 app.UseAuthentication();
 app.UseAuthorization();
@@ -275,12 +294,9 @@ app.Use(async (context, next) =>
     }
 });
 
-// OpenAPI/Swagger — endast i Development
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-    app.MapScalarApiReference();
-}
+// OpenAPI/Swagger — Nu tillgängligt även i produktion för att stödja externa anrop och Scalar
+app.MapOpenApi();
+app.MapScalarApiReference();
 
 app.MapStaticAssets();
 
