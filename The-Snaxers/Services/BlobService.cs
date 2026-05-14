@@ -8,10 +8,11 @@ public class BlobService : IBlobService
     private readonly BlobServiceClient _blobServiceClient;
     private readonly string _containerName;
 
-    public BlobService(IConfiguration configuration)
+    // Tar emot den DI-registrerade BlobServiceClient (Managed Identity i Azure, connection string lokalt)
+    // istället för att skapa en ny från ConnectionStrings:AzureBlobStorage
+    public BlobService(BlobServiceClient blobServiceClient, IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString("AzureBlobStorage");
-        _blobServiceClient = new BlobServiceClient(connectionString);
+        _blobServiceClient = blobServiceClient;
         _containerName = configuration["AzureStorage:ProductContainerName"] ?? "products";
     }
 
