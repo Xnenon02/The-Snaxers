@@ -159,7 +159,7 @@ builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IBlobService, BlobService>();
 builder.Services.AddScoped<IInventoryService, InventoryService>();
 builder.Services.AddHttpClient();
-builder.Services.AddMemoryCache(); 
+builder.Services.AddMemoryCache();
 builder.Services.AddScoped<ICountryService, CountryService>();
 
 builder.Services.AddHttpContextAccessor();
@@ -178,7 +178,7 @@ builder.Services.AddSession(options =>
 builder.Services.AddCookiePolicy(options =>
 {
     // Set to false — CheckConsentNeeded=true blocks Identity auth cookies and causes HTTP 400 on login
-    options.CheckConsentNeeded = context => true; 
+    options.CheckConsentNeeded = context => true;
     options.MinimumSameSitePolicy = SameSiteMode.Lax;
     options.Secure = CookieSecurePolicy.SameAsRequest;
 });
@@ -191,7 +191,7 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.Cookie.SameSite = SameSiteMode.Lax;
     options.ExpireTimeSpan = TimeSpan.FromMinutes(60); // 60 minuter istället för 20 som ni diskuterade
     options.SlidingExpiration = true;
-    
+
     // Säkerställ att sökvägarna pekar mot standard Identity-sidorna
     options.LoginPath = "/Identity/Account/Login";
     options.AccessDeniedPath = "/Identity/Account/AccessDenied";
@@ -221,7 +221,18 @@ if (!string.IsNullOrEmpty(googleClientId) && !string.IsNullOrEmpty(googleClientS
             // Hämta profilbild och namn från Google
             options.Scope.Add("profile");
             options.SaveTokens = true;
-        });
+        })
+        .AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true, // Vem skickade den?
+        ValidateAudience = true, // Är den till mig?
+        ValidateLifetime = true, // Har den gått ut?
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)) // Är signaturen äkta?
+    };
+});
+
 }
 
 
@@ -250,12 +261,6 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
-app.UseRouting();
-app.UseCookiePolicy(); // Applies cookie consent and security policy
-app.UseAuthentication();
-app.UseAuthorization();
-app.UseSession();
-
 // Generates a per-request correlation ID and pushes it onto the logger scope
 app.Use(async (context, next) =>
 {
@@ -274,6 +279,14 @@ app.Use(async (context, next) =>
         await next();
     }
 });
+
+app.UseRouting();
+app.UseCookiePolicy(); // Applies cookie consent and security policy
+app.UseAuthentication();
+app.UseAuthorization();
+app.UseSession();
+
+
 
 // OpenAPI/Swagger — endast i Development
 if (app.Environment.IsDevelopment())
@@ -323,21 +336,21 @@ using (var scope = app.Services.CreateScope())
     var adminEmail = builder.Configuration["AdminSettings:Email"];
     var adminPassword = builder.Configuration["AdminSettings:Password"];
 
-    if (!string.IsNullOrEmpty(adminEmail) && !string.IsNullOrEmpty(adminPassword)) 
+    if (!string.IsNullOrEmpty(adminEmail) && !string.IsNullOrEmpty(adminPassword))
     {
         var adminUser = await userManager.FindByEmailAsync(adminEmail);
-        
+
         if (adminUser == null)
         {
-            adminUser = new IdentityUser 
-            { 
-                UserName = adminEmail, 
-                Email = adminEmail, 
-                EmailConfirmed = true 
+            adminUser = new IdentityUser
+            {
+                UserName = adminEmail,
+                Email = adminEmail,
+                EmailConfirmed = true
             };
 
             var result = await userManager.CreateAsync(adminUser, adminPassword);
-            
+
             if (result.Succeeded)
             {
                 await userManager.AddToRoleAsync(adminUser, "Admin");
@@ -345,7 +358,7 @@ using (var scope = app.Services.CreateScope())
             }
         }
     }
-    else 
+    else
     {
         Console.WriteLine("System: Admin-uppgifter saknas i konfigurationen (User Secrets). Hoppar över seeding.");
     }
@@ -388,7 +401,7 @@ static Task WriteJsonResponse(HttpContext ctx, HealthReport report)
 public class InMemoryCartRepositoryFallback : ICartRepository
 {
     private readonly Dictionary<string, ShoppingCart> _carts = new();
-    public async Task<ShoppingCart> GetCartByUserIdAsync(string userId) => 
+    public async Task<ShoppingCart> GetCartByUserIdAsync(string userId) =>
         _carts.TryGetValue(userId, out var cart) ? cart : new ShoppingCart { Id = userId, UserId = userId };
     public async Task SaveCartAsync(ShoppingCart cart) => _carts[cart.Id] = cart;
     public async Task ClearCartAsync(string userId) => _carts.Remove(userId);
