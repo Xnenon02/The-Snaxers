@@ -245,13 +245,10 @@ app.Use(async (context, next) =>
 });
 
 // ===================================================
-// DOKUMENTATION — Endast tillgänglig under utveckling
+// DOKUMENTATION — Scalar API-dokumentation (Development + Production)
 // ===================================================
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-    app.MapScalarApiReference();
-}
+app.MapOpenApi();
+app.MapScalarApiReference();
 
 app.MapStaticAssets();
 
