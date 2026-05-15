@@ -27,8 +27,9 @@ public class BlobService : IBlobService
         if (fileStream.CanSeek)
             fileStream.Position = 0;
 
-        var contentType = fileName.ToLower().EndsWith(".png") ? "image/png" :
-                         fileName.ToLower().EndsWith(".gif") ? "image/gif" : "image/jpeg";
+        var contentType = fileName.ToLower().EndsWith(".png")  ? "image/png"  :
+                         fileName.ToLower().EndsWith(".gif")  ? "image/gif"  :
+                         fileName.ToLower().EndsWith(".webp") ? "image/webp" : "image/jpeg";
 
         var options = new BlobUploadOptions
         {
