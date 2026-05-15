@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
-                    'RequestVerificationToken': antiForgeryToken
+                    'RequestVerificationToken': antiForgeryToken,
                 },
                 body: `productId=${encodeURIComponent(action.productId)}&returnUrl=Chocolate`
             }).then(() => {
