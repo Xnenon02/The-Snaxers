@@ -287,7 +287,10 @@ app.MapStaticAssets();
 app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false });
 app.MapHealthChecks("/health/ready", new HealthCheckOptions { Predicate = c => c.Tags.Contains("ready") });
 app.MapHealthChecks("/health", new HealthCheckOptions { ResponseWriter = WriteJsonResponse });
-
+// ===================================================
+// INBYGGDA IDENTITY ENDPOINTS (För /login, /register osv)
+// ===================================================
+app.MapIdentityApi<IdentityUser>();
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}")
