@@ -167,7 +167,7 @@ builder.Services.AddSession(options =>
 
 builder.Services.AddCookiePolicy(options =>
 {
-    options.CheckConsentNeeded = context => true; 
+    options.CheckConsentNeeded = context => false; // false = auth-cookies skickas alltid, oavsett cookie-samtycke
     options.MinimumSameSitePolicy = SameSiteMode.Lax;
     options.Secure = CookieSecurePolicy.SameAsRequest;
 });
