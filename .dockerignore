@@ -1,0 +1,24 @@
+# Git
+.git/
+.gitignore
+
+# Build output
+**/bin/
+**/obj/
+
+# Local databases
+*.db
+*.db-shm
+*.db-wal
+
+# IDE
+.vs/
+**/.idea/
+**/.vscode/
+
+# Product images — serveras från Azure Blob Storage i produktion
+The-Snaxers/wwwroot/images/products/
+
+# Backup och lokala filer
+cosmos-backup/
+*.tar.gz

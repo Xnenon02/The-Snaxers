@@ -1,0 +1,33 @@
+@using Microsoft.AspNetCore.Http.Features
+
+@{
+    var consentFeature = Context.Features.Get<ITrackingConsentFeature>();
+    var showBanner = !consentFeature?.CanTrack ?? false;
+    var cookieString = consentFeature?.CreateConsentCookie();
+}
+
+@if (showBanner)
+{
+    <div id="cookieConsent" class="fixed-bottom bg-dark text-white p-3 text-center" style="z-index: 1050;">
+        <div class="container">
+            <span class="me-3">Vi använder cookies för att optimera din snacks-upplevelse! 🍪</span>
+            <button type="button" class="btn btn-primary btn-sm" data-cookie-string="@cookieString">
+                Acceptera Nödvändiga
+            </button>
+            <button type="button" class="btn btn-outline-light btn-sm ms-2" onclick="showDetails()">
+                Inställningar
+            </button>
+        </div>
+    </div>
+
+    <script>
+        document.querySelector("#cookieConsent button[data-cookie-string]").addEventListener("click", function (el) {
+            document.cookie = el.target.dataset.cookieString;
+            document.querySelector("#cookieConsent").classList.add("d-none");
+        }, false);
+
+        function showDetails() {
+            alert("Här skulle Hanita kunna skriva en hel uppsats om statistik-cookies, men just nu kör vi bara på de absolut nödvändiga för inloggning!");
+        }
+    </script>
+}

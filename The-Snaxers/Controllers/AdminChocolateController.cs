@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Identity;
 namespace TheSnaxers.Controllers;
 
 [Authorize(Roles = "Admin")]
+[ResponseCache(Location = ResponseCacheLocation.None, NoStore = true)] // Hindrar cachning av känsliga formulär och data
 public class AdminChocolateController : Controller
 {
     private readonly IProductService _productService;
@@ -98,8 +99,7 @@ public class AdminChocolateController : Controller
 
     public async Task<IActionResult> Edit(string id)
     {
-        // FIX: Konvertera int id till string
-        var product = await _productService.GetProductByIdAsync(id.ToString());
+        var product = await _productService.GetProductByIdAsync(id);
         if (product == null) return NotFound();
         return View(product);
     }
