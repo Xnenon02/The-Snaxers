@@ -24,12 +24,12 @@ The Snaxers is a product management system for a luxury chocolate brand. Admins 
 
 | Layer | Technology |
 |-------|-----------|
-| Framework | ASP.NET Core MVC (.NET 9) |
+| Framework | ASP.NET Core MVC (.NET 10) |
 | Language | C# |
 | Database | Entity Framework Core + SQLite / Azure CosmosDB |
 | Storage | Azure Blob Storage |
 | Auth | ASP.NET Core Identity + JWT Bearer |
-| 2FA | Google Authenticator (TOTP) |
+| 2FA | Google Authenticator (TOTP) | *Planned feature*
 | Frontend | Razor Views + Bootstrap 5 |
 | Infrastructure | Docker / Azure Container Apps / Bicep |
 
@@ -117,7 +117,7 @@ dotnet user-secrets set "Authentication:Google:ClientId" "YOUR_CLIENT_ID"
 dotnet user-secrets set "Authentication:Google:ClientSecret" "YOUR_CLIENT_SECRET"
 ```
 
-## 📱 Setting Up Google Authenticator
+## 📱 Setting Up Google Authenticator (Planned feature)
 
 1. Register a new account in the app
 
