@@ -67,7 +67,7 @@ public class ChocolateController : Controller
         {
             var searchCountry = !string.IsNullOrWhiteSpace(p.Country) ? p.Country : "Sweden";
 
-            // --- MARTINA FIXAR TOMS DB-SLARV START ---
+           
             // Om CountryCode saknas i databasen, gissar vi baserat på Country-namnet
             var fixedCountryCode = p.CountryCode;
             if (string.IsNullOrEmpty(fixedCountryCode))
@@ -105,7 +105,7 @@ public class ChocolateController : Controller
                     _ => "un"
                 };
             }
-            // --- MARTINA FIXAR TOMS DB-SLARV SLUT ---
+           
 
             return new ChocolateGalleryViewModel
             {
@@ -116,10 +116,12 @@ public class ChocolateController : Controller
                 Description = p.Description ?? "",
                 Price = p.Price,
                 Weight = p.Weight,
+                StockLevel = p.StockLevel,
                 ImageUrl = !string.IsNullOrWhiteSpace(p.ImageUrl) ? p.ImageUrl : "/images/placeholder-choco.png",
                 CountryName = p.Country ?? "Okänt",
                 CountryCode = fixedCountryCode, // <-- Använd den fixade koden här!
                 FlagUrl = "" // Loaded lazily via JS on hover — no server-side API call needed
+                
             };
         }).ToList();
 
