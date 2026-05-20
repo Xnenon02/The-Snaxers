@@ -32,6 +32,7 @@ public class ProductsApiController : ControllerBase
     // GET /api/v1/products
     /// <summary>Returns all chocolate products</summary>
     [HttpGet]
+    [Authorize(AuthenticationSchemes = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme)] // 🔒 HÄR PLOCKAR VI IN JWT!
     [ProducesResponseType(typeof(IEnumerable<ProductDto>), 200)]
     [ProducesResponseType(401)]
     public async Task<IActionResult> GetAll()
