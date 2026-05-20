@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using TheSnaxers.DTOs;
 using TheSnaxers.Services;
-using TheSnaxers.Filters;
 using TheSnaxers.Models;
 using Microsoft.AspNetCore.Authorization;
 
@@ -11,12 +10,12 @@ namespace TheSnaxers.Controllers;
 // REST API för produkter — körs parallellt med MVC
 // OpenAPI-dokumentation: /openapi/v1.json
 // Scalar UI: /scalar/v1
-// Skyddas av API-nyckel via X-Api-Key header (ApiKeyFilter)
+// 🔒 Skyddas fullt ut med JWT Bearer Tokens!
 // ===================================================
 [ApiController]
 [Route("api/v1/products")]
-[ServiceFilter(typeof(ApiKeyFilter))]
-[ResponseCache(Location = ResponseCacheLocation.None, NoStore = true)] // Förhindrar cachning av produktdata i API:et
+[Authorize(AuthenticationSchemes = "Bearer")] // 🔒 Ändrat hit! Skyddar NU ALLA endpoints i denna controller med JWT
+[ResponseCache(Location = ResponseCacheLocation.None, NoStore = true)] 
 public class ProductsApiController : ControllerBase
 {
     private readonly IProductService _productService;
@@ -33,7 +32,6 @@ public class ProductsApiController : ControllerBase
     // GET /api/v1/products
     /// <summary>Returns all chocolate products</summary>
     [HttpGet]
-    [Authorize(AuthenticationSchemes = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme)] // 🔒 HÄR PLOCKAR VI IN JWT!
     [ProducesResponseType(typeof(IEnumerable<ProductDto>), 200)]
     [ProducesResponseType(401)]
     public async Task<IActionResult> GetAll()
@@ -49,7 +47,7 @@ public class ProductsApiController : ControllerBase
     [ProducesResponseType(typeof(ProductDto), 200)]
     [ProducesResponseType(401)]
     [ProducesResponseType(404)]
-    public async Task<IActionResult> GetById(string id) // Ändrad till string enligt CR
+    public async Task<IActionResult> GetById(string id) 
     {
         _logger.LogInformation("API: Fetching product {ProductId}", id);
         var product = await _productService.GetProductByIdAsync(id);
@@ -77,10 +75,10 @@ public class ProductsApiController : ControllerBase
         return Ok(products.Select(MapToDto));
     }
 
-    // Maps a Product domain model to a ProductDto — avoids repeating mapping logic across endpoints
+    // Maps a Product domain model to a ProductDto
     private static ProductDto MapToDto(Product p) => new()
     {
-        Id = p.Id.ToString(), // Konverteras till string för att matcha ProductDto och framtida Tech-debt
+        Id = p.Id.ToString(), 
         Name = p.Name,
         Brand = p.Brand,
         CocoaPercentage = p.CocoaPercentage,
