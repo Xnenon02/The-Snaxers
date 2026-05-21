@@ -68,9 +68,10 @@ public class ChocolateController : Controller
             var searchCountry = !string.IsNullOrWhiteSpace(p.Country) ? p.Country : "Sweden";
 
            
-            // Om CountryCode saknas i databasen, gissar vi baserat på Country-namnet
-            var fixedCountryCode = p.CountryCode;
-            if (string.IsNullOrEmpty(fixedCountryCode))
+            // NOTE: CountryCode saknas i äldre Cosmos-dokument (utanför nuvarande scope).
+// Vi faller tillbaka på att gissa landskod baserat på 'Country'-fältet tills datamigrationen är helt genomförd.
+var fixedCountryCode = p.CountryCode;
+if (string.IsNullOrEmpty(fixedCountryCode))
             {
                 fixedCountryCode = searchCountry.ToLower() switch
                 {

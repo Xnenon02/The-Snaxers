@@ -31,6 +31,8 @@ public class Product
     [Range(0.01, 10000, ErrorMessage = "Priset måste vara mellan 0.01 och 10000.")]
     [Display(Name = "Pris")]
     public decimal Price { get; set; }
+    
+    [Range(0, int.MaxValue, ErrorMessage = "Lagersaldo kan inte vara negativt.")]
     public int StockLevel { get; set; }
 
     public int Weight { get; set; } 

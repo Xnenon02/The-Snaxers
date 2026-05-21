@@ -1,5 +1,6 @@
 @model IEnumerable<TheSnaxers.Models.Product>
 
+@using TheSnaxers.Constants
 @{
     ViewData["Title"] = "Admin - Hantera Choklad";
 }
@@ -63,13 +64,13 @@
                                 
                                 <td>
                                     @* 🚀 Här använder vi det riktiga lagersaldot nu! *@
-                                    @if (item.StockLevel > 15)
+                                    @if (item.StockLevel > InventoryConstants.MediumStockThreshold)
                                     {
                                         <span class="badge rounded-pill bg-success-subtle text-success border border-success-subtle">
                                             <i class="bi bi-check-circle"></i> @item.StockLevel i lager
                                         </span>
                                     }
-                                    else if (item.StockLevel > 0)
+                                    else if (item.StockLevel > InventoryConstants.LowStockThreshold)
                                     {
                                         <span class="badge rounded-pill bg-warning-subtle text-warning-emphasis border border-warning-subtle">
                                             <i class="bi bi-exclamation-triangle"></i> Få kvar (@item.StockLevel)
