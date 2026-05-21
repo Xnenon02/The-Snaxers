@@ -97,3 +97,43 @@ jobs:
             --resource-group rg-snaxers-dev \
             --name ca-snaxers-dev \
             --image acrsnaxersdev.azurecr.io/thesnaxers:${{ github.sha }}
+
+      # SNAX-4: Seed Key Vault med hemligheter från GitHub Secrets
+      # Körs efter deploy så att Key Vault alltid är i sync med GitHub Secrets
+      - name: Seed Key Vault secrets
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+        run: |
+          # Admin-credentials (obligatoriska)
+          az keyvault secret set \
+            --vault-name kv-snaxers-dev \
+            --name "AdminSettings--Email" \
+            --value "${{ secrets.ADMIN_EMAIL }}" \
+            --output none
+
+          az keyvault secret set \
+            --vault-name kv-snaxers-dev \
+            --name "AdminSettings--Password" \
+            --value "${{ secrets.ADMIN_PASSWORD }}" \
+            --output none
+
+          # JWT Secret (obligatorisk)
+          az keyvault secret set \
+            --vault-name kv-snaxers-dev \
+            --name "Jwt--Secret" \
+            --value "${{ secrets.JWT_SECRET }}" \
+            --output none
+
+          # Google OAuth (valfritt — sätts bara om secrets finns)
+          if [ -n "${{ secrets.GOOGLE_CLIENT_ID }}" ]; then
+            az keyvault secret set \
+              --vault-name kv-snaxers-dev \
+              --name "Authentication--Google--ClientId" \
+              --value "${{ secrets.GOOGLE_CLIENT_ID }}" \
+              --output none
+
+            az keyvault secret set \
+              --vault-name kv-snaxers-dev \
+              --name "Authentication--Google--ClientSecret" \
+              --value "${{ secrets.GOOGLE_CLIENT_SECRET }}" \
+              --output none
+          fi
