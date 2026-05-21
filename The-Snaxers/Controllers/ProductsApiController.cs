@@ -86,6 +86,7 @@ public class ProductsApiController : ControllerBase
         Country = p.Country,
         Description = p.Description,
         Price = p.Price,
+        StockLevel = p.StockLevel,
         Category = p.Category,
         ImageUrl = p.ImageUrl
     };

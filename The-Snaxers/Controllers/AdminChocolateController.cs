@@ -151,6 +151,9 @@ public class AdminChocolateController : Controller
             return View(product);
         }
 
+        // COMMENT: Direkt uppdatering av StockLevel via ProductService/Repository är avsedd för 
+        // administrativa justeringar (t.ex. manuell inventering eller korrigering av lagersaldo).
+        // För automatiska lagertransaktioner vid kundköp i kassan används InventoryService (DeductStockAsync).
         await _productService.UpdateProductAsync(product, originalCategory);
         _logger.LogInformation("Successfully updated product ID: {ProductId}", id);
         return RedirectToAction(nameof(Index));
