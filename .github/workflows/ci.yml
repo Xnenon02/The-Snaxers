@@ -78,47 +78,57 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
+      # P2-fix: Beräkna miljönamn och resurser från branch-namn
+      - name: Set environment config
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+        run: |
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            echo "ENV_NAME=prod" >> $GITHUB_ENV
+            echo "VAULT_NAME=kv-snaxers-prod" >> $GITHUB_ENV
+            echo "ACR_NAME=acrsnaxersprod" >> $GITHUB_ENV
+            echo "CONTAINER_APP=ca-snaxers-prod" >> $GITHUB_ENV
+            echo "RESOURCE_GROUP=rg-snaxers-prod" >> $GITHUB_ENV
+          else
+            echo "ENV_NAME=dev" >> $GITHUB_ENV
+            echo "VAULT_NAME=kv-snaxers-dev" >> $GITHUB_ENV
+            echo "ACR_NAME=acrsnaxersdev" >> $GITHUB_ENV
+            echo "CONTAINER_APP=ca-snaxers-dev" >> $GITHUB_ENV
+            echo "RESOURCE_GROUP=rg-snaxers-dev" >> $GITHUB_ENV
+          fi
+
       - name: Log in to ACR
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
-        run: az acr login --name acrsnaxersdev
+        run: az acr login --name ${{ env.ACR_NAME }}
 
       - name: Push image to ACR
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
         run: |
-          docker tag thesnaxers:${{ github.sha }} acrsnaxersdev.azurecr.io/thesnaxers:${{ github.sha }}
-          docker tag thesnaxers:${{ github.sha }} acrsnaxersdev.azurecr.io/thesnaxers:latest
-          docker push acrsnaxersdev.azurecr.io/thesnaxers:${{ github.sha }}
-          docker push acrsnaxersdev.azurecr.io/thesnaxers:latest
+          docker tag thesnaxers:${{ github.sha }} ${{ env.ACR_NAME }}.azurecr.io/thesnaxers:${{ github.sha }}
+          docker tag thesnaxers:${{ github.sha }} ${{ env.ACR_NAME }}.azurecr.io/thesnaxers:latest
+          docker push ${{ env.ACR_NAME }}.azurecr.io/thesnaxers:${{ github.sha }}
+          docker push ${{ env.ACR_NAME }}.azurecr.io/thesnaxers:latest
 
-      - name: Deploy to Container App
-        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
-        run: |
-          az containerapp update \
-            --resource-group rg-snaxers-dev \
-            --name ca-snaxers-dev \
-            --image acrsnaxersdev.azurecr.io/thesnaxers:${{ github.sha }}
-
-      # SNAX-4: Seed Key Vault med hemligheter från GitHub Secrets
-      # Körs efter deploy så att Key Vault alltid är i sync med GitHub Secrets
+      # P1-fix: Seed Key Vault INNAN appen deployas så att
+      # nya revisioner startar med korrekta hemligheter
       - name: Seed Key Vault secrets
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
         run: |
           # Admin-credentials (obligatoriska)
           az keyvault secret set \
-            --vault-name kv-snaxers-dev \
+            --vault-name ${{ env.VAULT_NAME }} \
             --name "AdminSettings--Email" \
             --value "${{ secrets.ADMIN_EMAIL }}" \
             --output none
 
           az keyvault secret set \
-            --vault-name kv-snaxers-dev \
+            --vault-name ${{ env.VAULT_NAME }} \
             --name "AdminSettings--Password" \
             --value "${{ secrets.ADMIN_PASSWORD }}" \
             --output none
 
           # JWT Secret (obligatorisk)
           az keyvault secret set \
-            --vault-name kv-snaxers-dev \
+            --vault-name ${{ env.VAULT_NAME }} \
             --name "Jwt--Secret" \
             --value "${{ secrets.JWT_SECRET }}" \
             --output none
@@ -126,14 +136,22 @@ jobs:
           # Google OAuth (valfritt — sätts bara om secrets finns)
           if [ -n "${{ secrets.GOOGLE_CLIENT_ID }}" ]; then
             az keyvault secret set \
-              --vault-name kv-snaxers-dev \
+              --vault-name ${{ env.VAULT_NAME }} \
               --name "Authentication--Google--ClientId" \
               --value "${{ secrets.GOOGLE_CLIENT_ID }}" \
               --output none
 
             az keyvault secret set \
-              --vault-name kv-snaxers-dev \
+              --vault-name ${{ env.VAULT_NAME }} \
               --name "Authentication--Google--ClientSecret" \
               --value "${{ secrets.GOOGLE_CLIENT_SECRET }}" \
               --output none
           fi
+
+      - name: Deploy to Container App
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+        run: |
+          az containerapp update \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --name ${{ env.CONTAINER_APP }} \
+            --image ${{ env.ACR_NAME }}.azurecr.io/thesnaxers:${{ github.sha }}

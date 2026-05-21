@@ -24,61 +24,62 @@ Write-Host " Repo             : $org/$repo" -ForegroundColor Cyan
 Write-Host "=========================================" -ForegroundColor Cyan
 Write-Host ""
 
-# Lista befintliga credentials för att undvika dubletter
-Write-Host "Befintliga federated credentials:" -ForegroundColor Yellow
-az ad app federated-credential list --id $appObjectId --output table
+# Hämta befintliga credential-namn för idempotens-kontroll (P2-fix)
+Write-Host "Hämtar befintliga federated credentials..." -ForegroundColor Yellow
+$existing = az ad app federated-credential list --id $appObjectId --output json | ConvertFrom-Json
+$existingNames = $existing | ForEach-Object { $_.name }
+Write-Host "  Befintliga: $($existingNames -join ', ')" -ForegroundColor Gray
 Write-Host ""
+
+# Hjälpfunktion — skapar credential om det inte redan finns
+function Set-FederatedCredential {
+    param(
+        [string]$Name,
+        [string]$Subject,
+        [string]$Description
+    )
+    if ($existingNames -contains $Name) {
+        Write-Host "  SKIP  $Name (finns redan)" -ForegroundColor Gray
+        return
+    }
+    az ad app federated-credential create `
+        --id $appObjectId `
+        --parameters "{
+            `"name`": `"$Name`",
+            `"issuer`": `"https://token.actions.githubusercontent.com`",
+            `"subject`": `"$Subject`",
+            `"description`": `"$Description`",
+            `"audiences`": [`"api://AzureADTokenExchange`"]
+        }" | Out-Null
+    Write-Host "  OK    $Name" -ForegroundColor Green
+}
 
 # ===================================================
 # develop-branchen
 # ===================================================
-Write-Host "Skapar credential for 'develop'..." -ForegroundColor Yellow
-
-az ad app federated-credential create `
-    --id $appObjectId `
-    --parameters "{
-        `"name`": `"github-actions-develop`",
-        `"issuer`": `"https://token.actions.githubusercontent.com`",
-        `"subject`": `"repo:$org/$($repo):ref:refs/heads/develop`",
-        `"description`": `"GitHub Actions OIDC for develop branch`",
-        `"audiences`": [`"api://AzureADTokenExchange`"]
-    }"
-
-Write-Host "  OK  develop" -ForegroundColor Green
+Write-Host "Kontrollerar credential for 'develop'..." -ForegroundColor Yellow
+Set-FederatedCredential `
+    -Name "github-actions-develop" `
+    -Subject "repo:$org/$($repo):ref:refs/heads/develop" `
+    -Description "GitHub Actions OIDC for develop branch"
 
 # ===================================================
 # main-branchen
 # ===================================================
-Write-Host "Skapar credential for 'main'..." -ForegroundColor Yellow
-
-az ad app federated-credential create `
-    --id $appObjectId `
-    --parameters "{
-        `"name`": `"github-actions-main`",
-        `"issuer`": `"https://token.actions.githubusercontent.com`",
-        `"subject`": `"repo:$org/$($repo):ref:refs/heads/main`",
-        `"description`": `"GitHub Actions OIDC for main branch`",
-        `"audiences`": [`"api://AzureADTokenExchange`"]
-    }"
-
-Write-Host "  OK  main" -ForegroundColor Green
+Write-Host "Kontrollerar credential for 'main'..." -ForegroundColor Yellow
+Set-FederatedCredential `
+    -Name "github-actions-main" `
+    -Subject "repo:$org/$($repo):ref:refs/heads/main" `
+    -Description "GitHub Actions OIDC for main branch"
 
 # ===================================================
 # Pull Requests (valfritt — behövs om CI kör vid PR mot main/develop)
 # ===================================================
-Write-Host "Skapar credential for pull_request..." -ForegroundColor Yellow
-
-az ad app federated-credential create `
-    --id $appObjectId `
-    --parameters "{
-        `"name`": `"github-actions-pr`",
-        `"issuer`": `"https://token.actions.githubusercontent.com`",
-        `"subject`": `"repo:$org/$($repo):pull_request`",
-        `"description`": `"GitHub Actions OIDC for pull requests`",
-        `"audiences`": [`"api://AzureADTokenExchange`"]
-    }"
-
-Write-Host "  OK  pull_request" -ForegroundColor Green
+Write-Host "Kontrollerar credential for 'pull_request'..." -ForegroundColor Yellow
+Set-FederatedCredential `
+    -Name "github-actions-pr" `
+    -Subject "repo:$org/$($repo):pull_request" `
+    -Description "GitHub Actions OIDC for pull requests"
 
 Write-Host ""
 Write-Host "=========================================" -ForegroundColor Green

@@ -4,8 +4,14 @@
 #         skickar outputs automatiskt som parametrar.
 # ===================================================
 # Användning:
-#   .\infra\deploy.ps1 -ResourceGroup rg-snaxers-dev -EnvironmentName dev
-#   .\infra\deploy.ps1 -ResourceGroup rg-snaxers-prod -EnvironmentName prod -ContainerImage acrsnaxersprod.azurecr.io/thesnaxers:latest
+#   .\infra\deploy.ps1 -ResourceGroup rg-snaxers-dev -EnvironmentName dev `
+#       -CosmosAccountEndpoint https://snaxers.documents.azure.com:443/ `
+#       -BlobStorageEndpoint https://sasnaxersdev.blob.core.windows.net/
+#
+#   .\infra\deploy.ps1 -ResourceGroup rg-snaxers-prod -EnvironmentName prod `
+#       -ContainerImage acrsnaxersprod.azurecr.io/thesnaxers:latest `
+#       -CosmosAccountEndpoint https://snaxers-prod.documents.azure.com:443/ `
+#       -BlobStorageEndpoint https://sasnaxersprod.blob.core.windows.net/
 # ===================================================
 
 param(
@@ -20,9 +26,13 @@ param(
 
     [string]$ContainerImage = 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest',
 
-    [string]$CosmosAccountEndpoint = 'https://snaxers.documents.azure.com:443/',
+    # P1-fix: Inga default-värden för endpoints — måste anges explicit
+    # för att undvika att prod råkar pekas mot dev-resurser
+    [Parameter(Mandatory)]
+    [string]$CosmosAccountEndpoint,
 
-    [string]$BlobStorageEndpoint = 'https://sasnaxersdev.blob.core.windows.net/'
+    [Parameter(Mandatory)]
+    [string]$BlobStorageEndpoint
 )
 
 $ErrorActionPreference = 'Stop'
@@ -77,8 +87,8 @@ if (-not $?) { Write-Host "ERROR: monitoring.bicep misslyckades." -ForegroundCol
 $logAnalyticsId             = $monitoringResult.logAnalyticsId.value
 $appInsightsConnectionString = $monitoringResult.appInsightsConnectionString.value
 
-Write-Host "  OK  Log Analytics ID         : $logAnalyticsId" -ForegroundColor Green
-Write-Host "  OK  App Insights conn string : $($appInsightsConnectionString.Substring(0, 40))..." -ForegroundColor Green
+Write-Host "  OK  Log Analytics ID  : $logAnalyticsId" -ForegroundColor Green
+Write-Host "  OK  App Insights      : connection string captured" -ForegroundColor Green
 
 # ===================================================
 # STEG 3 — main.bicep
