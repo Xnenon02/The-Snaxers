@@ -80,8 +80,13 @@
                     <div class="col-12 mt-2">
                         <div class="mb-3">
                             <label class="form-label fw-bold">Ladda upp produktbild</label>
-                            <input type="file" name="imageFile" class="form-control shadow-sm" accept="image/*" />
-                            <span class="text-muted small">Välj en bild från din dator för att ladda upp till galleriet.</span>
+                            <input type="file" name="imageFile" id="imageFile" class="form-control shadow-sm" accept="image/*" />
+                            <span class="text-muted small">Välj en bild från din dator (max 2 MB, .jpg/.png/.webp).</span>
+                            <span class="text-danger" id="fileSizeError"></span>
+                            @if (ViewData["imageFileError"] != null)
+                            {
+                                <span class="text-danger d-block">@ViewData["imageFileError"]</span>
+                            }
                             
                             @* Vi behåller den dolda ImageUrl så att modellen fortfarande är giltig, 
                                men användaren ser den inte *@
@@ -120,5 +125,16 @@
         $.validator.methods.number = function (value, element) {
             return this.optional(element) || /^-?(?:\d+|\d{1,3}(?:[\s,]\d{3})+)(?:[.,]\d+)?$/.test(value);
         }
+
+        document.getElementById('imageFile').addEventListener('change', function () {
+            const maxSize = 2 * 1024 * 1024; // 2 MB
+            const errorEl = document.getElementById('fileSizeError');
+            if (this.files[0] && this.files[0].size > maxSize) {
+                errorEl.textContent = 'Filen är för stor. Max 2 MB tillåts.';
+                this.value = '';
+            } else {
+                errorEl.textContent = '';
+            }
+        });
     </script>
 }
