@@ -179,7 +179,8 @@ public class CosmosProductRepository : IProductRepository
         Price = doc.Price,
         Weight = doc.Weight,
         Category = doc.Category ?? string.Empty,
-        ImageUrl = doc.ImageUrl ?? string.Empty
+        ImageUrl = doc.ImageUrl ?? string.Empty,
+        StockLevel = doc.StockLevel
     };
 
     private static CosmosProductDocument MapToDocument(Product product) => new()
@@ -193,7 +194,8 @@ public class CosmosProductRepository : IProductRepository
         Price = product.Price,
         Weight = product.Weight,
         Category = product.Category ?? string.Empty,
-        ImageUrl = product.ImageUrl ?? string.Empty
+        ImageUrl = product.ImageUrl ?? string.Empty,
+        StockLevel = product.StockLevel
     };
 
     private class CosmosProductDocument
@@ -209,5 +211,6 @@ public class CosmosProductRepository : IProductRepository
         public int Weight { get; set; }
         public string Category { get; set; } = string.Empty;
         public string ImageUrl { get; set; } = string.Empty;
+        public int StockLevel { get; set; }
     }
 }
