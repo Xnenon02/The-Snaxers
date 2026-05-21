@@ -13,9 +13,9 @@ namespace TheSnaxers.Controllers;
 // 🔒 Skyddas fullt ut med JWT Bearer Tokens!
 // ===================================================
 [ApiController]
-[Route("api/v1/products")]
-[Authorize(AuthenticationSchemes = "Bearer")] // 🔒 Ändrat hit! Skyddar NU ALLA endpoints i denna controller med JWT
-[ResponseCache(Location = ResponseCacheLocation.None, NoStore = true)] 
+[Route("api/v1/products")] // Snyggt och explicit istället för [controller]
+[ResponseCache(Location = ResponseCacheLocation.None, NoStore = true)] // Hindrar cachning av API-svar som kan innehålla känslig data eller snabbt förändras
+[Authorize(AuthenticationSchemes = "Bearer")] // Skyddar nu allt med enbart JWT
 public class ProductsApiController : ControllerBase
 {
     private readonly IProductService _productService;
