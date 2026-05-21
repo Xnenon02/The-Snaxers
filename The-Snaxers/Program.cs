@@ -151,7 +151,7 @@ builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IBlobService, BlobService>();
 builder.Services.AddScoped<IInventoryService, InventoryService>();
 builder.Services.AddHttpClient();
-builder.Services.AddMemoryCache(); 
+builder.Services.AddMemoryCache();
 builder.Services.AddScoped<ICountryService, CountryService>();
 builder.Services.AddHttpContextAccessor();
 
@@ -189,21 +189,52 @@ builder.Services.AddDefaultIdentity<IdentityUser>(options =>
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>();
 
-// GOOGLE OAUTH
+// ===================================================
+// AUTENTISERING & BEHÖRIGHET (Google OAuth & JWT Bearer)
+// ===================================================
 var googleClientId = builder.Configuration["Authentication:Google:ClientId"];
 var googleClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
 
+// Hämta JWT-inställningar från Key Vault / User Secrets
+var jwtSecret = builder.Configuration["Jwt:Secret"] 
+    ?? throw new InvalidOperationException("JWT Secret saknas i konfigurationen!");
+var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "TheSnaxersAPI";
+var jwtAudience = builder.Configuration["Jwt:Audience"] ?? "TheSnaxersApp";
+
+// Initiera autentiseringstjänsterna
+var authBuilder = builder.Services.AddAuthentication();
+
+// Lägg till Google om nycklarna finns
 if (!string.IsNullOrEmpty(googleClientId) && !string.IsNullOrEmpty(googleClientSecret))
 {
-    builder.Services.AddAuthentication()
-        .AddGoogle(options =>
-        {
-            options.ClientId = googleClientId;
-            options.ClientSecret = googleClientSecret;
-            options.Scope.Add("profile");
-            options.SaveTokens = true;
-        });
+    authBuilder.AddGoogle(options =>
+    {
+        options.ClientId = googleClientId;
+        options.ClientSecret = googleClientSecret;
+        options.Scope.Add("profile");
+        options.SaveTokens = true;
+    });
 }
+
+// Lägg till JWT Bearer (Ligger utanför if-satsen så API-säkerheten alltid körs!)
+authBuilder.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidIssuer = jwtIssuer,
+
+        ValidateAudience = true,
+        ValidAudience = jwtAudience,
+
+        ValidateLifetime = true, // Kollar så stämpeln inte har gått ut
+
+        ValidateIssuerSigningKey = true, // Validera signaturen med vår hemliga nyckel
+        IssuerSigningKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(
+            System.Text.Encoding.UTF8.GetBytes(jwtSecret))
+    };
+});
+
 
 var app = builder.Build();
 
@@ -226,13 +257,6 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
-app.UseRouting();
-
-app.UseCookiePolicy(); 
-app.UseAuthentication();
-app.UseAuthorization();
-app.UseSession();
-
 app.Use(async (context, next) =>
 {
     var correlationId = Guid.NewGuid().ToString("N");
@@ -243,6 +267,14 @@ app.Use(async (context, next) =>
         await next();
     }
 });
+app.UseRouting();
+
+app.UseCookiePolicy(); 
+app.UseAuthentication();
+app.UseAuthorization();
+app.UseSession();
+
+
 
 // ===================================================
 // DOKUMENTATION — Scalar API-dokumentation (Development + Production)
@@ -255,7 +287,10 @@ app.MapStaticAssets();
 app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false });
 app.MapHealthChecks("/health/ready", new HealthCheckOptions { Predicate = c => c.Tags.Contains("ready") });
 app.MapHealthChecks("/health", new HealthCheckOptions { ResponseWriter = WriteJsonResponse });
-
+// ===================================================
+// INBYGGDA IDENTITY ENDPOINTS (För /login, /register osv)
+// ===================================================
+app.MapIdentityApi<IdentityUser>();
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}")
@@ -277,7 +312,7 @@ using (var scope = app.Services.CreateScope())
     var adminEmail = builder.Configuration["AdminSettings:Email"];
     var adminPassword = builder.Configuration["AdminSettings:Password"];
 
-    if (!string.IsNullOrEmpty(adminEmail) && !string.IsNullOrEmpty(adminPassword)) 
+    if (!string.IsNullOrEmpty(adminEmail) && !string.IsNullOrEmpty(adminPassword))
     {
         var adminUser = await userManager.FindByEmailAsync(adminEmail);
         if (adminUser == null)
