@@ -46,6 +46,11 @@ builder.Services.AddControllersWithViews(options =>
 {
     // 🔒 Tvingar validering av antiförfalskningstoken för alla POST-anrop globalt
     options.Filters.Add(new Microsoft.AspNetCore.Mvc.AutoValidateAntiforgeryTokenAttribute());
+})
+.AddJsonOptions(options =>
+{
+    options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+    options.JsonSerializerOptions.PropertyNameCaseInsensitive = true; // <-- Denna gör oss immuna mot stora/små bokstäver!
 });
 builder.Services.AddLogging();
 
@@ -217,7 +222,7 @@ if (!string.IsNullOrEmpty(googleClientId) && !string.IsNullOrEmpty(googleClientS
 }
 
 // Lägg till JWT Bearer (Ligger utanför if-satsen så API-säkerheten alltid körs!)
-authBuilder.AddJwtBearer(options =>
+authBuilder.AddJwtBearer("Bearer",options =>
 {
     options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
     {
