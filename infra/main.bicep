@@ -30,6 +30,9 @@ param appInsightsConnectionString string = ''
 @description('Cosmos DB account endpoint — from database.bicep output or manual input')
 param cosmosAccountEndpoint string = 'https://snaxers.documents.azure.com:443/'
 
+@description('Azure Blob Storage endpoint — SNAX-2')
+param blobStorageEndpoint string = 'https://sasnaxersdev.blob.core.windows.net/'
+
 // ===================================================
 // AZURE CONTAINER REGISTRY (ACR)
 // ===================================================
@@ -154,6 +157,16 @@ resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
             {
               name: 'AZURE_CLIENT_ID'
               value: managedIdentityClientId
+            }
+            // SNAX-2: Blob Storage endpoint — sattes tidigare manuellt via CLI
+            {
+              name: 'AzureStorage__BlobEndpoint'
+              value: blobStorageEndpoint
+            }
+            // SNAX-3: Krävs för att X-Forwarded-Proto ska fungera bakom Container Apps reverse proxy
+            {
+              name: 'ASPNETCORE_FORWARDEDHEADERS_ENABLED'
+              value: 'true'
             }
           ]
         }
