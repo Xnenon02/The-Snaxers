@@ -32,7 +32,11 @@ param(
     [string]$CosmosAccountEndpoint,
 
     [Parameter(Mandatory)]
-    [string]$BlobStorageEndpoint
+    [string]$BlobStorageEndpoint,
+
+    # Blob Storage-kontonamn — används för att aktivera anonym åtkomst
+    # Default: sasnaxers<miljö> (t.ex. sasnaxersdev / sasnaxersprod)
+    [string]$BlobStorageAccountName = "sasnaxers$EnvironmentName"
 )
 
 $ErrorActionPreference = 'Stop'
@@ -112,6 +116,7 @@ $mainResult = az deployment group create `
         appInsightsConnectionString=$appInsightsConnectionString `
         cosmosAccountEndpoint=$CosmosAccountEndpoint `
         blobStorageEndpoint=$BlobStorageEndpoint `
+        blobStorageAccountName=$BlobStorageAccountName `
     --query properties.outputs `
     --output json | ConvertFrom-Json
 
@@ -120,9 +125,29 @@ if (-not $?) { Write-Host "ERROR: main.bicep misslyckades." -ForegroundColor Red
 $containerAppUrl   = $mainResult.containerAppUrl.value
 $acrLoginServer    = $mainResult.acrLoginServer.value
 
+# ===================================================
+# STEG 4 — Blob Storage: aktivera anonym åtkomst på kontonivå
+# Krävs för att Bicep-containerns publicAccess: Blob ska ha effekt
+# ===================================================
+Write-Host ""
+Write-Host "[4/4] Configuring Blob Storage public access..." -ForegroundColor Yellow
+
+az storage account update `
+    --name $BlobStorageAccountName `
+    --resource-group $ResourceGroup `
+    --allow-blob-public-access true `
+    --output none
+
+if (-not $?) { Write-Host "ERROR: Blob Storage public access misslyckades." -ForegroundColor Red; exit 1 }
+
+Write-Host "  OK  Anonymous blob access enabled on '$BlobStorageAccountName'" -ForegroundColor Green
+
 Write-Host ""
 Write-Host "=========================================" -ForegroundColor Green
 Write-Host " Deployment klar!" -ForegroundColor Green
 Write-Host " App URL    : $containerAppUrl" -ForegroundColor Green
 Write-Host " ACR server : $acrLoginServer" -ForegroundColor Green
 Write-Host "=========================================" -ForegroundColor Green
+Write-Host ""
+Write-Host " Manuellt kvar:" -ForegroundColor Yellow
+Write-Host "   Kopiera bilder från snaxerschocolateblob till $BlobStorageAccountName/products" -ForegroundColor Yellow
