@@ -33,6 +33,9 @@ param cosmosAccountEndpoint string = 'https://snaxers.documents.azure.com:443/'
 @description('Azure Blob Storage endpoint — SNAX-2')
 param blobStorageEndpoint string = 'https://sasnaxersdev.blob.core.windows.net/'
 
+@description('Azure Blob Storage account name — används för container-konfiguration')
+param blobStorageAccountName string = 'sasnaxers${environmentName}'
+
 // ===================================================
 // AZURE CONTAINER REGISTRY (ACR)
 // ===================================================
@@ -184,6 +187,20 @@ resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
         maxReplicas: 3
       }
     }
+  }
+}
+
+// ===================================================
+// BLOB STORAGE — Container policy för produktbilder
+// ===================================================
+// Sätter anonym läsåtkomst (Blob-nivå) på products-containern så att
+// produktbilder laddas korrekt på frontend utan autentisering.
+// Obs: allowBlobPublicAccess måste vara true på kontot — sätts av deploy.ps1.
+// RBAC (Storage Blob Data Contributor) för Managed Identity är redan tilldelad manuellt.
+resource productsContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-01-01' = {
+  name: '${blobStorageAccountName}/default/products'
+  properties: {
+    publicAccess: 'Blob'
   }
 }
 
