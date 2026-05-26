@@ -114,6 +114,14 @@ resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
           identity: managedIdentityId
         }
       ]
+      // Tech debt: App Insights connection string som Container App secret
+      // så att värdet inte syns i klartext via az containerapp show
+      secrets: [
+        {
+          name: 'appinsights-connstr'
+          value: appInsightsConnectionString
+        }
+      ]
     }
     template: {
       containers: [
@@ -155,7 +163,7 @@ resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
             }
             {
               name: 'ApplicationInsights__ConnectionString'
-              value: appInsightsConnectionString
+              secretRef: 'appinsights-connstr'
             }
             {
               name: 'AZURE_CLIENT_ID'
