@@ -93,6 +93,7 @@ namespace TheSnaxers.Extensions
             services.AddScoped<IBlobService, BlobService>();
             services.AddScoped<IInventoryService, InventoryService>();
             services.AddScoped<ICountryService, CountryService>();
+            services.AddScoped<IImageValidationService, ImageValidationService>();
 
             services.AddHttpClient();
             services.AddMemoryCache();
