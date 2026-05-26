@@ -53,7 +53,7 @@ Write-Host ""
 # STEG 1 — security.bicep
 # Skapar: Managed Identity + Key Vault + RBAC
 # ===================================================
-Write-Host "[1/3] Deploying security.bicep..." -ForegroundColor Yellow
+Write-Host "[1/4] Deploying security.bicep..." -ForegroundColor Yellow
 
 $securityResult = az deployment group create `
     --resource-group $ResourceGroup `
@@ -77,7 +77,7 @@ Write-Host "  OK  Key Vault URI    : $keyVaultUri" -ForegroundColor Green
 # Skapar: Log Analytics + Application Insights
 # ===================================================
 Write-Host ""
-Write-Host "[2/3] Deploying monitoring.bicep..." -ForegroundColor Yellow
+Write-Host "[2/4] Deploying monitoring.bicep..." -ForegroundColor Yellow
 
 $monitoringResult = az deployment group create `
     --resource-group $ResourceGroup `
@@ -95,12 +95,30 @@ Write-Host "  OK  Log Analytics ID  : $logAnalyticsId" -ForegroundColor Green
 Write-Host "  OK  App Insights      : connection string captured" -ForegroundColor Green
 
 # ===================================================
-# STEG 3 — main.bicep
+# STEG 3 — Blob Storage: aktivera anonym åtkomst på kontonivå
+# Måste köras INNAN main.bicep eftersom Bicep sätter publicAccess: Blob
+# på containern — det kräver att kontot tillåter public access först.
+# ===================================================
+Write-Host ""
+Write-Host "[3/4] Configuring Blob Storage public access..." -ForegroundColor Yellow
+
+az storage account update `
+    --name $BlobStorageAccountName `
+    --resource-group $ResourceGroup `
+    --allow-blob-public-access true `
+    --output none
+
+if (-not $?) { Write-Host "ERROR: Blob Storage public access misslyckades." -ForegroundColor Red; exit 1 }
+
+Write-Host "  OK  Anonymous blob access enabled on '$BlobStorageAccountName'" -ForegroundColor Green
+
+# ===================================================
+# STEG 4 — main.bicep
 # Skapar: ACR + Container Apps Environment + Container App
 # Tar emot outputs från steg 1 och 2 som parametrar
 # ===================================================
 Write-Host ""
-Write-Host "[3/3] Deploying main.bicep..." -ForegroundColor Yellow
+Write-Host "[4/4] Deploying main.bicep..." -ForegroundColor Yellow
 
 $mainResult = az deployment group create `
     --resource-group $ResourceGroup `
@@ -124,23 +142,6 @@ if (-not $?) { Write-Host "ERROR: main.bicep misslyckades." -ForegroundColor Red
 
 $containerAppUrl   = $mainResult.containerAppUrl.value
 $acrLoginServer    = $mainResult.acrLoginServer.value
-
-# ===================================================
-# STEG 4 — Blob Storage: aktivera anonym åtkomst på kontonivå
-# Krävs för att Bicep-containerns publicAccess: Blob ska ha effekt
-# ===================================================
-Write-Host ""
-Write-Host "[4/4] Configuring Blob Storage public access..." -ForegroundColor Yellow
-
-az storage account update `
-    --name $BlobStorageAccountName `
-    --resource-group $ResourceGroup `
-    --allow-blob-public-access true `
-    --output none
-
-if (-not $?) { Write-Host "ERROR: Blob Storage public access misslyckades." -ForegroundColor Red; exit 1 }
-
-Write-Host "  OK  Anonymous blob access enabled on '$BlobStorageAccountName'" -ForegroundColor Green
 
 Write-Host ""
 Write-Host "=========================================" -ForegroundColor Green
