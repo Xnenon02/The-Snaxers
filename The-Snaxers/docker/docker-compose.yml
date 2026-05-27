@@ -16,10 +16,11 @@ services:
       - CosmosDb__CartContainerName=${COSMOS_CART_CONTAINER:-}
       - Authentication__Google__ClientId=${GOOGLE_CLIENT_ID:-}
       - Authentication__Google__ClientSecret=${GOOGLE_CLIENT_SECRET:-}
-      - ConnectionStrings__AzureBlobStorage=${BLOB_CONNECTION_STRING}
+      - AzureStorage__ConnectionString=${BLOB_CONNECTION_STRING}
       - AzureStorage__ProductContainerName=products
       - AdminSettings__Email=${ADMIN_EMAIL}
       - AdminSettings__Password=${ADMIN_PASSWORD}
+      - Jwt__Secret=${JWT_SECRET}
       - ApplicationInsights__ConnectionString=${APP_INSIGHTS_CONNECTION_STRING:-}
     # Volume disabled: mounting /app overwrites the published app binaries.
     # SQLite (Identity) is recreated automatically by EnsureCreated() on startup.
