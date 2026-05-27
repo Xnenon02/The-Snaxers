@@ -30,7 +30,7 @@ namespace TheSnaxers.Extensions
 
             // Identity DB & Stores
             services.AddDbContext<ApplicationDbContext>(options => options.UseSqlite("Data Source=snaxers.db"));
-            
+
             services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = false)
                 .AddRoles<IdentityRole>()
                 .AddEntityFrameworkStores<ApplicationDbContext>();
@@ -48,7 +48,7 @@ namespace TheSnaxers.Extensions
             {
                 var endpoint = configuration["CosmosDb:AccountEndpoint"] ?? throw new InvalidOperationException("CosmosDb:AccountEndpoint saknas.");
                 var accountKey = configuration["CosmosDb:AccountKey"];
-                
+
                 if (!string.IsNullOrWhiteSpace(accountKey))
                     return new CosmosClient(endpoint, accountKey);
 
@@ -110,7 +110,12 @@ namespace TheSnaxers.Extensions
             var jwtIssuer = configuration["Jwt:Issuer"] ?? "TheSnaxersAPI";
             var jwtAudience = configuration["Jwt:Audience"] ?? "TheSnaxersApp";
 
-            var authBuilder = services.AddAuthentication();
+            var authBuilder = services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = IdentityConstants.ApplicationScheme;
+    options.DefaultChallengeScheme = IdentityConstants.ApplicationScheme;
+    options.DefaultSignInScheme = IdentityConstants.ExternalScheme;
+});
 
             if (!string.IsNullOrEmpty(googleClientId) && !string.IsNullOrEmpty(googleClientSecret))
             {

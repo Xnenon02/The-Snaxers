@@ -1,5 +1,7 @@
 namespace TheSnaxers.Services
+
 {
+    using Microsoft.AspNetCore.Identity;
     public interface IIdentitySeeder
     {
         Task SeedAdminAndRolesAsync();
@@ -14,11 +16,11 @@ namespace TheSnaxers.Services
 
         public IdentitySeeder(
             Microsoft.AspNetCore.Identity.UserManager<Microsoft.AspNetCore.Identity.IdentityUser> userManager, 
-            Microsoft.AspNetCore.Identity.RoleManager<Microsoft.AspNetCore.Identity.IdentityRole> _roleManager, 
+            Microsoft.AspNetCore.Identity.RoleManager<Microsoft.AspNetCore.Identity.IdentityRole> roleManager, 
             IConfiguration configuration)
         {
             _userManager = userManager;
-            this._roleManager = _roleManager;
+            _roleManager = roleManager;
             _configuration = configuration;
         }
 

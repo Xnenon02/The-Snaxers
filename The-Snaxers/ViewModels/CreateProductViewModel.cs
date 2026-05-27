@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace TheSnaxers.Models;
+namespace TheSnaxers.ViewModels;
 
 public class CreateProductViewModel
 {

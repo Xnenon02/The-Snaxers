@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace TheSnaxers.Models;
+namespace TheSnaxers.ViewModels;
 
 public class EditProductViewModel
 {
@@ -8,6 +8,7 @@ public class EditProductViewModel
     public string Id { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "Du måste ange ett produktnamn.")]
+    [StringLength(100, ErrorMessage = "Namnet får inte vara längre än 100 tecken.")]
     public string Name { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "Du måste ange ett varumärke.")]
@@ -32,6 +33,7 @@ public class EditProductViewModel
     public string Category { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "Du måste skriva en beskrivning.")]
+    [StringLength(1000, ErrorMessage = "Beskrivningen är för lång.")]
     public string Description { get; set; } = string.Empty;
 
     // Denna håller reda på bildens URL i Blob Storage under uppdateringen

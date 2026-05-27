@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using TheSnaxers.Services;
 using TheSnaxers.Models;
+using TheSnaxers.ViewModels;
 using Microsoft.AspNetCore.Identity;
 
 namespace TheSnaxers.Controllers;
