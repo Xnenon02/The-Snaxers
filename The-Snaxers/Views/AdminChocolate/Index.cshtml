@@ -18,8 +18,7 @@
 
     <ul class="nav nav-tabs mb-4 border-bottom-0">
         <li class="nav-item">
-            <a class="nav-link active shadow-sm border-bottom-0 fw-bold" asp-action="Index" 
-               style="background-color: #fff; color: #4b2c20; border-radius: 10px 10px 0 0;">
+            <a class="admin-tab-active nav-link active shadow-sm border-bottom-0 fw-bold" asp-action="Index">
                 <i class="bi bi-egg-fried"></i> Lagerhantering
             </a>
         </li>
@@ -30,11 +29,11 @@
         </li>
     </ul>
 
-    <div class="card shadow border-0" style="border-radius: 0 15px 15px 15px;">
+    <div class="admin-card card shadow border-0">
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
-                    <thead style="background-color: #4b2c20; color: white;">
+                    <thead class="admin-table-head">
                         <tr>
                             <th class="ps-4">Bild</th>
                             <th>Namn</th>
@@ -50,14 +49,13 @@
                             <tr>
                                 <td class="ps-4">
                                     <img src="@item.ImageUrl" 
-                                         alt="@item.Name" 
-                                         style="width: 50px; height: 50px; object-fit: cover;" 
-                                         class="rounded shadow-sm border">
+                                         alt="@item.Name"  
+                                         class="admin-product-thumb rounded shadow-sm border">
                                 </td>
                                 <td class="fw-bold text-chocolate">@item.Name</td>
                                 <td>@item.Brand</td>
                                 <td>
-                                    <span class="badge rounded-pill" style="background-color: #ffc0cb; color: #4b2c20;">
+                                    <span class="cocoa-badge badge rounded-pill">
                                         @item.CocoaPercentage%
                                     </span>
                                 </td>
