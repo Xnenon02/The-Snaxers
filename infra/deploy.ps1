@@ -8,10 +8,18 @@
 #       -CosmosAccountEndpoint https://snaxers.documents.azure.com:443/ `
 #       -BlobStorageEndpoint https://sasnaxersdev.blob.core.windows.net/
 #
+#   # Prod med eget storage-konto:
 #   .\infra\deploy.ps1 -ResourceGroup rg-snaxers-prod -EnvironmentName prod `
 #       -ContainerImage acrsnaxersprod.azurecr.io/thesnaxers:latest `
-#       -CosmosAccountEndpoint https://snaxers-prod.documents.azure.com:443/ `
+#       -CosmosAccountEndpoint https://snaxers.documents.azure.com:443/ `
 #       -BlobStorageEndpoint https://sasnaxersprod.blob.core.windows.net/
+#
+#   # Prod som delar dev storage-konto (BlobStorageResourceGroup skiljer sig):
+#   .\infra\deploy.ps1 -ResourceGroup rg-snaxers-prod -EnvironmentName prod `
+#       -CosmosAccountEndpoint https://snaxers.documents.azure.com:443/ `
+#       -BlobStorageEndpoint https://sasnaxersdev.blob.core.windows.net/ `
+#       -BlobStorageAccountName sasnaxersdev `
+#       -BlobStorageResourceGroup rg-snaxers-dev
 # ===================================================
 
 param(
@@ -36,7 +44,14 @@ param(
 
     # Blob Storage-kontonamn — används för att aktivera anonym åtkomst
     # Default: sasnaxers<miljö> (t.ex. sasnaxersdev / sasnaxersprod)
-    [string]$BlobStorageAccountName = "sasnaxers$EnvironmentName"
+    [string]$BlobStorageAccountName = "sasnaxers$EnvironmentName",
+
+    # Resursgrupp för Blob Storage-kontot.
+    # Om du delar ett storage-konto från en annan miljö (t.ex. prod som använder sasnaxersdev),
+    # ange den RG som kontot tillhör — steg 3 körs då mot rätt RG och Bicep hoppar
+    # över container-skapandet (kontot är redan konfigurerat).
+    # Default: samma RG som deployments-targeten.
+    [string]$BlobStorageResourceGroup = $ResourceGroup
 )
 
 $ErrorActionPreference = 'Stop'
@@ -98,19 +113,27 @@ Write-Host "  OK  App Insights      : connection string captured" -ForegroundCol
 # STEG 3 — Blob Storage: aktivera anonym åtkomst på kontonivå
 # Måste köras INNAN main.bicep eftersom Bicep sätter publicAccess: Blob
 # på containern — det kräver att kontot tillåter public access först.
+# Hoppas över om storage-kontot tillhör en annan RG (redan konfigurerat).
 # ===================================================
 Write-Host ""
 Write-Host "[3/4] Configuring Blob Storage public access..." -ForegroundColor Yellow
 
-az storage account update `
-    --name $BlobStorageAccountName `
-    --resource-group $ResourceGroup `
-    --allow-blob-public-access true `
-    --output none
+$deployBlobContainer = 'true'
 
-if (-not $?) { Write-Host "ERROR: Blob Storage public access misslyckades." -ForegroundColor Red; exit 1 }
+if ($BlobStorageResourceGroup -ne $ResourceGroup) {
+    Write-Host "  SKIP  '$BlobStorageAccountName' tillhör '$BlobStorageResourceGroup' — already configured, skipping" -ForegroundColor Gray
+    $deployBlobContainer = 'false'
+} else {
+    az storage account update `
+        --name $BlobStorageAccountName `
+        --resource-group $BlobStorageResourceGroup `
+        --allow-blob-public-access true `
+        --output none
 
-Write-Host "  OK  Anonymous blob access enabled on '$BlobStorageAccountName'" -ForegroundColor Green
+    if (-not $?) { Write-Host "ERROR: Blob Storage public access misslyckades." -ForegroundColor Red; exit 1 }
+
+    Write-Host "  OK  Anonymous blob access enabled on '$BlobStorageAccountName'" -ForegroundColor Green
+}
 
 # ===================================================
 # STEG 4 — main.bicep
@@ -135,6 +158,7 @@ $mainResult = az deployment group create `
         cosmosAccountEndpoint=$CosmosAccountEndpoint `
         blobStorageEndpoint=$BlobStorageEndpoint `
         blobStorageAccountName=$BlobStorageAccountName `
+        deployBlobContainer=$deployBlobContainer `
     --query properties.outputs `
     --output json | ConvertFrom-Json
 
