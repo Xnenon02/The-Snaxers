@@ -11,7 +11,8 @@
         <div class="text-center py-5 shadow-sm rounded bg-light border">
             <img src="/images/empty-cart-choco.jpg" 
                  alt="Tom chokladask" 
-                 class="favorite-empty-image img-fluid mb-4" />
+                 class="img-fluid mb-4" 
+                 style="max-height: 250px; opacity: 0.8;">
             
             <p class="lead text-muted mb-4">Här var det tomt! Din choklad-samling väntar på att fyllas. 🍫</p>
             
@@ -29,8 +30,9 @@
                     <div class="card h-100 border-0 shadow-sm snaxers-card">
                         <div class="position-relative">
                             <img src="@item.Product?.ImageUrl" 
-                                class="favorite-product-image card-img-top p-4" 
-                                alt="@item.Product?.Name" />
+                                class="card-img-top p-4" 
+                                alt="@item.Product?.Name" 
+                                style="height: 200px; object-fit: contain;">
                             
                             <form asp-controller="Favorite" asp-action="Remove" method="post" class="position-absolute top-0 end-0 m-2">
                                 <input type="hidden" name="productId" value="@item.ProductId" />
