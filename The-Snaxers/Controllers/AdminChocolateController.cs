@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using TheSnaxers.Services;
 using TheSnaxers.Models;
+using TheSnaxers.ViewModels;
 using Microsoft.AspNetCore.Identity;
 
 namespace TheSnaxers.Controllers;
@@ -14,29 +15,21 @@ public class AdminChocolateController : Controller
     private readonly IBlobService _blobService;
     private readonly UserManager<IdentityUser> _userManager;
     private readonly ILogger<AdminChocolateController> _logger;
+    private readonly IImageValidationService _imageValidationService; 
 
     public AdminChocolateController(
         IProductService productService, 
         IBlobService blobService, 
         UserManager<IdentityUser> userManager,
-        ILogger<AdminChocolateController> logger)
+        ILogger<AdminChocolateController> logger,
+        IImageValidationService imageValidationService)
     {
         _productService = productService;
         _blobService = blobService;
         _userManager = userManager;
         _logger = logger;
+        _imageValidationService = imageValidationService;
     }
-
-    private static readonly string[] AllowedExtensions = { ".jpg", ".jpeg", ".png", ".webp" };
-
-    private static readonly byte[][] ImageMagicBytes =
-    [
-        [0xFF, 0xD8, 0xFF],
-        [0x89, 0x50, 0x4E, 0x47],
-        [0x52, 0x49, 0x46, 0x46],
-    ];
-
-    private const long MaxFileSizeBytes = 2 * 1024 * 1024;
 
     public async Task<IActionResult> Index()
     {
@@ -59,105 +52,150 @@ public class AdminChocolateController : Controller
         return View(users);
     }
 
-    public IActionResult Create()
-    {
-        return View();
-    }
 
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create(Product product, IFormFile? imageFile)
-    {
-        _logger.LogInformation("Admin attempt to create product: {ProductName}", product.Name);
 
-        if (imageFile != null && imageFile.Length > 0)
+
+public IActionResult Create()
+{
+    return View(new CreateProductViewModel());
+}
+
+[HttpPost]
+[ValidateAntiForgeryToken]
+public async Task<IActionResult> Create(CreateProductViewModel model, IFormFile? imageFile)
+{
+    _logger.LogInformation("Admin attempt to create product: {ProductName}", model.Name);
+
+    string imageUrl = string.Empty;
+
+    if (imageFile != null && imageFile.Length > 0)
+    {
+        // Använd vår nya tjänst istället för den gamla interna metoden!
+        var validationError = _imageValidationService.ValidateImageFile(imageFile);
+        if (validationError != null)
         {
-            var validationError = ValidateImageFile(imageFile);
-            if (validationError != null)
-            {
-                ViewData["imageFileError"] = validationError;
-                return View(product);
-            }
-
-            using var stream = imageFile.OpenReadStream();
-            product.ImageUrl = await _blobService.UploadImageAsync(stream, imageFile.FileName);
-            _logger.LogInformation("Image uploaded for new product {ProductName}: {ImageUrl}", product.Name, product.ImageUrl);
+            ViewData["imageFileError"] = validationError;
+            return View(model);
         }
 
-        ModelState.Remove("ImageUrl");
-
-        if (ModelState.IsValid)
-        {
-            await _productService.AddProductAsync(product);
-            _logger.LogInformation("Successfully added {ProductName} to the database.", product.Name);
-            return RedirectToAction(nameof(Index));
-        }
-
-        _logger.LogWarning("Validation failed for creating product: {ProductName}", product.Name);
-        return View(product);
+        using var stream = imageFile.OpenReadStream();
+        imageUrl = await _blobService.UploadImageAsync(stream, imageFile.FileName);
+        _logger.LogInformation("Image uploaded for new product {ProductName}: {ImageUrl}", model.Name, imageUrl);
     }
 
-    public async Task<IActionResult> Edit(string id)
+    if (!ModelState.IsValid)
     {
-        var product = await _productService.GetProductByIdAsync(id);
-        if (product == null) return NotFound();
-        return View(product);
+        _logger.LogWarning("Validation failed for creating product: {ProductName}", model.Name);
+        return View(model);
     }
 
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(string id, Product product, IFormFile? imageFile, string originalCategory = "")
+    // Explicit mappning från ViewModel till säker Domänmodell
+    var product = new Product
     {
-        _logger.LogInformation("Admin attempt to edit product ID: {ProductId}", id);
+        Id = Guid.NewGuid().ToString(),
+    Name = model.Name,
+    Brand = model.Brand,
+    Price = model.Price,
+    CocoaPercentage = model.CocoaPercentage,
+    Weight = model.Weight, 
+    StockLevel = model.StockLevel,
+    Country = model.Country,
+    Category = model.Category,
+    Description = model.Description,
+    ImageUrl = imageUrl
+    };
 
-        // Sätt alltid Id från route-parametern — förhindrar att ett nytt GUID
-        // genereras av Product-konstruktorn om model binding misslyckas
-        product.Id = id;
+    await _productService.AddProductAsync(product);
+    _logger.LogInformation("Successfully added {ProductName} to the database.", product.Name);
+    return RedirectToAction(nameof(Index));
+}
 
-        if (imageFile != null && imageFile.Length > 0)
+public async Task<IActionResult> Edit(string id)
+{
+    var product = await _productService.GetProductByIdAsync(id);
+    if (product == null) return NotFound();
+
+    // Mappa ALLA egenskaper från domänmodellen till din ViewModel inför visning i vyn
+    var viewModel = new EditProductViewModel
+    {
+        Id = product.Id,
+        Name = product.Name,
+        Brand = product.Brand,             
+        Price = product.Price,
+        CocoaPercentage = product.CocoaPercentage, 
+        Weight = product.Weight,           
+        StockLevel = product.StockLevel,
+        Country = product.Country,        
+        Category = product.Category,
+        Description = product.Description,
+        ImageUrl = product.ImageUrl
+    };
+
+    return View(viewModel);
+}
+
+[HttpPost]
+[ValidateAntiForgeryToken]
+public async Task<IActionResult> Edit(string id, EditProductViewModel model, IFormFile? imageFile, string originalCategory = "")
+{
+    _logger.LogInformation("Admin attempt to edit product ID: {ProductId}", id);
+    model.Id = id;
+
+    // Hämta produkten för att behålla nuvarande bild-URL om ingen ny laddas upp
+    var existingProduct = await _productService.GetProductByIdAsync(id);
+    if (existingProduct == null) return NotFound();
+    
+    string currentImageUrl = existingProduct.ImageUrl ?? string.Empty;
+
+    if (imageFile != null && imageFile.Length > 0)
+    {
+        var validationError = _imageValidationService.ValidateImageFile(imageFile);
+        if (validationError != null)
         {
-            var validationError = ValidateImageFile(imageFile);
-            if (validationError != null)
-            {
-                ViewData["imageFileError"] = validationError;
-                return View(product);
-            }
-
-            // AC5 — Radera gamla bilden från Blob Storage innan ny laddas upp
-            if (!string.IsNullOrWhiteSpace(product.ImageUrl))
-            {
-                await _blobService.DeleteImageAsync(product.ImageUrl);
-                _logger.LogInformation("Old image deleted for product {ProductId}: {ImageUrl}", id, product.ImageUrl);
-            }
-
-            using var stream = imageFile.OpenReadStream();
-            product.ImageUrl = await _blobService.UploadImageAsync(stream, imageFile.FileName);
-            _logger.LogInformation("New image uploaded for product {ProductId}: {ImageUrl}", id, product.ImageUrl);
+            ViewData["imageFileError"] = validationError;
+            model.ImageUrl = currentImageUrl;
+            return View(model);
         }
 
-        ModelState.Remove("imageFile");
-        ModelState.Remove("ImageUrl");
-        ModelState.Remove("Id");
-
-        _logger.LogInformation("Edit POST — Id: {Id}, Category: {Category}, ModelStateValid: {Valid}",
-            product.Id, product.Category, ModelState.IsValid);
-
-        if (!ModelState.IsValid)
+        if (!string.IsNullOrWhiteSpace(currentImageUrl))
         {
-            foreach (var error in ModelState.Where(x => x.Value?.Errors.Count > 0))
-                _logger.LogWarning("ModelState fel: {Key} = {Error}", error.Key,
-                    error.Value?.Errors.FirstOrDefault()?.ErrorMessage);
-
-            return View(product);
+            await _blobService.DeleteImageAsync(currentImageUrl);
+            _logger.LogInformation("Old image deleted for product {ProductId}: {ImageUrl}", id, currentImageUrl);
         }
 
-        // COMMENT: Direkt uppdatering av StockLevel via ProductService/Repository är avsedd för 
-        // administrativa justeringar (t.ex. manuell inventering eller korrigering av lagersaldo).
-        // För automatiska lagertransaktioner vid kundköp i kassan används InventoryService (DeductStockAsync).
-        await _productService.UpdateProductAsync(product, originalCategory);
-        _logger.LogInformation("Successfully updated product ID: {ProductId}", id);
-        return RedirectToAction(nameof(Index));
+        using var stream = imageFile.OpenReadStream();
+        currentImageUrl = await _blobService.UploadImageAsync(stream, imageFile.FileName);
+        _logger.LogInformation("New image uploaded for product {ProductId}: {ImageUrl}", id, currentImageUrl);
     }
+
+    if (!ModelState.IsValid)
+    {
+        model.ImageUrl = currentImageUrl;
+        return View(model);
+    }
+
+    // Bygg domänobjektet utifrån validerad data
+    var product = new Product
+    {
+        Id = id,
+        Name = model.Name,
+        Brand = model.Brand,
+        CocoaPercentage = model.CocoaPercentage,
+        Weight = model.Weight,
+        Country = model.Country,
+        Description = model.Description,
+        Price = model.Price,
+        Category = model.Category,
+        StockLevel = model.StockLevel,
+        ImageUrl = currentImageUrl
+    };
+// COMMENT: Direkt uppdatering av StockLevel via ProductService/Repository är avsedd för 
+    // administrativa justeringar (t.ex. manuell inventering eller korrigering av lagersaldo).
+    // För automatiska lagertransaktioner vid kundköp i kassan används InventoryService (DeductStockAsync).
+    await _productService.UpdateProductAsync(product, originalCategory);
+    _logger.LogInformation("Successfully updated product ID: {ProductId}", id);
+    return RedirectToAction(nameof(Index));
+}
 
     [HttpPost]
     [ValidateAntiForgeryToken]
@@ -222,31 +260,5 @@ public class AdminChocolateController : Controller
         _logger.LogWarning("Admin-rättigheter borttagna för {Email}.", user.Email);
 
         return RedirectToAction(nameof(Users));
-    }
-
-    // AC3 — Validering av filtyp och storlek
-    private static string? ValidateImageFile(IFormFile file)
-    {
-        if (file.Length > MaxFileSizeBytes)
-            return "Filen är för stor. Max 2 MB tillåts.";
-
-        var extension = Path.GetExtension(file.FileName).ToLower();
-        if (!AllowedExtensions.Contains(extension))
-            return "Otillåtet filformat. Endast .jpg, .png och .webp tillåts.";
-
-        using var stream = file.OpenReadStream();
-        var header = new byte[4];
-        var bytesRead = stream.Read(header, 0, header.Length);
-
-        if (bytesRead < 3)
-            return "Filen verkar inte vara en giltig bild.";
-
-        var isValidImage = ImageMagicBytes.Any(magic =>
-            header.Take(magic.Length).SequenceEqual(magic));
-
-        if (!isValidImage)
-            return "Filen verkar inte vara en giltig bild.";
-
-        return null;
     }
 }
