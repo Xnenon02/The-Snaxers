@@ -1,4 +1,4 @@
-@model TheSnaxers.Models.Product
+@model TheSnaxers.ViewModels.CreateProductViewModel
 
 @{
     ViewData["Title"] = "Skapa ny choklad";
@@ -88,14 +88,10 @@
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Ladda upp produktbild</label>
                                 <input type="file" name="imageFile" class="form-control shadow-sm" accept="image/*" />
-                                <span asp-validation-for="ImageUrl" class="text-danger"></span>
                                 <span class="text-danger">@ViewData["imageFileError"]</span>
                                 <span class="text-muted small">Välj en bild från din dator för att ladda upp till
                                     galleriet.</span>
-                            
-                                    @* Vi behåller den dolda ImageUrl så att modellen fortfarande är giltig,
-                               men användaren ser den inte *@
-                                    <input type="hidden" asp-for="ImageUrl" />
+
                                 </div>
                             </div>
 
