@@ -36,6 +36,9 @@ param blobStorageEndpoint string = 'https://sasnaxersdev.blob.core.windows.net/'
 @description('Azure Blob Storage account name — används för container-konfiguration')
 param blobStorageAccountName string = 'sasnaxers${environmentName}'
 
+@description('Skapa products-containern i Blob Storage via Bicep. Sätt false om lagringskontot finns i en annan resursgrupp (t.ex. prod som delar dev-storage).')
+param deployBlobContainer bool = true
+
 // ===================================================
 // AZURE CONTAINER REGISTRY (ACR)
 // ===================================================
@@ -132,6 +135,34 @@ resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
             cpu: json('0.5')
             memory: '1Gi'
           }
+          probes: [
+            // Readiness-probe — Container Apps slutar skicka trafik tills /health/ready svarar 200
+            {
+              type: 'Readiness'
+              httpGet: {
+                path: '/health/ready'
+                port: 8080
+                scheme: 'HTTP'
+              }
+              initialDelaySeconds: 10
+              periodSeconds: 10
+              failureThreshold: 3
+              timeoutSeconds: 5
+            }
+            // Liveness-probe — startar om containern om /health/live slutar svara
+            {
+              type: 'Liveness'
+              httpGet: {
+                path: '/health/live'
+                port: 8080
+                scheme: 'HTTP'
+              }
+              initialDelaySeconds: 10
+              periodSeconds: 15
+              failureThreshold: 3
+              timeoutSeconds: 3
+            }
+          ]
           env: [
             {
               name: 'ASPNETCORE_ENVIRONMENT'
@@ -197,7 +228,7 @@ resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
 // produktbilder laddas korrekt på frontend utan autentisering.
 // Obs: allowBlobPublicAccess måste vara true på kontot — sätts av deploy.ps1.
 // RBAC (Storage Blob Data Contributor) för Managed Identity är redan tilldelad manuellt.
-resource productsContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-01-01' = {
+resource productsContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-01-01' = if (deployBlobContainer) {
   name: '${blobStorageAccountName}/default/products'
   properties: {
     publicAccess: 'Blob'
