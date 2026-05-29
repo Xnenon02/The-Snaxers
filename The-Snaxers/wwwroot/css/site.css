@@ -132,6 +132,7 @@ body {
 
 .toast-container-snaxers{
     background-color: transparent;
+    z-index: 1100;
 }
 
 .favorite-empty-image {
